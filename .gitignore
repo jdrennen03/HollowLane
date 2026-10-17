@@ -1,0 +1,9 @@
+node_modules/
+desktop/dist/
+desktop/app/
+index.html
+test.html
+three
+site/
+*.zip
+.DS_Store

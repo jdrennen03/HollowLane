@@ -1,0 +1,300 @@
+<title>13 Hollow Lane</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: full-bleed WebGL canvas; HUD pinned to screen edges; menus as case-file panels on the left third. Single deliberate dark look. */
+:root{
+  --ink:#0a0c10; --panel:rgba(12,14,18,.82); --paper:#d9d2bf; --paper-dim:#9d9786;
+  --rule:rgba(217,210,191,.18); --uv:#a07bff; --laser:#4dff7a; --emf:#ff5a3c; --cold:#8fd3ff; --warn:#ff4b3e;
+  --f-display:"Special Elite", "Courier New", ui-monospace, monospace;
+  --f-ui:"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  color-scheme:dark;
+}
+[hidden]{display:none!important;}
+html,body{height:100%;margin:0;background:var(--ink);color:var(--paper);overflow:hidden;font-family:var(--f-ui);}
+#app{position:fixed;inset:0;}
+canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none;}
+.layer{position:absolute;inset:0;pointer-events:none;}
+.ui-on{pointer-events:auto;}
+/* ---------- HUD ---------- */
+#hud{opacity:0;transition:opacity .6s;}
+#hud.show{opacity:1;}
+#xhair{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:rgba(230,225,210,.7);box-shadow:0 0 4px #000;transition:transform .15s,background .15s;}
+#xhair.hot{transform:scale(2.2);background:#fff;}
+#prompt{position:absolute;left:50%;top:calc(50% + 26px);transform:translateX(-50%);font:600 15px/1 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--paper);text-shadow:0 1px 3px #000;white-space:nowrap;}
+#prompt kbd,.kbd{display:inline-block;min-width:1.4em;padding:2px 5px;margin-right:6px;border:1px solid rgba(217,210,191,.55);border-radius:3px;font:600 12px/1.1 var(--f-ui);text-align:center;background:rgba(0,0,0,.4);}
+#inv{position:absolute;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:10px;}
+.slot{width:78px;height:64px;border:1px solid var(--rule);background:rgba(8,9,12,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;position:relative;transition:border-color .2s,transform .2s;}
+.slot.active{border-color:var(--paper);transform:translateY(-4px);background:rgba(20,22,26,.75);}
+.slot svg{width:30px;height:30px;}
+.slot .lbl{font:600 10px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--paper-dim);}
+.slot .num{position:absolute;left:5px;top:4px;font:600 10px/1 var(--f-ui);color:var(--paper-dim);}
+.slot .on{position:absolute;right:6px;top:6px;width:6px;height:6px;border-radius:50%;background:#333;}
+.slot .on.lit{background:var(--laser);box-shadow:0 0 6px var(--laser);}
+#readout{position:absolute;left:50%;bottom:calc(104px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:baseline;gap:6px;padding:6px 12px;background:rgba(5,12,10,.7);border:1px solid rgba(143,211,190,.3);font-variant-numeric:tabular-nums;}
+#readout .rv{font:600 30px/1 var(--f-ui);color:#d6ffe9;letter-spacing:.02em;}
+#readout .ru{font:600 14px/1 var(--f-ui);color:#7fb89c;}
+#readout .rm{font:600 12px/1 var(--f-ui);color:#7fb89c;letter-spacing:.08em;text-transform:uppercase;margin-left:8px;}
+#readout.freeze{border-color:rgba(127,214,255,.6);background:rgba(6,20,32,.75);}
+#readout.freeze .rv{color:#bfe9ff;}
+#readout.freeze .ru,#readout.freeze .rm{color:#7fd6ff;}
+#camHud{position:absolute;inset:6% 7%;pointer-events:none;font:600 15px/1 ui-monospace,monospace;color:#c8ffd0;text-shadow:0 0 6px rgba(80,255,120,.6);}#camHud .c{position:absolute;width:44px;height:30px;border:2px solid rgba(200,255,210,.75);}#camHud .tl{left:0;top:0;border-right:0;border-bottom:0}#camHud .tr{right:0;top:0;border-left:0;border-bottom:0}#camHud .bl{left:0;bottom:0;border-right:0;border-top:0}#camHud .br{right:0;bottom:0;border-left:0;border-top:0}#camHud .rec{position:absolute;left:58px;top:8px;display:flex;align-items:center;gap:8px}#camHud .rec b{width:12px;height:12px;border-radius:50%;background:#ff3030;box-shadow:0 0 8px #ff3030;animation:recb 1s steps(2) infinite}#camHud .nv{position:absolute;right:58px;bottom:8px;opacity:.8}@keyframes recb{50%{opacity:0}}
+#crouchTag{position:absolute;left:calc(22px + env(safe-area-inset-left,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));font:600 11px/1 var(--f-ui);letter-spacing:.18em;text-transform:uppercase;color:var(--paper-dim);}
+#vitals{position:absolute;left:calc(22px + env(safe-area-inset-left,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));width:210px;display:grid;gap:8px;}
+.meter{display:grid;gap:4px;}
+.meter .row{display:flex;justify-content:space-between;font:600 11px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--paper-dim);font-variant-numeric:tabular-nums;}
+.bar{height:5px;background:rgba(255,255,255,.08);overflow:hidden;}
+.bar i{display:block;height:100%;background:var(--paper);transition:width .3s, background .3s;}
+#sanBar.low{background:var(--warn);}
+#team{position:absolute;left:calc(22px + env(safe-area-inset-left,0px));top:calc(20px + env(safe-area-inset-top,0px));display:grid;gap:6px;font:500 13px/1.2 var(--f-ui);}
+.tm{display:flex;align-items:center;gap:8px;text-shadow:0 1px 2px #000;}
+.tm b{width:8px;height:8px;border-radius:50%;}
+.tm.dead{opacity:.45;text-decoration:line-through;}
+.tm small{color:var(--paper-dim);font-variant-numeric:tabular-nums;}
+#clock{position:absolute;right:calc(22px + env(safe-area-inset-right,0px));top:calc(20px + env(safe-area-inset-top,0px));text-align:right;font:600 11px/1.5 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--paper-dim);}
+#clock b{display:block;font:400 22px/1 var(--f-display);color:var(--paper);letter-spacing:.04em;}
+#subs{position:absolute;left:50%;bottom:calc(120px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(680px,90vw);text-align:center;display:grid;gap:6px;}
+.sub{font:500 17px/1.35 var(--f-ui);color:var(--paper);text-shadow:0 1px 4px #000,0 0 12px #000;animation:subIn .3s ease-out;}
+.sub.ghost{font-family:var(--f-display);color:#e8f4ff;font-size:22px;letter-spacing:.08em;text-shadow:0 0 10px #6cf,0 0 2px #000;}
+.sub.sys{color:var(--paper-dim);font-size:14px;letter-spacing:.06em;text-transform:uppercase;}
+@keyframes subIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#huntVig{position:absolute;inset:0;box-shadow:inset 0 0 180px rgba(120,0,0,.0);transition:box-shadow .4s;}
+#huntVig.on{box-shadow:inset 0 0 220px rgba(140,0,0,.55);}
+#fade{position:absolute;inset:0;background:#000;opacity:1;transition:opacity 1.2s;}
+/* ---------- Panels ---------- */
+.panel{position:absolute;inset:0;display:flex;align-items:stretch;}
+.panel[hidden]{display:none!important;}
+.sheet{width:min(470px,100%);box-sizing:border-box;padding-block:calc(40px + env(safe-area-inset-top,0px)) 32px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));background:linear-gradient(90deg,rgba(6,7,9,.96) 0%,rgba(6,7,9,.88) 75%,rgba(6,7,9,0) 100%);overflow-y:auto;display:flex;flex-direction:column;gap:22px;}
+.eyebrow{font:600 11px/1 var(--f-ui);letter-spacing:.28em;text-transform:uppercase;color:var(--paper-dim);}
+h1.title{margin:0;font:400 clamp(44px,7vw,68px)/.92 var(--f-display);letter-spacing:-.01em;color:var(--paper);text-wrap:balance;text-shadow:0 0 30px rgba(140,180,255,.15);}
+h1.title span{display:block;font-size:.42em;letter-spacing:.32em;color:var(--paper-dim);margin-bottom:10px;}
+.lede{margin:0;font:400 16px/1.5 var(--f-ui);color:var(--paper-dim);max-width:38ch;}
+.field{display:grid;gap:6px;}
+.field label{font:600 11px/1 var(--f-ui);letter-spacing:.18em;text-transform:uppercase;color:var(--paper-dim);}
+input.txt{background:rgba(255,255,255,.04);border:1px solid var(--rule);color:var(--paper);font:500 17px/1 var(--f-ui);padding:11px 12px;outline:none;letter-spacing:.04em;}
+input.txt:focus{border-color:var(--paper);}
+.btns{display:grid;gap:10px;}
+button.b{appearance:none;cursor:pointer;text-align:left;background:transparent;color:var(--paper);border:1px solid var(--rule);padding:14px 16px;font:600 15px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;transition:background .2s,border-color .2s;}
+button.b:hover:not(:disabled),button.b:focus-visible{background:rgba(217,210,191,.08);border-color:var(--paper);outline:none;}
+button.b.primary{background:var(--paper);color:var(--ink);border-color:var(--paper);}
+button.b.primary:hover:not(:disabled){background:#fff;}
+button.b:disabled{opacity:.35;cursor:not-allowed;}
+button.b small{font-weight:500;letter-spacing:.06em;text-transform:none;opacity:.7;}
+.maps{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.maps .mapc:last-child:nth-child(odd){grid-column:1 / -1;}
+.maps.modes{grid-template-columns:1fr 1fr 1fr;}
+.maps.modes .mapc:last-child:nth-child(odd){grid-column:auto;}
+@media (max-width:560px){.maps.modes{grid-template-columns:1fr;}}
+#lobbySet{display:grid;gap:10px;margin:4px 0 2px;}
+#lobbySet .maps .mapc small{display:none;}
+#lobbySet .next{font:600 12px/1.4 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--paper-dim);}
+#modeTag{font:600 11px/1.4 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--paper-dim);margin:-4px 0 10px;}
+.mapc{appearance:none;cursor:pointer;text-align:left;background:transparent;color:var(--paper);border:1px solid var(--rule);padding:10px 12px;font:600 14px/1.2 var(--f-ui);letter-spacing:.04em;display:grid;gap:4px;transition:border-color .2s,background .2s;}
+.mapc small{font:400 12px/1.3 var(--f-ui);color:var(--paper-dim);letter-spacing:0;}
+.mapc:hover,.mapc:focus-visible{border-color:var(--paper);outline:none;}
+.mapc.sel{background:rgba(217,210,191,.1);border-color:var(--paper);box-shadow:inset 3px 0 0 var(--paper);}
+.mapc:disabled{opacity:.5;cursor:wait;}
+.row2{display:grid;grid-template-columns:1fr auto;gap:10px;}
+.note{font:400 13px/1.45 var(--f-ui);color:var(--paper-dim);}
+.note b{color:var(--paper);font-weight:600;}
+.controls{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font:400 13px/1.3 var(--f-ui);color:var(--paper-dim);}
+.controls .kbd{justify-self:start;margin:0;}
+.lobbyList{display:grid;gap:6px;border-top:1px solid var(--rule);padding-top:12px;}
+.lobbyList .tm{font-size:15px;}
+.code{font:400 34px/1 var(--f-display);letter-spacing:.2em;color:var(--paper);}
+/* Journal */
+#journal{background:rgba(3,4,6,.78);justify-content:center;align-items:center;}
+.book{width:min(1080px,96vw);max-height:92vh;overflow:auto;background:#d8d0ba;color:#1d1a14;box-shadow:0 30px 80px rgba(0,0,0,.7);display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);background-image:linear-gradient(90deg,rgba(0,0,0,.08) 0,rgba(0,0,0,0) 3%,rgba(0,0,0,0) 97%,rgba(0,0,0,.08) 100%);}
+.book h2{margin:0 0 12px;font:400 26px/1 var(--f-display);}
+.book .pg{padding:28px 26px;min-width:0;}
+.book .pg + .pg{border-left:1px dashed rgba(0,0,0,.25);}
+.evrow{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.14);user-select:none;font:600 15px/1.2 var(--f-ui);}
+.evrow .lbl{margin-left:4px;}
+.evrow .mk{appearance:none;flex:none;width:26px;height:26px;border:2px solid rgba(29,26,20,.55);background:transparent;color:rgba(29,26,20,.4);display:grid;place-items:center;font:700 15px/1 var(--f-ui);cursor:pointer;padding:0;}
+.evrow .mk:hover,.evrow .mk:focus-visible{border-color:#1d1a14;color:#1d1a14;outline:none;}
+.evrow .mk.yes[aria-pressed="true"]{background:#1d1a14;border-color:#1d1a14;color:#d8d0ba;}
+.evrow .mk.no[aria-pressed="true"]{background:#8a2b1f;border-color:#8a2b1f;color:#f1e6cf;}
+.evrow.out .lbl{color:rgba(29,26,20,.45);text-decoration:line-through;}
+.evrow small{display:block;font:400 12px/1.3 var(--f-ui);color:rgba(29,26,20,.62);text-decoration:none;margin-top:2px;}
+.ghosts{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;}
+.gcard{border:1px solid rgba(0,0,0,.25);padding:10px 11px;cursor:pointer;display:grid;gap:5px;transition:background .2s;background:rgba(255,255,255,.12);}
+.gcard h3{margin:0;font:400 18px/1 var(--f-display);}
+.gcard .evs{display:flex;gap:4px;flex-wrap:wrap;}
+.gcard .evs span{font:600 10px/1 var(--f-ui);letter-spacing:.08em;text-transform:uppercase;padding:3px 5px;border:1px solid rgba(0,0,0,.35);}
+.gcard .evs span.hit{background:#1d1a14;color:#d8d0ba;}
+.gcard .evs span.miss{text-decoration:line-through;color:#8a2b1f;border-color:#8a2b1f;}
+.gcard.sel .evs span.hit{background:#d8d0ba;color:#1d1a14;}
+.evkey{font:400 12px/1.4 var(--f-ui);color:rgba(29,26,20,.62);margin:0 0 4px;}
+#ghostLeft{font:600 11px/1.4 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:rgba(29,26,20,.6);margin:0 0 8px;}
+.gcard p{margin:0;font:400 12px/1.35 var(--f-ui);color:rgba(29,26,20,.75);}
+.gcard.dim{opacity:.28;}
+.gcard.sel{background:#1d1a14;color:#d8d0ba;}
+.gcard.sel p{color:rgba(216,208,186,.75);}
+.gcard.sel .evs span{border-color:rgba(216,208,186,.5);}
+.jfoot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px;}
+.jfoot button{appearance:none;cursor:pointer;border:2px solid #1d1a14;background:#1d1a14;color:#d8d0ba;font:700 13px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;padding:11px 14px;}
+.jfoot button.ghostbtn{background:transparent;color:#1d1a14;}
+.jfoot button:disabled{opacity:.35;cursor:not-allowed;}
+.jfoot .note{color:rgba(29,26,20,.7);}
+.howto{font:400 12.5px/1.45 var(--f-ui);color:rgba(29,26,20,.78);display:grid;gap:7px;margin-top:16px;}
+.howto b{color:#1d1a14;}
+/* end screens */
+.center{justify-content:center;align-items:center;background:rgba(0,0,0,.55);}
+.card{width:min(520px,92vw);background:rgba(8,9,12,.92);border:1px solid var(--rule);padding:30px;display:grid;gap:16px;}
+.card h2{margin:0;font:400 38px/1 var(--f-display);}
+.card .big{font:400 24px/1.2 var(--f-display);color:var(--paper);}
+.stats{display:grid;grid-template-columns:1fr auto;gap:6px 18px;font:500 14px/1.3 var(--f-ui);color:var(--paper-dim);font-variant-numeric:tabular-nums;}
+.stats b{color:var(--paper);font-weight:600;text-align:right;}
+#loading{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:400 18px/1 var(--f-display);letter-spacing:.1em;color:var(--paper-dim);}
+.range{display:grid;grid-template-columns:110px 1fr 40px;gap:10px;align-items:center;font:500 13px/1 var(--f-ui);color:var(--paper-dim);}
+.range input{width:100%;accent-color:#d9d2bf;}
+@media (max-width:720px){.book{grid-template-columns:minmax(0,1fr);}.book .pg + .pg{border-left:0;border-top:1px dashed rgba(0,0,0,.25);}#vitals{width:150px}.slot{width:62px}}
+@media (prefers-reduced-motion:reduce){.sub{animation:none}}
+</style>
+
+<div id="app">
+  <canvas id="gl" tabindex="0"></canvas>
+  <div id="loading">Building the house…</div>
+
+  <div id="hud" class="layer">
+    <div id="huntVig"></div>
+    <div id="xhair"></div>
+    <div id="prompt"></div>
+    <div id="team"></div>
+    <div id="clock"><span id="clockLbl">Investigation</span><b id="clockVal">00:00</b><span id="roomLbl"></span></div>
+    <div id="subs"></div>
+    <div id="vitals">
+      <div class="meter"><div class="row"><span>Sanity</span><span id="sanVal">100%</span></div><div class="bar"><i id="sanBar" style="width:100%"></i></div></div>
+      <div class="meter"><div class="row"><span>Stamina</span><span></span></div><div class="bar"><i id="stamBar" style="width:100%"></i></div></div>
+    </div>
+    <div id="readout" hidden><span class="rv" id="rdVal">0.0</span><span class="ru">°C</span><span class="rm" id="rdMin"></span></div>
+    <div id="crouchTag" hidden>Crouched</div>
+    <div id="camHud" hidden><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i><div class="rec"><b></b>REC <span id="camTime">00:00:00</span></div><div class="nv">NIGHT VISION · SP</div></div>
+    <div id="inv"></div>
+  </div>
+
+  <div id="fade" class="layer"></div>
+
+  <!-- Main menu -->
+  <div id="menu" class="panel layer ui-on">
+    <div class="sheet">
+      <div class="eyebrow">Case file 0413 · Paranormal survey</div>
+      <h1 class="title" id="mapH1"><span>The house at</span>13 Hollow Lane</h1>
+      <p class="lede" id="mapLede">The Hartley family left in 1987 and never came back for their things. Something stayed. Set up at the tent, gather evidence, name the ghost, and get out before it hunts you.</p>
+      <div class="field"><label>Location</label><div class="maps" id="mapPick"><button class="mapc" data-map="lane">13 Hollow Lane<small>Ranch house · one floor · 9 rooms</small></button><button class="mapc" data-map="farm">Drennen Estate<small>Two floors · stairs · 14 rooms</small></button><button class="mapc" data-map="bayou">Bayou Maudit<small>Five stilt shacks · courtyard · mostly outdoors</small></button><button class="mapc" data-map="barn">Whitlock Stables<small>Horse barn · hayloft · riding arena</small></button></div></div>
+      <div class="field"><label>Difficulty</label><div class="maps modes" id="modePick"><button class="mapc" data-mode="rookie">Rookie<small>All 3 evidences · hunts can't kill</small></button><button class="mapc" data-mode="pro">Pro<small>All 3 evidences · hunts kill</small></button><button class="mapc" data-mode="nightmare">Nightmare<small>Only 2 evidences · hunts kill</small></button></div></div>
+      <div class="field"><label>Character</label><div class="maps chars" id="charPick"><button class="mapc" data-char="f">Female investigator<small>What your teammates see</small></button><button class="mapc" data-char="m">Male investigator<small>What your teammates see</small></button></div></div>
+      <div class="field"><label for="nick">Investigator name</label><input id="nick" class="txt" maxlength="14" autocomplete="off" value=""></div>
+      <div class="btns">
+        <button class="b primary" id="btnSolo">Investigate alone <small>1 player</small></button>
+        <button class="b" id="btnHost">Host a team lobby <small>up to 4</small></button>
+        <div class="row2"><input id="joinCode" class="txt" maxlength="4" placeholder="CODE" autocomplete="off" style="text-transform:uppercase;letter-spacing:.3em"><button class="b" id="btnJoin">Join</button></div>
+      </div>
+      <p class="note" id="mpNote">Checking whether team play is available here…</p>
+      <div class="controls">
+        <span class="kbd">WASD</span><span>Move · <b>Shift</b> sprint</span>
+        <span class="kbd">E</span><span>Pick up gear, doors, light switches</span>
+        <span class="kbd">1–3 / Q</span><span>Cycle the 3 inventory slots (or mouse wheel)</span>
+        <span class="kbd">R / RMB</span><span>Turn the held tool on or off</span>
+        <span class="kbd">T / LMB</span><span>Talk into the spirit box</span>
+        <span class="kbd">G</span><span>Drop or place the held tool</span>
+        <span class="kbd">F</span><span>Flashlight</span>
+        <span class="kbd">C</span><span>Crouch (quieter, slower)</span>
+        <span class="kbd">J / Tab</span><span>Field journal and ghost guess</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lobby -->
+  <div id="lobby" class="panel layer ui-on" hidden>
+    <div class="sheet">
+      <div class="eyebrow">Team lobby</div>
+      <div><div class="note">Lobby code</div><div class="code" id="lobbyCode">----</div></div>
+      <p class="note">Teammates open this same page, type the code and press Join. Up to 4 investigators. Anyone you share the page with needs access to it.</p>
+      <div class="lobbyList" id="lobbyList"></div>
+      <div id="lobbySet"></div>
+      <div class="btns">
+        <button class="b primary" id="btnStart">Start investigation</button>
+        <button class="b" id="btnLeave">Leave lobby</button>
+      </div>
+      <p class="note" id="lobbyNote"></p>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div id="pause" class="panel layer ui-on" hidden>
+    <div class="sheet">
+      <div class="eyebrow">Paused</div>
+      <h1 class="title" style="font-size:44px">Catch your breath</h1>
+      <p class="note" id="pauseNote">In team play the house keeps going while you're in this menu.</p>
+      <div class="btns">
+        <button class="b primary" id="btnResume">Resume</button>
+        <button class="b" id="btnQuit">Abandon investigation</button>
+      </div>
+      <div class="range"><span>Mouse</span><input type="range" id="sens" min="0.3" max="3" step="0.05" value="1"><span id="sensV">1.0</span></div>
+      <div class="range"><span>Volume</span><input type="range" id="vol" min="0" max="1" step="0.05" value="0.8"><span id="volV">80</span></div>
+      <div class="range"><span>Quality</span><input type="range" id="qual" min="0" max="2" step="1" value="2"><span id="qualV">High</span></div>
+      <div class="controls">
+        <span class="kbd">E</span><span>Interact · pick up</span>
+        <span class="kbd">1–3 / Q</span><span>Cycle inventory</span>
+        <span class="kbd">R / RMB</span><span>Tool on/off</span>
+        <span class="kbd">T / LMB</span><span>Ask the spirit box a question</span>
+        <span class="kbd">G</span><span>Drop / place tool</span>
+        <span class="kbd">F</span><span>Flashlight</span>
+        <span class="kbd">C</span><span>Crouch</span>
+        <span class="kbd">J / Tab</span><span>Journal</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Journal -->
+  <div id="journal" class="panel layer ui-on" hidden>
+    <div class="book">
+      <div class="pg">
+        <h2>Evidence</h2>
+        <div id="modeTag"></div>
+        <div class="evkey">✓ the ghost leaves it &nbsp;·&nbsp; ✕ confirmed it doesn't. Two evidences are never enough on their own: every pair is shared by at least two ghosts.</div>
+        <div id="evList"></div>
+        <div class="howto">
+          <div><b>Behaviour.</b> Every ghost has a tell you can spot with no equipment at all; it is written on its card. In Nightmare one of its three evidences never appears, so watch and listen.</div>
+          <div><b>EMF reader.</b> Ghost interactions leave readings of 2 to 4. Only some ghosts push it to level 5.</div>
+          <div><b>Spirit box.</b> Turn it on in the dark near the ghost, then ask a question. Some ghosts answer.</div>
+          <div><b>UV light.</b> Sweep walls, doors and light switches the ghost touched for glowing handprints.</div>
+          <div><b>Laser projector.</b> Place it in the ghost room and switch it on. Watch the grid for a silhouette.</div>
+          <div><b>Thermometer.</b> The ghost room is always colder. Some ghosts drop it to 0&nbsp;°C or below.</div>
+          <div><b>Loose objects.</b> Anything the ghost can throw, you can carry in your free hand: E picks it up, G drops it, left click throws it.</div>
+          <div><b>Incense bundle.</b> Not evidence, a lifeline. Press R to light it; it burns for about ten seconds. If the ghost comes near the smoke during a hunt it flees for a few seconds and can't touch anyone. Lit near a calm ghost, it delays the next hunt.</div>
+          <div><b>Camcorder.</b> Switch it on (R) and look through it: night vision. In the ghost's room, some ghosts show as floating orbs only the camera can see.</div>
+          <div><b>Spirit journal.</b> Set it down (G) near where you think the ghost is and check back. Some ghosts write in it.</div>
+          <div><b>Sanity medication.</b> Four cans on the tent table. Drink one (R) for +40% sanity. One can each, so share them out.</div>
+          <div><b>Sanity.</b> Darkness and ghost sightings drain it. Under 50% the ghost can start hunting (a Demon can hunt at any sanity). Run, break line of sight, or hide in a closet and close the door.</div>
+        </div>
+      </div>
+      <div class="pg">
+        <h2>Suspected ghost</h2>
+        <div id="ghostLeft"></div>
+        <div class="ghosts" id="ghostList"></div>
+        <div class="jfoot">
+          <button id="btnSubmit" disabled>Submit at the tent</button>
+          <button class="ghostbtn" id="btnCloseJ">Close journal</button>
+          <span class="note" id="submitNote">Go back to the tent and use the clipboard to file your verdict.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Death / results -->
+  <div id="dead" class="panel layer center" hidden>
+    <div class="card"><div class="eyebrow">Investigator lost</div><h2>You died</h2><p class="note" id="deadNote">You can still watch your team. Your teammates can finish the case.</p></div>
+  </div>
+  <div id="results" class="panel layer center ui-on" hidden>
+    <div class="card">
+      <div class="eyebrow" id="resEyebrow">Case closed</div>
+      <h2 id="resTitle">Correct</h2>
+      <div class="big" id="resGhost"></div>
+      <div class="stats" id="resStats"></div>
+      <div class="btns"><button class="b primary" id="btnAgain">Back to the street</button></div>
+    </div>
+  </div>
+</div>

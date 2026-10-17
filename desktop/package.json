@@ -1,0 +1,15 @@
+{
+  "name": "hollow-lane",
+  "productName": "Hollow Lane",
+  "version": "1.0.0",
+  "description": "Co-op ghost hunting",
+  "main": "main.js",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "stage": "node ../build.js && node stage.js",
+    "build": "npm run stage && node pack.js"
+  },
+  "dependencies": { "ws": "8.18.0" },
+  "devDependencies": { "electron": "44.7.2", "@electron/packager": "20.3.0", "three": "0.165.0" }
+}
