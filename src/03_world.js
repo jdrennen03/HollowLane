@@ -292,7 +292,7 @@ function buildFurniture(gb, root) {
     f.solid(-0.75, -0.25, 0.75, 0.25, 1);
   }
   { // sofa against hallway wall, facing the TV
-    const f = fur(gb, 2.2, 5.45, 0); sofa(f, 2.2, 'fabricGreen'); f.solid(-1.1, -0.45, 1.1, 0.45, 1);
+    const f = fur(gb, 2.2, 5.45, 0); sofa(f, 2.2, 'fabricGreen', 'prop-couch.json', root); f.solid(-1.1, -0.45, 1.1, 0.45, 1);
   }
   { const f = fur(gb, 2.2, 2.9, 0); f.box('darkWood', 0, 0.42, 0, 1.1, 0.05, 0.6); for (const [a, b] of [[-0.5, -0.25], [0.5, -0.25], [-0.5, 0.25], [0.5, 0.25]]) f.box('darkWood', a, 0.2, b, 0.05, 0.4, 0.05); f.box('darkWood', 0, 0.12, 0, 1.0, 0.03, 0.5); f.solid(-0.55, -0.3, 0.55, 0.3, 0.45); }
   rug(gb, 2.4, 2.9, 3.2, 2.3, 0);
@@ -316,17 +316,10 @@ function buildFurniture(gb, root) {
   rug(gb, 9.5, 2.2, 1.6, 2.4, 0);
   prop('bowl', 10.72, FY + 0.8, 4.4);
   // ===== DINING
-  { const f = fur(gb, 15.5, 3.0, 0);
-    f.box('darkWood', 0, 0.74, 0, 2.4, 0.05, 1.1); f.box('darkWood', 0, 0.66, 0, 2.2, 0.1, 0.95);
-    for (const [a, b] of [[-1.1, -0.45], [1.1, -0.45], [-1.1, 0.45], [1.1, 0.45]]) f.cyl('darkWood', a, 0.33, b, 0.035, 0.03, 0.66, 8);
-    f.solid(-1.2, -0.55, 1.2, 0.55, 0.8);
-    for (const [a, b, r] of [[-0.7, -0.8, 0], [0, -0.8, 0], [0.7, -0.8, 0.1], [-0.7, 0.8, Math.PI], [0.7, 0.8, Math.PI], [-1.5, 0, Math.PI / 2]]) { const [cx, cz] = f.pt(a, b); const c = fur(gb, cx, cz, r); chair(c, 'darkWood', 'fabricRose'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); }
-    // the sixth chair has been knocked over
-    { const [cx, cz] = f.pt(1.6, 0.2); const c = fur(gb, cx, cz, -0.9, FY + 0.2); c.box('darkWood', 0, 0, 0, 0.44, 0.04, 0.44, 0, Math.PI / 2 - 0.1); c.solid(-0.4, -0.3, 0.4, 0.3, 0.5); }
-  }
+  placeModel(root, { url: 'prop-dining.json', x: 15.5, z: 3.0, y: FY, cols: 'parts' });   // the table and its six chairs
   { const f = fur(gb, 18.3, 5.68, Math.PI); f.box('darkWood', 0, 0.45, 0, 1.4, 0.9, 0.48); f.box('darkWood', 0, 1.45, 0.06, 1.36, 1.1, 0.36); f.box('glass', 0, 1.45, -0.125, 1.2, 0.96, 0.01); for (const y of [1.15, 1.5]) f.box('darkWood', 0, y, 0.06, 1.3, 0.02, 0.32); for (let i = 0; i < 5; i++) f.cyl('porcelain', -0.5 + i * 0.25, 1.32, 0.12, 0.1, 0.1, 0.012, 16, Math.PI / 2 - 0.25); f.box('darkWood', 0, 2.03, 0.06, 1.44, 0.06, 0.4); f.solid(-0.7, -0.25, 0.7, 0.25, 2); }
   { const f = fur(gb, 15.6, 0.36, 0); f.box('darkWood', 0, 0.45, 0, 2.0, 0.9, 0.5); for (const a of [-0.5, 0, 0.5]) f.box('brass', a, 0.72, 0.255, 0.08, 0.015, 0.01); f.solid(-1, -0.25, 1, 0.25, 0.9); }
-  prop('plate', 14.8, FY + 0.775, 2.6); prop('plate', 15.5, FY + 0.775, 2.6); prop('plate', 16.2, FY + 0.775, 3.4); prop('candle', 15.5, FY + 0.775, 3.0); prop('cup', 14.9, FY + 0.775, 3.3); prop('cup', 16.1, FY + 0.775, 2.65);
+  prop('plate', 14.95, FY + 0.785, 2.75); prop('plate', 15.5, FY + 0.785, 2.75); prop('plate', 16.0, FY + 0.785, 3.25); prop('candle', 15.5, FY + 0.785, 3.0); prop('cup', 15.0, FY + 0.785, 3.25); prop('cup', 16.0, FY + 0.785, 2.75);
   prop('vase', 15.0, FY + 0.9, 0.36);
   picFrame(root, 'z', 15.6, 0.11, FY + 1.75, 1, 2, 0.6, 0.75);
   // ===== HALLWAY
@@ -395,10 +388,46 @@ function buildFurniture(gb, root) {
     root.add(m);
   }
 }
+// ---------------------------------------------------------------- loaded models as furniture/props
+// P: { url, x, z, y (default: ground), ry, len + axis ('x'|'z') to scale to a length, else scale (default 1),
+//      cols: 'box' one collider for the whole model, 'parts' one per mesh (a table and its chairs), false none }
+// The model is centred on (x, z) with its base on y. Each file loads once and is cloned for later placements.
+const MODEL_TPL = {};
+function placeModel(root, P) {
+  const MX = MIRROR_X;   // models arrive after the build, so the map's mirroring is applied here by hand
+  const place = T => {
+    if (!WORLD || WORLD.root !== root) return;
+    const g = new THREE.Group(), inner = new THREE.Group(), m = T.m.clone(); inner.add(m); g.add(inner);
+    const s = P.len ? P.len / (P.axis === 'z' ? T.sz.z : T.sz.x) : (P.scale || 1), c = T.b.getCenter(new V3());
+    const y = P.y !== undefined ? P.y : terrainY(P.x, P.z), ry = P.ry || 0;
+    inner.scale.setScalar(s); inner.position.set(-c.x * s, -T.b.min.y * s, -c.z * s);
+    g.position.set(P.x, y, P.z); g.rotation.y = ry;
+    const w = new THREE.Group(); w.add(g); if (MX !== null) { w.scale.x = -1; w.position.x = MX; } root.add(w);
+    const col = (b, k) => {   // a model-space box, turned and scaled into the world
+      const hw = (b.max.x - b.min.x) * s / 2 * k, hd = (b.max.z - b.min.z) * s / 2 * k, cs = Math.cos(ry), sn = Math.sin(ry);
+      const lx = ((b.min.x + b.max.x) / 2 - c.x) * s, lz = ((b.min.z + b.max.z) / 2 - c.z) * s, wx = P.x + lx * cs + lz * sn, wz = P.z - lx * sn + lz * cs;
+      const ex = hw * Math.abs(cs) + hd * Math.abs(sn), ez = hw * Math.abs(sn) + hd * Math.abs(cs);
+      const x0 = wx - ex, x1 = wx + ex;
+      COLL.push({ x0: MX !== null ? MX - x1 : x0, x1: MX !== null ? MX - x0 : x1, z0: wz - ez, z1: wz + ez, y0: y, y1: y + (b.max.y - T.b.min.y) * s, h: (b.max.y - T.b.min.y) * s, furn: true });
+    };
+    if (P.cols === 'parts') for (const b of T.parts) col(b, 0.85); else if (P.cols !== false) col(T.b, 0.85);
+  };
+  const T = MODEL_TPL[P.url];
+  if (T && T.m) return queueMicrotask(() => place(T));   // after the build, which mirrors whatever it added to root
+  if (T) return T.wait.push(place);
+  const W = MODEL_TPL[P.url] = { wait: [place] };
+  loadModelFile(P.url, gl => {
+    const m = gl.scene; m.updateMatrixWorld(true); W.parts = [];
+    m.traverse(o => { if (o.isMesh) { o.material = leanMat(Array.isArray(o.material) ? o.material[0] : o.material); o.castShadow = true; o.receiveShadow = true; W.parts.push(new THREE.Box3().setFromObject(o)); } });
+    W.m = m; W.b = new THREE.Box3().setFromObject(m); W.sz = W.b.getSize(new V3()); for (const f of W.wait) f(W); W.wait = [];
+  }, e => { console.warn('model', P.url, e); delete MODEL_TPL[P.url]; });
+}
 const FURN_LOG = [];   // seating, for the layout audit (front = local -z, or +z for chairs)
 function logFurn(f, kind, front) { const [ox, oz, ry, oy] = f.o, m = MIRROR_X !== null; FURN_LOG.push({ kind, x: m ? MIRROR_X - ox : ox, z: oz, y: oy, fx: (m ? -1 : 1) * front * Math.sin(ry), fz: front * Math.cos(ry) }); }
-function sofa(f, len, key) {
+// an upholstered sofa; with a model url the scanned couch stands in for the boxes (the models face +z, the sofa faces -z)
+function sofa(f, len, key, model, root) {
   logFurn(f, 'sofa', -1);
+  if (model) { const [ox, oz, ry, oy] = f.o; placeModel(root, { url: model, x: ox, z: oz, y: oy, ry: ry + Math.PI, len, axis: 'x', cols: false }); return; }
   f.box(key, 0, 0.22, 0, len, 0.25, 0.85); f.box(key, 0, 0.62, 0.34, len, 0.6, 0.2, 0, -0.08);
   for (const s of [-1, 1]) f.box(key, s * (len / 2 - 0.1), 0.45, 0, 0.2, 0.36, 0.85);
   const n = 3; for (let i = 0; i < n; i++) { const w = (len - 0.4) / n; f.box(key, -len / 2 + 0.2 + w * (i + 0.5), 0.4, -0.05, w - 0.02, 0.12, 0.66); }

@@ -584,27 +584,10 @@ function oakTree(gb, x, z, s) {
 }
 // imported models dressing the yard: loaded once, cloned per build, with a collider sized from the model itself
 const BARN_MODELS = [
-  { url: 'prop-truck.json', x: -15.6, z: 6.1, ry: -1.42, len: 5.3, axis: 'z' },
-  { url: 'prop-tractor.json', x: 63.0, z: 8.4, ry: 1.75, len: 2.9, axis: 'x' },
+  { url: 'prop-truck.json', x: -15.6, z: 6.1, ry: -1.42, len: 5.3, axis: 'z', cols: 'box' },
+  { url: 'prop-tractor.json', x: 63.0, z: 8.4, ry: 1.75, len: 2.9, axis: 'x', cols: 'box' },
 ];
-function placeBarnModels(root) {
-  for (const P of BARN_MODELS) {
-    const place = () => {
-      if (MAP.id !== 'barn' || !WORLD || WORLD.root !== root) return;
-      const m = P.tpl.clone(), g = new THREE.Group(), inner = new THREE.Group(), { b, sz } = P; inner.add(m); g.add(inner);
-      const s = P.len / (P.axis === 'x' ? sz.x : sz.z), c = b.getCenter(new V3());
-      inner.scale.setScalar(s); inner.position.set(-c.x * s, -b.min.y * s, -c.z * s);
-      g.position.set(P.x, terrainY(P.x, P.z), P.z); g.rotation.y = P.ry; root.add(g);
-      const hw = sz.x * s / 2 * 0.85, hd = sz.z * s / 2 * 0.85, cs = Math.abs(Math.cos(P.ry)), sn = Math.abs(Math.sin(P.ry)), ex = hw * cs + hd * sn, ez = hw * sn + hd * cs;
-      addCollider(P.x - ex, P.z - ez, P.x + ex, P.z + ez, sz.y * s);
-    };
-    if (P.tpl) { place(); continue; }
-    loadModelFile(P.url, gl => {
-      const m = gl.scene; m.traverse(o => { if (o.isMesh) { o.material = leanMat(Array.isArray(o.material) ? o.material[0] : o.material); o.castShadow = true; o.receiveShadow = true; } });
-      m.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(m); P.tpl = m; P.b = b; P.sz = b.getSize(new V3()); place();
-    }, e => console.warn('barn model', P.url, e));
-  }
-}
+function placeBarnModels(root) { for (const P of BARN_MODELS) placeModel(root, P); }
 function buildBarnYard(gb, root) {
   goosenecktrailer(gb, -14.2, -2.8, Math.PI / 2 + 0.06);
   placeBarnModels(root);   // the crashed truck on the parking pad, the Ferguson by the arena harrow

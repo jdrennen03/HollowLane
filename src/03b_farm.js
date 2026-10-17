@@ -251,7 +251,7 @@ function buildFarm(gb, root) {
   // ---------- MAIN FLOOR FURNITURE
   // family room
   { const f = F0(-0.1, 0.38, 0); f.box('darkWood', 0, 0.25, 0, 1.4, 0.5, 0.48); f.box('blackPlastic', 0, 0.68, 0.0, 0.66, 0.5, 0.46); f.box('screen', 0, 0.7, 0.235, 0.52, 0.38, 0.01); f.solid(-0.7, -0.25, 0.7, 0.25, 1.1); }
-  { const f = F0(0.6, 4.72, 0); sofa(f, 2.2, 'fabricBrown'); f.solid(-1.1, -0.45, 1.1, 0.45, 1); }   // faces the TV, with a cat-sized gap behind it
+  { const f = F0(0.6, 4.72, 0); sofa(f, 2.0, 'fabricBrown', 'prop-couch2.json', root); f.solid(-1.1, -0.45, 1.1, 0.45, 1); }   // faces the TV, with a cat-sized gap behind it
   { const f = F0(0.6, 3.6); f.box('lightWood', 0, 0.42, 0, 1.1, 0.05, 0.6); for (const [a, b] of [[-0.5, -0.25], [0.5, -0.25], [-0.5, 0.25], [0.5, 0.25]]) f.box('lightWood', a, 0.2, b, 0.05, 0.4, 0.05); f.solid(-0.55, -0.3, 0.55, 0.3, 0.45); }
   rug(gb, 0.8, 3.4, 3.0, 2.2, 0, Y0);
   { const f = F0(3.6, 2.4, Math.PI / 2); armchair(f, 'fabricGreen'); f.solid(-0.45, -0.45, 0.45, 0.45, 1); }
@@ -281,16 +281,15 @@ function buildFarm(gb, root) {
   { const f = F0(9.62, 2.2, -Math.PI / 2); f.box('darkWood', 0, 0.78, 0, 1.0, 0.04, 0.36); f.box('darkWood', 0, 0.6, 0, 0.9, 0.18, 0.32); for (const a of [-0.45, 0.45]) for (const b of [-0.14, 0.14]) f.box('darkWood', a, 0.38, b, 0.04, 0.78, 0.04); f.solid(-0.5, -0.18, 0.5, 0.18, 0.8); }
   rug(gb, 10.3, 1.4, 1.4, 2.2, 0, Y0); prop('bowl', 9.62, Y0 + 0.8, 2.35);
   // dining room + nook
-  { const f = F0(14.15, 2.3); f.box('darkWood', 0, 0.74, 0, 1.7, 0.05, 1.0); for (const [a, b] of [[-0.75, -0.4], [0.75, -0.4], [-0.75, 0.4], [0.75, 0.4]]) f.cyl('darkWood', a, 0.36, b, 0.035, 0.03, 0.72, 8); f.solid(-0.85, -0.5, 0.85, 0.5, 0.8);   // clear of the hutch, with room to walk all the way round
-    for (const [a, b, r] of [[-0.45, -0.75, 0], [0.45, -0.75, 0], [-0.45, 0.75, Math.PI], [0.45, 0.75, Math.PI]]) { const [cx, cz] = f.pt(a, b); const c = F0(cx, cz, r); chair(c, 'darkWood', 'fabricRose'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
+  placeModel(root, { url: 'prop-dining.json', x: 14.15, z: 2.3, y: Y0, cols: 'parts' });   // clear of the hutch, with room to walk all the way round
   { const f = F0(15.68, 4.2, -Math.PI / 2); f.box('darkWood', 0, 0.45, 0, 1.4, 0.9, 0.48); f.box('darkWood', 0, 1.45, 0.06, 1.36, 1.1, 0.36); f.box('glass', 0, 1.45, -0.125, 1.2, 0.96, 0.01); for (let i = 0; i < 5; i++) f.cyl('porcelain', -0.5 + i * 0.25, 1.32, 0.12, 0.1, 0.1, 0.012, 16, Math.PI / 2 - 0.25); f.solid(-0.7, -0.25, 0.7, 0.25, 2); }
-  prop('plate', 13.65, Y0 + 0.775, 2.0); prop('plate', 14.6, Y0 + 0.775, 2.6); prop('candle', 14.15, Y0 + 0.775, 2.3); prop('cup', 13.85, Y0 + 0.775, 2.65); prop('vase', 15.6, Y0 + 0.9, 4.6);
+  prop('plate', 13.65, Y0 + 0.785, 2.05); prop('plate', 14.6, Y0 + 0.785, 2.55); prop('candle', 14.15, Y0 + 0.785, 2.3); prop('cup', 13.85, Y0 + 0.785, 2.55); prop('vase', 15.6, Y0 + 0.9, 4.6);
   { const f = F0(14.3, -1.3, Math.PI * 0.85); armchair(f, 'fabricRose'); f.solid(-0.42, -0.42, 0.42, 0.42, 1); }
   { const f = F0(15.55, -0.55); f.cyl('darkWood', 0, 0.3, 0, 0.22, 0.22, 0.04, 14); f.cyl('darkWood', 0, 0.15, 0, 0.04, 0.04, 0.3, 6); f.solid(-0.22, -0.22, 0.22, 0.22, 0.4); }
   prop('book', 15.55, Y0 + 0.33, -0.55, 0.3);
   // great room
   { gb.mm('railBlack', 6.7, Y0, 9.0, 7.5, Y0 + 0.7, 9.7); gb.mm('railBlack', 6.65, Y0 + 0.7, 8.95, 7.55, Y0 + 0.74, 9.75); gb.mm('screen', 6.9, Y0 + 0.2, 8.99, 7.3, Y0 + 0.55, 9.0); gb.cyl('railBlack', 7.4, (Y0 + 0.74 + CEIL_FARM0) / 2, 9.35, 0.08, 0.08, CEIL_FARM0 - Y0 - 0.74, 10); gb.mm('brick', 6.4, Y0 - 0.02, 8.7, 7.8, Y0 + 0.02, 9.98); addCollider(6.6, 8.9, 7.6, 9.8, 1, true, Y0); }
-  { const f = F0(10.9, 6.3, 0); sofa(f, 2.4, 'fabricGreen'); f.solid(-1.2, -0.45, 1.2, 0.45, 1); }
+  { const f = F0(10.9, 6.3, Math.PI); sofa(f, 2.1, 'fabricGreen', 'prop-couch3.json', root); f.solid(-1.2, -0.45, 1.2, 0.45, 1); }
   { const f = F0(10.9, 7.55); f.box('darkWood', 0, 0.42, 0, 1.2, 0.05, 0.6); for (const [a, b] of [[-0.55, -0.25], [0.55, -0.25], [-0.55, 0.25], [0.55, 0.25]]) f.box('darkWood', a, 0.2, b, 0.05, 0.4, 0.05); f.solid(-0.6, -0.3, 0.6, 0.3, 0.45); }
   rug(gb, 10.9, 7.5, 3.4, 2.4, 0, Y0);
   { const f = F0(8.3, 8.6, -Math.PI * 0.7); f.box('darkWood', 0, 0.45, 0, 0.5, 0.04, 0.5); f.box('darkWood', 0, 0.85, 0.24, 0.5, 0.8, 0.04, 0, -0.15); for (const a of [-0.24, 0.24]) f.box('darkWood', a, 0.04, 0, 0.04, 0.05, 0.9, 0, 0); f.solid(-0.3, -0.45, 0.3, 0.45, 1); }
