@@ -19,15 +19,10 @@ Mac: if it says the app is damaged, run `xattr -cr "/Applications/Hollow Lane.ap
 
 ## Making a release
 
-Builds run on GitHub Actions (`.github/workflows/build.yml`). To publish a new version:
-
-```sh
-git tag v1.0.1
-git push origin v1.0.1
-```
-
-About 10 minutes later the Release appears with all four downloads. You can also start a test build
-from the Actions tab → "Build desktop apps" → Run workflow; the zips appear under that run's Artifacts.
+Builds run on GitHub Actions (`.github/workflows/build.yml`). To publish a new version, open the
+**Actions** tab → **Build desktop apps** → **Run workflow**, type a version such as `v1.0.1`, and run it.
+About 10 minutes later the Release appears with all four downloads. (Pushing a git tag `v1.0.1` does
+the same.) Leave the version blank for a test build – the zips then appear under that run's Artifacts.
 
 ## Project layout
 

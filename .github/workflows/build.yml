@@ -1,11 +1,17 @@
 name: Build desktop apps
 
-# Push a tag like v1.0.0 to publish a Release with Windows/Mac/Linux downloads.
-# "Run workflow" on the Actions tab builds the same files as downloadable artifacts (no Release).
+# Publishes a Release with Windows/Mac/Linux downloads. Either:
+#  - Actions tab > "Build desktop apps" > Run workflow, type a version like v1.0.1 (leave blank for a test build), or
+#  - push a git tag like v1.0.1.
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version, e.g. v1.0.1 (blank = test build only, zips under the run\'s Artifacts)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -52,7 +58,7 @@ jobs:
           compression-level: 0
 
   release:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || inputs.version != ''
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -62,5 +68,7 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.version || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           files: out/*.zip
           generate_release_notes: true
