@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version, e.g. v1.0.1 (blank = test build only, zips under the run\'s Artifacts)'
+        description: "Release version, e.g. v1.0.1 (blank = test build only, zips under the run's Artifacts)"
         required: false
         default: ''
 
