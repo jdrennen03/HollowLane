@@ -258,13 +258,13 @@ function buildFarm(gb, root) {
   { const f = F0(5.62, 0.9, Math.PI / 2); bookshelf(f); f.solid(-0.5, -0.18, 0.5, 0.18, 2); }
   { const f = F0(5.5, 4.9); floorLamp(f); f.solid(-0.15, -0.15, 0.15, 0.15, 1.7); }
   prop('mug', 0.4, Y0 + 0.445, 3.55); prop('remote', 0.8, Y0 + 0.445, 3.7, 0.6); prop('book', 0.1, Y0 + 0.445, 3.45, 1.1);
-  picFrame(root, 'x', -0.89, 4.2, Y0 + 1.7, 1, 4, 0.7, 0.55);
+  picFrame(root, 'x', -0.89, 4.2, Y0 + 1.7, 1, 'p61', 0, 0.55);
   // master bedroom
-  { const f = F0(2.69, 7.9, -Math.PI / 2); bed(f, 1.6, 2.1, 'bedding', 'darkWood'); f.solid(-0.82, -1.08, 0.82, 1.08, 0.7); }
+  { const f = F0(2.69, 7.9, -Math.PI / 2); placeModel(root, { url: 'prop-bed3.json', x: 2.69, z: 7.9, y: Y0, ry: -Math.PI / 2, len: 1.65, axis: 'x', cols: false }); f.solid(-0.82, -1.08, 0.82, 1.08, 0.7); }
   { const f = F0(3.45, 6.4, -Math.PI / 2); nightstand(f); f.solid(-0.25, -0.22, 0.25, 0.22, 0.6); tableLamp(f, 0.05, 0.58, 0.05); }
   { const f = F0(2.9, 9.65, Math.PI); dresser(f); f.solid(-0.7, -0.25, 0.7, 0.25, 1); }
   prop('clock', 3.45, Y0 + 0.585, 6.25); prop('jbox', 2.6, Y0 + 0.93, 9.65); prop('book', 3.1, Y0 + 0.93, 9.6, 0.4);
-  picFrame(root, 'z', 1.3, 5.56, Y0 + 1.6, 1, 0, 0.45, 0.58);
+  picFrame(root, 'z', 1.3, 5.56, Y0 + 1.6, 1, 'p33', 0, 0.5);
   // master bath
   tubAt(gb, 4.9, 9.48, Math.PI / 2, Y0); toiletAt(gb, 5.6, 7.3, -Math.PI / 2, Y0); vanityAt(gb, root, 4.1, 7.4, Math.PI / 2, Y0);
   prop('soap', 4.05, Y0 + 0.885, 7.15);
@@ -278,8 +278,8 @@ function buildFarm(gb, root) {
     for (const [a, r] of [[-0.8, Math.PI / 2], [0.8, -Math.PI / 2]]) { const [cx, cz] = f.pt(a, 0); const c = F0(cx, cz, r); chair(c, 'lightWood', 'fabricBlue'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
   prop('pot', 6.45, Y0 + 0.94, 0.45); prop('kettle', 6.65, Y0 + 0.93, 0.62); prop('cup', 8.4, Y0 + 0.92, 0.4); prop('bottle', 9.0, Y0 + 0.92, 0.45); prop('plate', 7.75, Y0 + 0.76, 2.5); prop('mug', 8.1, Y0 + 0.76, 2.75);
   // entry hall
-  { const f = F0(9.62, 2.2, -Math.PI / 2); f.box('darkWood', 0, 0.78, 0, 1.0, 0.04, 0.36); f.box('darkWood', 0, 0.6, 0, 0.9, 0.18, 0.32); for (const a of [-0.45, 0.45]) for (const b of [-0.14, 0.14]) f.box('darkWood', a, 0.38, b, 0.04, 0.78, 0.04); f.solid(-0.5, -0.18, 0.5, 0.18, 0.8); }
-  rug(gb, 10.3, 1.4, 1.4, 2.2, 0, Y0); prop('bowl', 9.62, Y0 + 0.8, 2.35);
+  placeModel(root, { url: 'prop-sidetable2.json', x: 9.62, z: 2.2, y: Y0, ry: Math.PI / 2, len: 1.05, axis: 'x', cols: 'box' });   // the lamp, books and keepsake box come with it
+  rug(gb, 10.3, 1.4, 1.4, 2.2, 0, Y0);
   // dining room + nook
   placeModel(root, { url: 'prop-dining.json', x: 14.15, z: 2.3, y: Y0, cols: 'parts' });   // clear of the hutch, with room to walk all the way round
   { const f = F0(15.68, 4.2, -Math.PI / 2); f.box('darkWood', 0, 0.45, 0, 1.4, 0.9, 0.48); f.box('darkWood', 0, 1.45, 0.06, 1.36, 1.1, 0.36); f.box('glass', 0, 1.45, -0.125, 1.2, 0.96, 0.01); for (let i = 0; i < 5; i++) f.cyl('porcelain', -0.5 + i * 0.25, 1.32, 0.12, 0.1, 0.1, 0.012, 16, Math.PI / 2 - 0.25); f.solid(-0.7, -0.25, 0.7, 0.25, 2); }
@@ -296,12 +296,12 @@ function buildFarm(gb, root) {
   { const f = F0(15.6, 8.9, -Math.PI / 2); f.box('darkWood', 0, 0.65, 0, 1.4, 1.3, 0.55); f.box('enamel', 0, 0.78, -0.28, 1.2, 0.05, 0.02); f.box('darkWood', 0, 0.75, -0.35, 1.3, 0.04, 0.2); f.solid(-0.7, -0.3, 0.7, 0.3, 1.3); }
   { const f = F0(15.68, 5.9, -Math.PI / 2); bookshelf(f); f.solid(-0.5, -0.18, 0.5, 0.18, 2); }
   prop('book', 10.7, Y0 + 0.445, 7.5, 0.5); prop('candle', 11.2, Y0 + 0.445, 7.6); prop('vase', 15.6, Y0 + 1.33, 8.7);
-  picFrame(root, 'z', 12.8, 5.06, Y0 + 1.7, 1, 2, 0.7, 0.85);
+  picFrame(root, 'z', 12.8, 5.06, Y0 + 1.7, 1, 'p17', 0, 0.85);
   // ---------- UPSTAIRS FURNITURE
   { const f = F1(10.0, 0.4); f.box('darkWood', 0, 0.38, 0, 0.6, 0.76, 0.4); f.solid(-0.3, -0.2, 0.3, 0.2, 0.8); }
   gb.mm('runner', 9.6, Y1 + 0.004, 1.6, 10.9, Y1 + 0.012, 6.8);
   prop('phone', 10.0, Y1 + 0.77, 0.4, 1.57);
-  picFrame(root, 'x', 9.46, 4.0, Y1 + 1.6, 1, 3, 0.4, 0.5);
+  picFrame(root, 'x', 9.46, 4.0, Y1 + 1.6, 1, 'p18', 0, 0.55);
   // Claire's and Jim's bedrooms (see 03d_farmrooms.js)
   buildClaireRoom(gb, root); buildJimRoom(gb, root);
   // upstairs bath

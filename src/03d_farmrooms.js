@@ -184,7 +184,7 @@ function buildClaireRoom(gb, root) {
 
 function buildJimRoom(gb, root) {
   const Y = FA1, F = (x, z, ry = 0) => fur(gb, x, z, ry, Y), A = roomArt();
-  { const f = F(14.85, 2.5, -Math.PI / 2); bed(f, 1.4, 2.0, 'beddingGame', 'darkWood'); f.solid(-0.75, -1.03, 0.75, 1.03, 0.7); }
+  { const f = F(14.85, 2.5, -Math.PI / 2); placeModel(root, { url: 'prop-bed2.json', x: 14.85, z: 2.5, y: Y, ry: 0, len: 2.05, axis: 'x', cols: false }); f.solid(-0.8, -1.03, 0.8, 1.03, 0.7); }   // the model's headboard is at +x
   prop('sketchbook', 14.5, Y + 0.5, 2.3, 0.4); prop('handheld', 15.0, Y + 0.5, 2.85, -0.6);
   // drafting table against the front wall: tilted board with a blueprint, parallel rule, triangle and a clamp lamp
   { const ry = Math.PI, f = F(14.3, 0.52, ry), T = -0.4, n = [0, Math.cos(T), Math.sin(T)];
