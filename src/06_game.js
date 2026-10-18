@@ -118,6 +118,21 @@ function hostRequest(slot, r) {
   else if (t === 'egg' && MAP.id === 'bayou' && r[2] === 3) { hostEvent(['snd', 'bell', -3.0, 1.6, -26.1, 1]); if (G.gatorBait && !G.eggOn) { G.eggOn = true; hostEvent(['gator']); } }
   else if (t === 'calm' && HORSE.state === 'buck' && HORSE.calmT === null) { const P = G.players[slot]; if (P && HORSE.root && Math.hypot(P.pos.x - HORSE.root.position.x, P.pos.z - HORSE.root.position.z) < 4.5) hostEvent(['hcalm', r2(G.elapsed + 0.3), (Math.random() * 1e9) | 0]); }
 }
+// the nearest solid thing (at least knee high) the ghost could lay a hand on, with the face toward it, for when no wall is close
+function touchSolid(x, z, FL) {
+  let best = null;
+  for (const c of COLL) {
+    const h = c.y1 - Math.max(c.y0, FL); if (h < 0.55 || c.y0 > FL + 1.2 || c.y1 - c.y0 > 8) continue;
+    const px = clamp(x, c.x0, c.x1), pz = clamp(z, c.z0, c.z1), d = Math.hypot(px - x, pz - z); if (d > 3.2 || (best && d >= best.d)) continue;
+    // which face: the side the ghost is on
+    const dl = x - c.x0, dr = c.x1 - x, dn = z - c.z0, df = c.z1 - z, out = [[-dl, -1, 0], [-dr, 1, 0], [-dn, 0, -1], [-df, 0, 1]].sort((a, b) => b[0] - a[0])[0];
+    const nx = out[1], nz = out[2], fx = nx ? (nx < 0 ? c.x0 : c.x1) : clamp(x, c.x0 + 0.08, c.x1 - 0.08), fz = nz ? (nz < 0 ? c.z0 : c.z1) : clamp(z, c.z0 + 0.08, c.z1 - 0.08);
+    const top = Math.min(c.y1 - 0.08, FL + 1.6);
+    best = { x: fx + nx * 0.035, z: fz + nz * 0.035,   // colliders sit a little inside the stone; keep the print on its face
+             nx, nz, d, y0: Math.max(FL + 0.3, Math.min(top - 0.15, FL + 0.8)), y1: top };
+  }
+  return best;
+}
 // local wrapper: host applies at once, clients send a request
 function request(...args) { if (G.isHost) hostRequest(G.mySlot, [0, ...args]); else Net.request(args); }
 
@@ -250,8 +265,9 @@ function ghostInteract() {
   } else if (choice === 'touch') {
     let best = null;
     for (let k = 0; k < 8; k++) { const a = Math.random() * Math.PI * 2, h = rayWall(gs.x, gs.z, Math.cos(a), Math.sin(a), 2.4, FL); if (h && (!best || h.d < best.d)) best = h; }
+    if (!best) best = touchSolid(gs.x, gs.z, FL);   // out in the open (the bayou graveyard): a headstone, a crypt, a post
     if (best) {
-      const y = rr(FL + 0.85, FL + 1.7);
+      const y = best.y0 !== undefined ? rr(best.y0, best.y1) : rr(FL + 0.85, FL + 1.7);
       hostEvent(['emf', r2(best.x), r2(y), r2(best.z), emfLevel(2)]);
       hostEvent(['snd', 'knock', r2(best.x), r2(y), r2(best.z), 0.5]);
       if (hasUV && Math.random() < 0.75) hostEvent(['pr', r2(best.x), r2(y), r2(best.z), best.nx, best.nz, r2(rr(-0.5, 0.5)), -1, 1, gh.childPrints ? 0.55 : false]);

@@ -67,6 +67,7 @@ function bayouTerrain(x, z, walk) {
   const r = Math.hypot(x, z);
   if (walk && Math.abs(r - BW_R) < BW_W) return 0.36;                                   // boardwalk planks
   if (walk && Math.abs(x) < 1.1 && z < -BW_R && z > -26) return 0.33;                    // plank walk to the dock
+  if (walk && Math.abs(x) < 3.5 && z <= -25.8 && z >= -27.5) return 0.34;               // the dock itself
   if (walk && Math.abs(x) < 2.25 && Math.abs(z + 21) < 2.25) return 0.33;              // the deck under the base tent
   if (r < YARD + 0.6) return BY0;
   const marsh = 0.05 + (fbm(fract(x / 40 + 0.5), fract(z / 40 + 0.5), 4, 4, 3, 77) - 0.5) * 0.32;
@@ -285,7 +286,9 @@ function buildBayou(gb, root) {
   addCollider(3.05, -18.65, 3.35, -18.35, 4);
   { const b = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffc070, emissiveIntensity: 0 })); b.position.set(0, -20, 0); root.add(b); WORLD_EXTRA.porchBulb = b; }
   // ---------- edge of the walkable swamp
-  for (let i = 0; i < 48; i++) { const a = i / 48 * 6.28, x = Math.cos(a) * 26.6, z = Math.sin(a) * 26.6; addCollider(x - 1.8, z - 1.8, x + 1.8, z + 1.8, 10, false, -3); }
+  for (let i = 0; i < 48; i++) { const a = i / 48 * 6.28, x = Math.cos(a) * 26.6, z = Math.sin(a) * 26.6; if (Math.abs(x) < 5.5 && z < -20) continue; addCollider(x - 1.8, z - 1.8, x + 1.8, z + 1.8, 10, false, -3); }
+  // ...with a gap for the dock: the water stops you at its sides and end instead
+  addCollider(-3.6, -29.6, 3.6, -27.65, 10, false, -3); addCollider(3.6, -28.6, 5.4, -24.6, 10, false, -3); addCollider(-5.4, -28.6, -3.6, -24.6, 10, false, -3);
 }
 // lots of small things in every shack for the ghost to throw, knock and roll
 function furnishShack(gb, root, h, n) {
