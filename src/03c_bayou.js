@@ -320,7 +320,7 @@ function furnishShack(gb, root, h, n) {
     for (const [du, dv] of [[0, 0], [-0.65, 0], [0, -0.65]]) { const f = F(cu + du, cv + dv, WR() * 0.4); f.box('cardboard', 0, 0.28, 0, 0.55, 0.56, 0.55); f.solid(-0.28, -0.28, 0.28, 0.28, 0.6); }
     P('bottle', cu, cv, 0.56); P('bottle', cu - 0.65, cv, 0.56); P('jbox', cu, cv - 0.65, 0.56); P('basket', U0 + 2.6, V1 - 0.5, 0); P('pot', (U0 + U1) / 2, V0 + 0.6, 0);
   } else if (kind === 3) { // family: toys all over the floor
-    const f = F(cu, cv - 0.2, 0.3); rockingHorse(f); f.solid(-0.25, -0.5, 0.25, 0.5, 0.8);
+    const f = F(cu, cv - 0.2, 0.3); rockingHorse(f, root); f.solid(-0.2, -0.5, 0.2, 0.5, 0.8);
     P('ball', (U0 + U1) / 2 + 0.4, V0 + 2.0, 0.1); P('block', (U0 + U1) / 2 - 0.3, V0 + 2.2, 0.035); P('block', (U0 + U1) / 2 - 0.1, V0 + 2.45, 0.035); P('truck', U0 + 2.6, V1 - 0.5, 0.04); P('teddy', (U0 + U1) / 2, V1 - 0.3, 0.13);
   } else { // smokehouse: hanging racks over a hearth, buckets, a cleaver block
     const f = F(cu, cv); f.box('brick', 0, 0.25, 0, 0.8, 0.5, 0.6); f.box('screen', 0, 0.51, 0, 0.6, 0.02, 0.45); f.solid(-0.42, -0.32, 0.42, 0.32, 0.6);

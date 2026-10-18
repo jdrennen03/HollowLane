@@ -353,7 +353,7 @@ function buildFurniture(gb, root) {
   // ===== CHILD'S BEDROOM
   { const f = fur(gb, 9.55, 12.9, Math.PI); bed(f, 0.95, 1.95, 'beddingKid', 'lightWood'); f.solid(-0.5, -1.0, 0.5, 1.0, 0.6); }
   { const f = fur(gb, 11.3, 13.6, 0); f.box('toyBlue', 0, 0.22, 0, 0.8, 0.44, 0.45); f.box('toyYellow', 0, 0.46, -0.05, 0.82, 0.04, 0.46, 0, -0.5); f.solid(-0.42, -0.24, 0.42, 0.24, 0.5); }
-  { const f = fur(gb, 12.8, 9.6, 0.7); rockingHorse(f); f.solid(-0.25, -0.5, 0.25, 0.5, 0.8); }
+  { const f = fur(gb, 12.8, 9.6, 0.7); rockingHorse(f, root); f.solid(-0.2, -0.5, 0.2, 0.5, 0.8); }
   { const f = fur(gb, 10.6, 9.8, 0); f.box('lightWood', 0, 0.45, 0, 0.7, 0.04, 0.7); for (const [a, b] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) f.box('lightWood', a, 0.22, b, 0.04, 0.44, 0.04); f.solid(-0.36, -0.36, 0.36, 0.36, 0.5); for (const [a, r] of [[-0.6, Math.PI / 2], [0.6, -Math.PI / 2]]) { const [cx, cz] = f.pt(a, 0); const c = fur(gb, cx, cz, r); chair(c, 'toyRed', 'toyRed', 0.7); } }
   { const f = fur(gb, 13.7, 10.8, -Math.PI / 2); f.box('lightWood', 0, 0.45, 0, 1.0, 0.9, 0.35); // dollhouse on a low shelf
     f.box('paintedWood', 0, 1.15, 0, 0.6, 0.5, 0.3); f.box('toyRed', 0, 1.5, 0, 0.66, 0.04, 0.36, 0, 0, 0.55); f.box('toyRed', 0, 1.5, 0, 0.66, 0.04, 0.36, 0, 0, -0.55); f.box('screen', -0.15, 1.15, 0.155, 0.12, 0.14, 0.01); f.box('screen', 0.15, 1.15, 0.155, 0.12, 0.14, 0.01); f.solid(-0.5, -0.18, 0.5, 0.18, 1.6); }
@@ -496,13 +496,8 @@ function nightstand(f) { f.box('darkWood', 0, 0.28, 0, 0.5, 0.56, 0.42); f.box('
 function dresser(f) { f.box('darkWood', 0, 0.45, 0, 1.4, 0.9, 0.48); f.box('darkWood', 0, 0.91, 0, 1.44, 0.03, 0.52); for (let i = 0; i < 3; i++) { f.box('darkWood', 0, 0.18 + i * 0.27, -0.245, 1.32, 0.24, 0.01); f.box('brass', -0.35, 0.18 + i * 0.27, -0.255, 0.08, 0.02, 0.015); f.box('brass', 0.35, 0.18 + i * 0.27, -0.255, 0.08, 0.02, 0.015); } }
 function tableLamp(f, x, y, z) { f.cyl('brass', x, y + 0.01, z, 0.07, 0.08, 0.02, 12); f.cyl('brass', x, y + 0.2, z, 0.012, 0.012, 0.38, 6); f.cyl('fabricRose', x, y + 0.44, z, 0.1, 0.17, 0.2, 16); }
 function floorLamp(f) { f.cyl('brass', 0, 0.015, 0, 0.16, 0.16, 0.03, 14); f.cyl('brass', 0, 0.8, 0, 0.012, 0.012, 1.6, 6); f.cyl('fabricRose', 0, 1.6, 0, 0.14, 0.24, 0.26, 16); }
-function rockingHorse(f) {
-  for (const s of [-0.18, 0.18]) f.add ? 0 : 0;
-  for (const s of [-0.18, 0.18]) { const g = new THREE.TorusGeometry(0.9, 0.025, 6, 24, 0.9); f.box('lightWood', s, 0.06, 0, 0.04, 0.04, 0.95, 0, 0.0); }
-  f.box('lightWood', 0, 0.42, 0, 0.18, 0.2, 0.55); f.box('lightWood', 0, 0.62, -0.32, 0.12, 0.32, 0.12, 0, -0.5); f.box('lightWood', 0, 0.78, -0.42, 0.1, 0.12, 0.22);
-  for (const [a, b] of [[-0.1, -0.2], [0.1, -0.2], [-0.1, 0.2], [0.1, 0.2]]) f.box('lightWood', a * 1.6, 0.22, b, 0.04, 0.34, 0.04);
-  f.box('toyRed', 0, 0.54, 0.05, 0.2, 0.04, 0.22); f.box('fabricBrown', 0, 0.7, -0.25, 0.04, 0.2, 0.15, 0, -0.4);
-}
+// the wooden rocking horse model (its head is at +x; the furniture frame wants it at -z)
+function rockingHorse(f, root) { const [ox, oz, ry, oy] = f.o; placeModel(root, { url: 'prop-rockhorse.json', x: ox, z: oz, y: oy, ry: ry + Math.PI / 2, len: 1.0, axis: 'x', cols: false }); }
 function rug(gb, x, z, w, d, ry, y = FY) { const g = new THREE.PlaneGeometry(w, d); g.rotateX(-Math.PI / 2); gb.add(g, mat4(x, y + 0.006, z, ry), 'rugMat', false); }
 // img: a portrait texture index, or 'p<n>' for a framed piece from the paintings collection, scaled to height h
 function picFrame(root, axis, a, b, y, facing, img, w, h) {
@@ -661,7 +656,7 @@ function buildExterior(gb, root) {
   firBelt([-5.8, -14.4, 26, 19.8], 46, [[-200, -40, 200, -12]], 3, 16);
   for (const [x, z, s] of [[-9, 4, 1.2], [-10.5, 14, 1.35], [30, 2, 1.25], [31, 15, 1.1], [8, 25, 1.3]]) fir(x, z, s);
   // abandoned car in the driveway
-  car(gb, 15.5, -6.5, 0.05);
+  car(root, 15.5, -6.5, 0.05);
   // mailbox
   gb.cyl('darkWood', 11.0, 0.55, -15.2, 0.04, 0.04, 1.1, 6); gb.box('metal', 11.0, 1.15, -15.2, 0.22, 0.24, 0.48);
   // street lamp across the road
@@ -696,15 +691,8 @@ function deadTree(gb, x, z, s) {
   branch(x, 0, z, 2.6 * s, 0.22 * s, WR() * 6.28, 0.06, 4);
   addCollider(x - 0.3 * s, z - 0.3 * s, x + 0.3 * s, z + 0.3 * s, 3);
 }
-function car(gb, x, z, ry) {
-  const f = fur(gb, x, z, ry, 0);
-  f.box('carPaint', 0, 0.55, 0, 1.8, 0.55, 4.6); f.box('carPaint', 0, 1.05, 0.3, 1.66, 0.5, 2.6);
-  f.box('glass', 0, 1.1, -1.02, 1.5, 0.4, 0.05, 0, -0.5); f.box('glass', 0.835, 1.08, 0.3, 0.02, 0.38, 2.3); f.box('glass', -0.835, 1.08, 0.3, 0.02, 0.38, 2.3);
-  for (const [a, b] of [[-0.85, -1.45], [0.85, -1.45], [-0.85, 1.45], [0.85, 1.45]]) f.cyl('tire', a, 0.33, b, 0.33, 0.33, 0.24, 16, 0, Math.PI / 2);
-  f.box('chrome', 0, 0.38, -2.31, 1.8, 0.1, 0.06); f.box('chrome', 0, 0.38, 2.31, 1.8, 0.1, 0.06);
-  f.box('screen', 0, 1.06, 0.3, 1.62, 0.44, 2.56);
-  f.solid(-0.95, -2.35, 0.95, 2.35, 1.5);
-}
+// the abandoned sedan (the model's nose is at +z)
+function car(root, x, z, ry) { placeModel(root, { url: 'prop-car.json', x, z, ry: ry + Math.PI, len: 4.5, axis: 'z', cols: 'box' }); }
 function buildTent(gb, root) {
   const { x, z } = TENT, s = 1.6, h = 2.15;
   for (const [a, b] of [[-s, -s], [s, -s], [-s, s], [s, s]]) { gb.cyl('tentPole', x + a, h / 2, z + b, 0.025, 0.025, h, 8); addCollider(x + a - 0.06, z + b - 0.06, x + a + 0.06, z + b + 0.06, 2); }
