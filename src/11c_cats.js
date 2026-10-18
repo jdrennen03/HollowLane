@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------- Drennen Estate cats
-// Three house cats, built from simple shapes and animated procedurally. The host runs their behaviour and shares
+// Three house cats: one rigged cat model, re-coated and reshaped for each, its skeleton animated procedurally. The host runs their behaviour and shares
 // positions with the team; everyone animates them locally.
 //   Izzabelle (blue) - a fat Russian Blue with a pink collar and an always-upright tail; roams the whole downstairs, never outside
 //   Mitty (tort)     - Claire's small, low tortoiseshell with a turquoise collar and a black "claires cat" tag; Claire's room and the
@@ -8,78 +8,67 @@
 //                      you in, runs up to Claire's room, and runs back out the next time someone leaves the house
 // During a hunt each one runs to its hiding place until it is over: Mitty under Claire's bed, Izzabelle behind the couch, Toby under the porch.
 const CATS = [];
+// sc: model scale (x wide, y tall, z long); fat widens the belly; L (stride) and LL (how far the body drops to sit/lie) follow
 const CAT_DEFS = [
-  { id: 'blue', name: 'Izzabelle', L: 0.44, W: 0.135, H: 0.12, LL: 0.12, hr: 0.078, tl: 0.28, tailUp: true, eye: 0xe8c818, collar: 0xe87aa8, walk: 0.32 },
-  { id: 'tort', name: 'Mitty', L: 0.33, W: 0.085, H: 0.075, LL: 0.075, hr: 0.064, tl: 0.26, eye: 0xc8a020, collar: 0x2ad0c0, tag: true, walk: 0.38 },
-  { id: 'white', name: 'Toby', L: 0.46, W: 0.078, H: 0.085, LL: 0.21, hr: 0.062, tl: 0.36, eye: 0x7ac87a, collar: null, walk: 0.42 },
+  { id: 'blue', name: 'Izzabelle', sc: [1.08, 1.0, 1.04], fat: 1.32, tailUp: true, collar: 0xe87aa8, walk: 0.32 },
+  { id: 'tort', name: 'Mitty', sc: [0.82, 0.8, 0.82], fat: 1, collar: 0x2ad0c0, tag: true, walk: 0.38 },
+  { id: 'white', name: 'Toby', sc: [0.9, 1.1, 1.08], fat: 1, collar: null, walk: 0.42 },
 ];
-function catTex(kind) {
-  return artTex(256, 128, (x, w, h) => {
-    if (kind === 'tort') {
-      x.fillStyle = '#2a1c14'; x.fillRect(0, 0, w, h);
-      const blot = (c, n, s) => { x.fillStyle = c; for (let i = 0; i < n; i++) { const cx = Math.random() * w, cy = Math.random() * h; x.beginPath(); for (let a = 0; a < 7; a++) { const r = s * (0.5 + Math.random() * 0.8), ang = a / 7 * Math.PI * 2; x.lineTo(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r * 0.7); } x.fill(); } };
-      blot('#b8621e', 26, 16); blot('#8a4a1a', 18, 10); blot('#d89a58', 12, 7); blot('#120c0a', 16, 12); blot('#c87a30', 14, 6);
-    } else {
-      const base = kind === 'blue' ? [92, 102, 118] : [236, 232, 224];
-      for (let y = 0; y < h; y++) for (let i = 0; i < w; i += 2) { const n = (Math.random() - 0.5) * 22; x.fillStyle = `rgb(${base[0] + n | 0},${base[1] + n | 0},${base[2] + n | 0})`; x.fillRect(i, y, 2, 1); }
-    }
-  });
+for (const d of CAT_DEFS) { d.L = 0.3 * d.sc[2]; d.LL = 0.2 * d.sc[1]; }
+// ---- the rigged model (a wolf-style skeleton: spine, two-joint legs, neck, four tail joints). It faces +z and stands on
+// y = 0; each cat wraps it in a group turned to face -z like everything else in the game.
+const CAT_MODEL = { tpl: null, wait: [] };
+function loadCatModel(cb) {
+  if (CAT_MODEL.tpl) return cb(CAT_MODEL.tpl);
+  CAT_MODEL.wait.push(cb); if (CAT_MODEL.wait.length > 1) return;
+  loadModelFile('cat-model.json', gl => { CAT_MODEL.tpl = gl.scene; for (const f of CAT_MODEL.wait) f(gl.scene); CAT_MODEL.wait = []; }, e => console.warn('cat model', e));
 }
+const CAT_TEX = {};
+function catCoat(id) { if (!CAT_TEX[id]) { const t = new THREE.TextureLoader().load('cat-' + id + '.jpg'); t.colorSpace = THREE.SRGBColorSpace; t.flipY = false; t.anisotropy = 4; CAT_TEX[id] = t; } return CAT_TEX[id]; }
+const CAT_BONES = { root: 'ROOTSHJnt', neck: 'Neck_01SHJnt', head: 'Neck_TopSHJnt', s1: 'Spine_01SHJnt', s2: 'Spine_02SHJnt', s4: 'Spine_04SHJnt',
+  legs: [['l_FrontLeg_HipSHJnt', 'l_FrontLeg_KneeSHJnt', null, true, 1], ['r_FrontLeg_HipSHJnt', 'r_FrontLeg_KneeSHJnt', null, true, -1],
+         ['l_HindLeg_HipSHJnt', 'l_HindLeg_Knee1SHJnt', 'l_HindLeg_Knee2SHJnt', false, 1], ['r_HindLeg_HipSHJnt', 'r_HindLeg_Knee1SHJnt', 'r_HindLeg_Knee2SHJnt', false, -1]],
+  tail: ['Tail_01_02SHJnt', 'Tail_01_03SHJnt', 'Tail_01_04SHJnt', 'Tail_01_05SHJnt'] };
+// a bone we pose: rotations are given about the model's own axes (x across the body, y up, z toward the head) relative to
+// the bone's rest orientation, so a leg's x angle swings it fore and aft whatever way the rig's joint axes point
+function poseBone(b) {
+  const rw = b.getWorldQuaternion(new THREE.Quaternion());
+  return { b, q0: b.quaternion.clone(), rw, rwi: rw.clone().invert(), p0: b.position.clone(), ax: 0, ay: 0, az: 0 };
+}
+const _pq = new THREE.Quaternion(), _pe = new THREE.Euler();
+function applyPose(pb) { _pq.setFromEuler(_pe.set(pb.ax, pb.ay, pb.az, 'YXZ')); pb.b.quaternion.copy(pb.q0).multiply(pb.rwi.clone().multiply(_pq).multiply(pb.rw)); pb.ax = pb.ay = pb.az = 0; }
 function buildCat(def) {
-  const { L, W, H, LL, hr, tl } = def;
-  const mat = new THREE.MeshStandardMaterial({ map: catTex(def.id), roughness: 0.95 });
-  const black = new THREE.MeshStandardMaterial({ color: 0x1e1e20, roughness: 0.55 });   // a little sheen so black fur still catches a flashlight
-  const pink = new THREE.MeshStandardMaterial({ color: 0xd88a96, roughness: 0.7 });
-  const M = (geo, m, parent, x = 0, y = 0, z = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; parent.add(o); return o; };
-  const root = new THREE.Group(), torso = new THREE.Group(); root.add(torso);
-  // body: an egg from shoulders to hips; the torso pivots at the hips so sitting tips the front up
-  const zc = -L * 0.32;
-  M(new THREE.SphereGeometry(1, 18, 12), mat, torso, 0, 0, zc).scale.set(W, H, L * 0.5);
-  M(new THREE.SphereGeometry(1, 14, 10), mat, torso, 0, -H * 0.15, zc + L * 0.24).scale.set(W * 1.05, H * 0.95, L * 0.26);   // haunches
-  M(new THREE.SphereGeometry(1, 14, 10), mat, torso, 0, H * 0.05, zc - L * 0.28).scale.set(W * 0.95, H * 0.95, L * 0.24);   // chest
-  // legs (pivot at the top so they can swing and fold)
-  const legs = [];
-  for (const [sx, front] of [[-1, true], [1, true], [-1, false], [1, false]]) {
-    const g = new THREE.Group(); g.position.set(sx * W * 0.55, -H * 0.35, front ? zc - L * 0.3 : zc + L * 0.3); torso.add(g);
-    const len = LL + H * 0.35, lm = def.id === 'white' && !front && sx > 0 ? 'spot' : mat;
-    M(new THREE.CylinderGeometry(W * 0.2, W * 0.16, len, 8), lm === 'spot' ? mat : mat, g, 0, -len / 2, 0);
-    if (!front) M(new THREE.SphereGeometry(W * 0.36, 10, 8), mat, g, 0, -len * 0.15, 0.01).scale.set(1, 1.3, 1.1);
-    M(new THREE.SphereGeometry(W * 0.22, 8, 6), mat, g, 0, -len, -W * 0.06).scale.set(1, 0.6, 1.3);
-    if (lm === 'spot') M(new THREE.SphereGeometry(W * 0.3, 10, 8), black, g, W * 0.12, -len * 0.25, 0.0).scale.set(0.8, 1.1, 1.15);   // the black spot on his hind leg
-    g.userData = { front, sx, len }; legs.push(g);
-  }
-  // head
-  const head = new THREE.Group(); head.position.set(0, H * 0.75, zc - L * 0.5 - hr * 0.25); torso.add(head);
-  M(new THREE.SphereGeometry(hr, 16, 12), mat, head).scale.set(1.08, 0.95, 1);
-  M(new THREE.SphereGeometry(hr * 0.45, 10, 8), mat, head, 0, -hr * 0.32, -hr * 0.78).scale.set(1.2, 0.8, 0.9);
-  M(new THREE.SphereGeometry(hr * 0.1, 6, 5), pink, head, 0, -hr * 0.18, -hr * 1.14);
-  for (const sx of [-1, 1]) {
-    const earM = def.id === 'white' && sx < 0 ? black : mat;   // one black ear
-    const ear = M(new THREE.ConeGeometry(hr * 0.36, hr * 0.62, 4), earM, head, sx * hr * 0.55, hr * 0.78, -hr * 0.05); ear.rotation.set(-0.15, Math.PI / 4, sx * -0.38);
-    const eye = M(new THREE.SphereGeometry(hr * 0.17, 10, 8), new THREE.MeshStandardMaterial({ color: def.eye, emissive: def.eye, emissiveIntensity: 0.35, roughness: 0.15 }), head, sx * hr * 0.36, hr * 0.12, -hr * 0.84); eye.scale.set(1, 0.85, 0.6);
-    M(new THREE.SphereGeometry(hr * 0.06, 6, 6), black, head, sx * hr * 0.37, hr * 0.12, -hr * 0.95).scale.set(0.6, 1.6, 0.5);   // slit pupil
-    for (const k of [-1, 1]) { const wh = M(new THREE.CylinderGeometry(0.0012, 0.0012, hr * 1.4, 3), new THREE.MeshBasicMaterial({ color: 0xe8e4dc }), head, sx * hr * 0.6, -hr * 0.3 + k * 0.006, -hr * 0.8); wh.rotation.set(0, 0, sx * (1.5 + k * 0.12)); wh.castShadow = false; }
-  }
-  // collar and tag
-  if (def.collar !== null) {
-    const col = M(new THREE.TorusGeometry(hr * 0.72, 0.008, 6, 20), new THREE.MeshStandardMaterial({ color: def.collar, roughness: 0.5 }), torso, 0, H * 0.55, zc - L * 0.46); col.rotation.x = Math.PI / 2 - 0.55;
-    if (def.tag) {
-      const tagTex = artTex(64, 64, (x, w, h) => { x.fillStyle = '#0c0c0c'; x.beginPath(); x.arc(32, 32, 31, 0, Math.PI * 2); x.fill(); x.fillStyle = '#d8c070'; x.font = 'bold 13px Georgia, serif'; x.textAlign = 'center'; x.fillText('claires', 32, 30); x.fillText('cat', 32, 45); });
-      const tag = M(new THREE.CylinderGeometry(0.016, 0.016, 0.003, 16), [new THREE.MeshStandardMaterial({ color: 0x0c0c0c }), new THREE.MeshStandardMaterial({ map: tagTex, roughness: 0.4, metalness: 0.3 }), new THREE.MeshStandardMaterial({ map: tagTex })], torso, 0, H * 0.55 - hr * 0.62, zc - L * 0.46 - hr * 0.42);
-      tag.rotation.x = Math.PI / 2 - 0.2; tag.rotation.z = Math.PI;
+  const root = new THREE.Group(), body = new THREE.Group(); body.rotation.y = Math.PI; body.scale.set(...def.sc); root.add(body);
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), PROP_HIT_MAT); hit.position.set(0, 0.2 * def.sc[1], -0.05); root.add(hit);
+  const c = { def, root, body, hit, rig: null };
+  loadCatModel(tpl => {
+    const m = SkeletonUtils.clone(tpl); m.updateMatrixWorld(true);
+    const find = n => { let r = null; m.traverse(o => { if (!r && o.isBone && o.name.includes(n)) r = o; }); return r; };
+    const coat = new THREE.MeshStandardMaterial({ map: catCoat(def.id), roughness: 0.82, side: THREE.DoubleSide });
+    const eyes = new THREE.MeshStandardMaterial({ map: catCoat(def.id), roughness: 0.15, side: THREE.DoubleSide });
+    m.traverse(o => { if (o.isMesh) { o.material = o.name === 'Object_7' ? eyes : coat; o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; } });
+    const B = CAT_BONES, R = {
+      root: poseBone(find(B.root)), neck: poseBone(find(B.neck)), head: poseBone(find(B.head)),
+      legs: B.legs.map(([h, k1, k2, front, sx]) => ({ hip: poseBone(find(h)), k1: poseBone(find(k1)), k2: k2 ? poseBone(find(k2)) : null, front, sx })),
+      tail: B.tail.map(n => poseBone(find(n))),
+    };
+    // a unit of world height in the root bone's parent space (the rig is built at another scale)
+    R.up = new V3(0, 1, 0).applyQuaternion(R.root.b.parent.getWorldQuaternion(new THREE.Quaternion()).invert()).divideScalar(R.root.b.parent.getWorldScale(new V3()).y);
+    // a fat cat: the belly bones widen and deepen, the chest bone undoes it so shoulders and head stay cat-sized
+    if (def.fat !== 1) { const k = Math.sqrt(def.fat), d = 1 + (k - 1) * 0.5; find(B.s1).scale.set(k, 1, d); find(B.s2).scale.set(k, 1, d); find(B.s4).scale.set(1 / (k * k), 1, 1 / (d * d)); }
+    // collar round the neck (and Mitty's tag), parented to the neck bone but sized in the cat's own metres
+    if (def.collar !== null) {
+      const nb = R.neck.b, g = new THREE.Group(); nb.add(g); const ws = nb.getWorldScale(new V3()); g.scale.set(1 / ws.x, 1 / ws.y, 1 / ws.z);
+      const col = new THREE.Mesh(new THREE.TorusGeometry(0.034, 0.005, 6, 22), new THREE.MeshStandardMaterial({ color: def.collar, roughness: 0.5 })); col.rotation.x = Math.PI / 2; col.position.y = 0.012; g.add(col);
+      if (def.tag) {
+        const tagTex = artTex(64, 64, (x, w, h) => { x.fillStyle = '#0c0c0c'; x.beginPath(); x.arc(32, 32, 31, 0, Math.PI * 2); x.fill(); x.fillStyle = '#d8c070'; x.font = 'bold 13px Georgia, serif'; x.textAlign = 'center'; x.fillText('claires', 32, 30); x.fillText('cat', 32, 45); });
+        const tag = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.003, 16), [new THREE.MeshStandardMaterial({ color: 0x0c0c0c }), new THREE.MeshStandardMaterial({ map: tagTex, roughness: 0.4, metalness: 0.3 }), new THREE.MeshStandardMaterial({ map: tagTex })]);
+        tag.position.set(0, 0.0, 0.036); tag.rotation.set(Math.PI / 2 - 0.3, 0, 0); g.add(tag);   // hangs at the throat (+z is forward in the model)
+      }
     }
-  }
-  // tail: a chain of short segments
-  const tail = []; let parent = torso; const n = 7, sl = tl / n;
-  const tailM = def.id === 'white' ? black : mat;   // his black tail
-  for (let i = 0; i < n; i++) {
-    const g = new THREE.Group(); if (i === 0) g.position.set(0, H * 0.35, zc + L * 0.47); else g.position.y = sl; parent.add(g);
-    const r0 = W * (def.tailUp ? 0.2 : 0.16) * (1 - i / n * 0.45), r1 = W * (def.tailUp ? 0.2 : 0.16) * (1 - (i + 1) / n * 0.45);
-    M(new THREE.CylinderGeometry(r1, r0, sl * 1.15, 7), tailM, g, 0, sl / 2, 0); tail.push(g); parent = g;
-  }
-  M(new THREE.SphereGeometry(W * 0.1, 6, 5), tailM, parent, 0, sl, 0);
-  const hit = new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.18, L * 0.55), 8, 6), PROP_HIT_MAT); hit.position.set(0, LL + H, -L * 0.1); root.add(hit);
-  return { def, root, torso, legs, head, tail, hit, baseY: LL + H * 0.55 };
+    body.add(m); c.rig = R;
+  });
+  return c;
 }
 // ---------------------------------------------------------------- lifecycle
 function removeCats() { for (const c of CATS) scene.remove(c.root); CATS.length = 0; for (let i = INTERACT.length - 1; i >= 0; i--) if (INTERACT[i].kind === 'cat') INTERACT.splice(i, 1); }
@@ -283,27 +272,44 @@ function updateCats(T, dt) {
   }
 }
 function animateCat(c, T, dt) {
-  const { def, root, torso, legs, head, tail } = c, mv = c.state === 'walk' || (!G.isHost && c.speed > 0.05) ? c.speed : 0;
+  const { def, root } = c, mv = c.state === 'walk' || (!G.isHost && c.speed > 0.05) ? c.speed : 0;
   root.position.set(c.x, c.y, c.z); root.rotation.y = c.yaw;
   const k = clamp(dt * 4, 0, 1);
   c.sit = lerp(c.sit, mv ? 0 : c.pose === 1 ? 1 : 0, k); c.lie = lerp(c.lie, mv ? 0 : c.pose === 2 ? 1 : 0, k);
   const run = clamp((mv - 0.9) / 0.9, 0, 1), w = clamp(mv / 0.25, 0, 1);
   c.ph += dt * mv / (def.L * (0.75 + run * 0.6)) * Math.PI;
-  const ph = c.ph, sit = c.sit, lie = c.lie;
   c.low = lerp(c.low || 0, c.wary ? 1 : 0, k);
-  torso.position.set(0, c.baseY + Math.abs(Math.sin(ph)) * 0.008 * w - sit * def.LL * 0.55 - lie * def.LL * 0.95 - c.low * def.LL * 0.4 * (1 - lie), 0);
-  torso.rotation.x = sit * 0.7;
-  for (const g of legs) {
-    const u = g.userData, off = (u.front ? 0 : Math.PI) + (u.sx > 0 ? Math.PI : 0) + (run > 0.5 ? (u.sx > 0 ? 0.6 : 0) : 0);
-    const swing = Math.sin(ph + off) * (0.5 + run * 0.4) * w;
-    g.rotation.x = swing * (1 - c.low * 0.4) + (u.front ? -0.7 * sit + 1.45 * lie - c.low * 0.35 : 1.1 * sit + 1.5 * lie + c.low * 0.5);
+  const sit = c.sit, lie = c.lie;
+  // flattened in a hiding place (Mitty has to fit under Claire's bed frame)
+  const H = CAT_HIDE[def.id], hid = lie > 0.5 && Math.hypot(c.x - catMx(H.spot[0]), c.z - H.spot[1]) < 0.5 ? 1 : 0;
+  c.sq = lerp(c.sq || 0, hid, k); c.body.scale.set(def.sc[0] * (1 + 0.15 * c.sq), def.sc[1] * (1 - 0.4 * c.sq), def.sc[2]);
+  const R = c.rig; if (!R) return;
+  const ph = c.ph, low = c.low * (1 - lie);
+  // model axes: +z toward the head, so a negative x angle swings a paw forward and tips the head down... front up is -x on the root
+  const pitch = 0.68 * sit;
+  R.root.ax = -pitch; R.root.b.position.copy(R.root.p0).addScaledVector(R.up, Math.abs(Math.sin(ph)) * 0.006 * w - 0.15 * sit - 0.1 * lie - 0.045 * low);
+  for (const L of R.legs) {
+    const off = (L.front ? 0 : Math.PI) + (L.sx > 0 ? Math.PI : 0) + (run > 0.5 ? (L.sx > 0 ? 0.6 : 0) : 0), cyc = ph + off;
+    const swing = Math.sin(cyc) * (0.42 + run * 0.35) * w, lift = Math.max(0, Math.cos(cyc)) * w;   // lift: the paw coming forward
+    if (L.front) {
+      L.hip.ax = -swing + pitch + 0.1 * lie + 0.25 * low;
+      L.k1.ax = 0.75 * lift - 1.45 * lie + 0.2 * low;   // lying: forearms laid forward along the floor, sphinx-style
+    } else {
+      L.hip.ax = -swing - 0.6 * sit + 0.4 * lie - 0.35 * low;
+      L.k1.ax = -0.4 * lift - 1.4 * sit - 0.5 * lie - 0.5 * low;   // negative folds the shin up under the thigh
+      L.k2.ax = 0.45 * lift + 1.2 * sit + 0.3 * lie + 0.35 * low;
+      applyPose(L.k2);
+    }
+    applyPose(L.hip); applyPose(L.k1);
   }
-  head.rotation.x = -0.7 * sit + Math.sin(ph * 2) * 0.04 * w - lie * 0.1;
-  head.rotation.y = (1 - w) * Math.sin(T * 0.31 + c.i * 2) * 0.45;
-  // tail: the Russian Blue's stands straight up with a little hook; the others swing low and curve
-  tail.forEach((g, i) => {
-    const sway = Math.sin(T * (def.tailUp ? 1.2 : 1.8) + i * 0.6 + c.i) * (def.tailUp ? 0.04 : 0.12) * (0.4 + i / tail.length);
-    if (def.tailUp) g.rotation.set(i === 0 ? -0.15 - sit * 0.7 : i >= tail.length - 2 ? -0.38 : -0.02, 0, sway);
-    else g.rotation.set(i === 0 ? 1.35 + sit * 0.5 + lie * 0.5 : -0.13 + lie * 0.08, 0, sway);   // carried out behind in a soft upward curve
+  R.neck.ax = pitch * 0.5 - lie * 0.05; R.head.ax = pitch * 0.5 + Math.sin(ph * 2) * 0.04 * w;
+  R.head.ay = (1 - w) * Math.sin(T * 0.31 + c.i * 2) * 0.45;
+  // tail: the Russian Blue's stands straight up with a hook at the tip; the others carry theirs low and swinging
+  R.tail.forEach((t, i) => {
+    const n = R.tail.length, sway = Math.sin(T * (def.tailUp ? 1.2 : 1.8) + i * 0.6 + c.i) * (def.tailUp ? 0.05 : 0.16) * (0.4 + i / n);
+    if (def.tailUp) t.ax = i === 0 ? 2.0 - lie * 1.2 : i === n - 1 ? -0.7 : -0.05;
+    else t.ax = i === 0 ? -0.25 * w + 0.35 * sit + 0.25 * lie : -0.06;
+    t.ay = sway;
   });
+  applyPose(R.root); applyPose(R.neck); applyPose(R.head); R.tail.forEach(applyPose);
 }
