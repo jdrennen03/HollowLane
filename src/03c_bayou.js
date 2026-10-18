@@ -53,7 +53,7 @@ function bayouData() {
     const topAtMin = axisX ? Math.abs(top[0] - sr[0]) < 0.01 : Math.abs(top[1] - sr[1]) < 0.01;
     stairs.push({ x0: sr[0], z0: sr[1], x1: sr[2], z1: sr[3], axis: axisX ? 'x' : 'z', lo: 0, hi: 1, flip: topAtMin });
   }
-  rooms.push({ id: 'yard', name: 'Courtyard', r: [-YARD, -YARD, YARD, YARD], lv: 0, outdoor: true, floor: 'mud', wall: 'plankWall', sw: [2.42, -1.0, -1, 0], lamp: [2.0, -1.0] });
+  rooms.push({ id: 'yard', name: 'Courtyard', r: [-YARD, -YARD, YARD, YARD], lv: 0, outdoor: true, floor: 'mud', wall: 'plankWall', sw: [0.92, -5.9, -1, 0], lamp: [0.5, -5.9] });
   for (const c of closets) {
     const { h } = c, cu1 = h.U0 + 1.4, cv0 = h.V1 - 1.3;
     const di = door(h, h.U0 + 0.3, cv0, h.U0 + 1.15, cv0, 0, -1, { closet: rooms.length });
@@ -67,6 +67,7 @@ function bayouTerrain(x, z, walk) {
   const r = Math.hypot(x, z);
   if (walk && Math.abs(r - BW_R) < BW_W) return 0.36;                                   // boardwalk planks
   if (walk && Math.abs(x) < 1.1 && z < -BW_R && z > -26) return 0.33;                    // plank walk to the dock
+  if (walk && Math.abs(x) < 2.25 && Math.abs(z + 21) < 2.25) return 0.33;              // the deck under the base tent
   if (r < YARD + 0.6) return BY0;
   const marsh = 0.05 + (fbm(fract(x / 40 + 0.5), fract(z / 40 + 0.5), 4, 4, 3, 77) - 0.5) * 0.32;
   if (r < YARD + 2) return lerp(BY0, marsh, (r - YARD - 0.6) / 1.4);
@@ -232,27 +233,15 @@ function buildBayou(gb, root) {
   { const p = []; for (let i = 0; i <= 8; i++) { const t = i / 8; p.push(new THREE.Vector2(Math.sin(t * Math.PI) * 0.42 + 0.02, (t - 0.5) * 4.4)); } const g = new THREE.LatheGeometry(p, 10, 0, Math.PI); g.rotateZ(Math.PI / 2); g.rotateX(Math.PI); gb.add(g, mat4(-2.0, 0.02, -29.0, 0.1), 'darkWood', false); }
   // ---------- shacks
   BAYOU_HOUSES.forEach((h, n) => { buildShack(gb, root, h, n); furnishShack(gb, root, h, n); });
-  // ---------- courtyard: crypt, dead oak, well, picnic table, crates, campfire, lamp post
-  { const f = fur(gb, -1.5, 3.2, 0.25, BY0);
-    f.box('concreteFound', 0, 0.3, 0, 1.6, 0.6, 2.3); f.box('concreteFound', 0, 1.0, 0, 1.4, 0.8, 2.1); f.box('concreteFound', 0, 1.5, 0, 1.7, 0.2, 2.4);
-    f.box('screen', 0, 0.95, -1.06, 0.7, 0.8, 0.02); f.box('concreteFound', 0, 2.0, -0.8, 0.1, 0.6, 0.1); f.box('concreteFound', 0, 2.1, -0.8, 0.4, 0.1, 0.1); f.solid(-0.85, -1.2, 0.85, 1.2, 1.9); }
-  for (const [x, z, r] of [[1.6, 4.5, 0.3], [-4.0, 1.0, 0.9]]) { const f = fur(gb, x, z, r, BY0); f.box('concreteFound', 0, 0.4, 0, 0.55, 0.8, 0.12); f.solid(-0.3, -0.1, 0.3, 0.1, 0.9); }
-  snag(-3.8, -3.8, 1.0, BY0);
-  { const mm = new THREE.MeshStandardMaterial({ map: mossTex(), transparent: true, alphaTest: 0.08, side: THREE.DoubleSide, roughness: 1, color: 0xa8b098, depthWrite: false });
-    for (let k = 0; k < 10; k++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 1.3 + WR() * 1.2), mm); m.position.set(-3.8 + (WR() - 0.5) * 4, BY0 + 2.6 + WR() * 1.2, -3.8 + (WR() - 0.5) * 4); m.rotation.y = WR() * 3.14; root.add(m); } }
-  { const f = fur(gb, 4.0, 3.6, 0, BY0); f.cyl('concreteFound', 0, 0.42, 0, 0.6, 0.65, 0.84, 14); f.cyl('screen', 0, 0.85, 0, 0.47, 0.47, 0.02, 14); f.box('darkWood', -0.55, 1.05, 0, 0.07, 1.2, 0.07); f.box('darkWood', 0.55, 1.05, 0, 0.07, 1.2, 0.07); f.box('darkWood', 0, 1.65, 0, 1.3, 0.07, 0.09); f.cyl('chrome', 0.1, 1.15, 0, 0.11, 0.09, 0.22, 10); f.solid(-0.7, -0.7, 0.7, 0.7, 1.2); }
-  // picnic table loaded with things the ghost can sweep off
-  { const f = fur(gb, 2.4, -3.6, 0.15, BY0); f.box('darkWood', 0, 0.74, 0, 1.8, 0.05, 0.75); for (const s of [-1, 1]) { f.box('darkWood', 0, 0.45, s * 0.6, 1.8, 0.04, 0.26); for (const a of [-0.7, 0.7]) f.box('darkWood', a, 0.37, s * 0.25, 0.06, 0.74, 0.06, 0, s * 0.45); } f.solid(-0.95, -0.75, 0.95, 0.75, 0.8);
-    for (const [t, a, b] of [['plate', -0.5, -0.15], ['plate', 0.3, 0.15], ['cup', -0.2, 0.2], ['mug', 0.6, -0.2], ['bottle', 0.1, -0.1], ['candle', -0.7, 0.2], ['bowl', 0.75, 0.2]]) { const [x, z] = f.pt(a, b); prop(t, x, BY0 + 0.765, z, WR() * 3); } }
-  // crates stacked by the well
-  for (const [x, z, r, y] of [[5.2, 1.4, 0.2, 0], [5.0, 0.6, -0.3, 0], [5.1, 1.0, 0.1, 0.55]]) { const f = fur(gb, x, z, r, BY0 + y); f.box('cardboard', 0, 0.27, 0, 0.55, 0.54, 0.55); if (!y) f.solid(-0.3, -0.3, 0.3, 0.3, 1.1); }
-  prop('bottle', 5.1, BY0 + 1.1, 1.0); prop('jbox', 5.0, BY0 + 0.55, 0.45); prop('bottle', 5.3, BY0 + 0.55, 1.55);
-  // campfire and chairs
-  { for (let k = 0; k < 8; k++) { const a = k / 8 * 6.28; gb.sphere('concreteFound', -1.5 + Math.cos(a) * 0.55, BY0 + 0.07, -2.8 + Math.sin(a) * 0.55, 0.14, 1, 0.6, 1); } gb.cyl('screen', -1.5, BY0 + 0.02, -2.8, 0.45, 0.45, 0.02, 12); for (let k = 0; k < 4; k++) gb.cyl('bark', -1.5, BY0 + 0.1, -2.8, 0.045, 0.045, 0.85, 5, k * 0.8, Math.PI / 2 - 0.15); }
-  for (const [x, z] of [[-0.2, -4.2], [-2.9, -4.0]]) { const f = fur(gb, x, z, Math.atan2(-1.5 - x, -2.8 - z), BY0); chair(f, 'darkWood', 'darkWood'); f.solid(-0.25, -0.25, 0.25, 0.25, 1); }
-  prop('pot', -1.5, BY0 + 0.07, -2.8); prop('basket', 0.6, BY0, 1.6); prop('kettle', -0.5, BY0 + 0.1, -2.2); prop('ball', 3.0, BY0 + 0.1, 0.2);
-  // lamp post (the courtyard's light; its switch is on the post)
-  gb.cyl('darkWood', 2.5, BY0 + 1.5, -1.0, 0.08, 0.1, 3.0, 8); gb.box('darkWood', 2.25, BY0 + 2.95, -1.0, 0.55, 0.07, 0.07); gb.cyl('tentPole', 2.0, BY0 + 2.92, -1.0, 0.006, 0.006, 0.08, 4); addCollider(2.35, -1.15, 2.65, -0.85, 3, false, BY0);
+  // ---------- courtyard: the old family graveyard (mausoleums, rows of headstones, the dead oak), a lamp post at the gate
+  placeModel(root, { url: 'prop-graveyard.json', x: 0, z: 0.3, y: BY0 - 0.02, len: 10.5, axis: 'x', cols: 'parts', minH: 0.3, maxW: 2.6 });
+  // the dead oak and the headstones its roots have grown into come as one piece, so they get their own blockers
+  addCollider(2.85, 3.3, 3.75, 4.2, 3, false, BY0);
+  for (const [x, z] of [[0, 3.5], [-0.5, 3.5], [5, 4.5], [5, 2.25], [-2, 2.25], [0, 2.15]]) addCollider(x - 0.25, z - 0.25, x + 0.25, z + 0.25, 1.1, true, BY0);
+  // offerings left at the graves: candles, flowers, a teddy; the ghost can knock them about
+  for (const [t, x, z, r] of [['candle', -2.6, -5.35, 0], ['candle', -2.3, -5.4, 0], ['vase', -1.2, -5.3, 0.4], ['teddy', 0.3, -5.35, 2.8], ['candle', 1.9, -5.3, 0], ['vase', 2.9, -5.35, 1.1], ['bottle', 3.6, -5.2, 0.5], ['jbox', -3.6, -5.25, 0.2], ['basket', -0.4, -5.45, 0]]) prop(t, x, BY0, z, r);
+  // lamp post by the gate (the courtyard's light; its switch is on the post)
+  gb.cyl('darkWood', 1.0, BY0 + 1.5, -5.9, 0.08, 0.1, 3.0, 8); gb.box('darkWood', 0.75, BY0 + 2.95, -5.9, 0.55, 0.07, 0.07); gb.cyl('tentPole', 0.5, BY0 + 2.92, -5.9, 0.006, 0.006, 0.08, 4); addCollider(0.85, -6.05, 1.15, -5.75, 3, false, BY0);
   // ---------- cypress swamp around the ring
   const placed = [];
   for (let k = 0; k < 400 && placed.length < 24; k++) {

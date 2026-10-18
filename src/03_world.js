@@ -334,7 +334,7 @@ function buildFurniture(gb, root) {
   // (the bed's backboard has its own side shelves)
   { const f = fur(gb, 0.33, 9.2, -Math.PI / 2); dresser(f); f.solid(-0.7, -0.25, 0.7, 0.25, 1); }
   { const f = fur(gb, 5.3, 9.3, -Math.PI * 0.75); armchair(f, 'fabricRose'); f.solid(-0.42, -0.42, 0.42, 0.42, 1); }
-  prop('book', 4.6, FY + 0.585, 13.5, 0.3); prop('clock', 4.75, FY + 0.585, 13.7, Math.PI); prop('jbox', 0.33, FY + 0.93, 9.6); prop('bottle', 0.33, FY + 0.93, 8.8);
+  prop('book', 2.4, FY + 0.475, 13.78, 0.3); prop('clock', 4.42, FY + 0.475, 13.78, Math.PI);   // on the backboard's side shelves prop('jbox', 0.33, FY + 0.93, 9.6); prop('bottle', 0.33, FY + 0.93, 8.8);
   picFrame(root, 'z', 3.4, 13.89, FY + 1.75, -1, 'p43', 0, 0.66);
   { const f = fur(gb, 0.6, 13.6, 0); f.box('cardboard', 0, 0.2, 0, 0.5, 0.4, 0.45); f.box('cardboard', 0.05, 0.55, 0, 0.42, 0.3, 0.4, 0.2); f.solid(-0.26, -0.24, 0.26, 0.24, 0.8); }
   gb.mm('darkWood', 0.06, FY + 1.75, 12.7, 1.95, FY + 1.77, 13.9); gb.cyl('chrome', 1.0, FY + 1.7, 13.35, 0.012, 0.012, 1.8, 6, 0, 0, Math.PI / 2);
@@ -394,7 +394,8 @@ function buildFurniture(gb, root) {
 //      cols: 'box' one collider for the whole model, 'parts' one per mesh (a table and its chairs), false none,
 //      part: name of one node to use on its own (a picture out of a collection), height: scale to this height,
 //      noFlip: on a mirrored map move it but don't reflect it (pictures with writing on them),
-//      back: put the model's back (its -z side) on (x, z) instead of its middle, for things hung on a wall }
+//      back: put the model's back (its -z side) on (x, z) instead of its middle, for things hung on a wall,
+//      minH / maxW: with cols 'parts', skip parts lower or wider than this (in metres) }
 // The model is centred on (x, z) with its base on y. Each file loads once and is cloned for later placements.
 const MODEL_TPL = {};
 function placeModel(root, P) {
@@ -416,7 +417,8 @@ function placeModel(root, P) {
       const x0 = wx - ex, x1 = wx + ex;
       COLL.push({ x0: MX !== null ? MX - x1 : x0, x1: MX !== null ? MX - x0 : x1, z0: wz - ez, z1: wz + ez, y0: y, y1: y + (b.max.y - T.b.min.y) * s, h: (b.max.y - T.b.min.y) * s, furn: true });
     };
-    if (P.cols === 'parts') for (const b of T.parts) col(b, 0.85); else if (P.cols !== false) col(T.b, 0.85);
+    if (P.cols === 'parts') { for (const b of T.parts) if ((b.max.y - b.min.y) * s >= (P.minH || 0) && Math.max(b.max.x - b.min.x, b.max.z - b.min.z) * s <= (P.maxW || 1e9)) col(b, 0.85); }
+    else if (P.cols !== false) col(T.b, 0.85);
   };
   const T = MODEL_TPL[P.url];
   if (T && T.m) return queueMicrotask(() => place(T));   // after the build, which mirrors whatever it added to root
@@ -694,41 +696,44 @@ function deadTree(gb, x, z, s) {
 // the abandoned sedan (the model's nose is at +z)
 function car(root, x, z, ry) { placeModel(root, { url: 'prop-car.json', x, z, ry: ry + Math.PI, len: 4.5, axis: 'z', cols: 'box' }); }
 function buildTent(gb, root) {
-  const { x, z } = TENT, s = 1.6, h = 2.15;
-  for (const [a, b] of [[-s, -s], [s, -s], [-s, s], [s, s]]) { gb.cyl('tentPole', x + a, h / 2, z + b, 0.025, 0.025, h, 8); addCollider(x + a - 0.06, z + b - 0.06, x + a + 0.06, z + b + 0.06, 2); }
+  const { x, z } = TENT, s = 1.6, h = 2.15, ty = terrainY(x, z);   // ty: the ground under the tent (the bayou's plank deck)
+  for (const [a, b] of [[-s, -s], [s, -s], [-s, s], [s, s]]) { gb.cyl('tentPole', x + a, ty + h / 2, z + b, 0.025, 0.025, h, 8); addCollider(x + a - 0.06, z + b - 0.06, x + a + 0.06, z + b + 0.06, 2, false, ty); }
   // pyramid roof
   const rg = new THREE.ConeGeometry(s * Math.SQRT2 + 0.05, 0.75, 4, 1, true); rg.rotateY(Math.PI / 4);
-  gb.add(rg, mat4(x, h + 0.37, z), 'canvas', false, 3);
+  gb.add(rg, mat4(x, ty + h + 0.37, z), 'canvas', false, 3);
   // valance skirt
-  for (const [a, b, ry] of [[0, -s, 0], [0, s, 0], [-s, 0, Math.PI / 2], [s, 0, Math.PI / 2]]) gb.box('canvas', x + a, h - 0.12, z + b, s * 2, 0.24, 0.01, ry);
+  for (const [a, b, ry] of [[0, -s, 0], [0, s, 0], [-s, 0, Math.PI / 2], [s, 0, Math.PI / 2]]) gb.box('canvas', x + a, ty + h - 0.12, z + b, s * 2, 0.24, 0.01, ry);
   // back wall (toward the street) and one side wall
   const back = new THREE.PlaneGeometry(s * 2, h - 0.2, 12, 4); const p = back.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, Math.sin(p.getX(i) * 5) * 0.03); back.computeVertexNormals();
-  gb.add(back, mat4(x, (h - 0.2) / 2, z - s), 'canvas', false, 2);
-  gb.add(back.clone(), mat4(x - s, (h - 0.2) / 2, z, Math.PI / 2), 'canvas', false, 2);
-  addCollider(x - s, z - s - 0.05, x + s, z - s + 0.05, 2); addCollider(x - s - 0.05, z - s, x - s + 0.05, z + s, 2);
+  gb.add(back, mat4(x, ty + (h - 0.2) / 2, z - s), 'canvas', false, 2);
+  gb.add(back.clone(), mat4(x - s, ty + (h - 0.2) / 2, z, Math.PI / 2), 'canvas', false, 2);
+  addCollider(x - s, z - s - 0.05, x + s, z - s + 0.05, 2, false, ty); addCollider(x - s - 0.05, z - s, x - s + 0.05, z + s, 2, false, ty);
   // stakes & guy lines
   for (const [a, b] of [[-s - 0.8, -s - 0.8], [s + 0.8, -s - 0.8], [-s - 0.8, s + 0.8], [s + 0.8, s + 0.8]]) {
     const L = Math.hypot(0.8, 0.8, h); const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, 1, 0), new V3(-Math.sign(a) * 0.8, h, -Math.sign(b) * 0.8).normalize());
-    gb.add(new THREE.CylinderGeometry(0.004, 0.004, L, 3), new THREE.Matrix4().compose(new V3(x + a - Math.sign(a) * 0.4, h / 2, z + b - Math.sign(b) * 0.4), q, new V3(1, 1, 1)), 'tentPole', false);
+    gb.add(new THREE.CylinderGeometry(0.004, 0.004, L, 3), new THREE.Matrix4().compose(new V3(x + a - Math.sign(a) * 0.4, ty + h / 2, z + b - Math.sign(b) * 0.4), q, new V3(1, 1, 1)), 'tentPole', false);
   }
   // folding table
   const tx = x, tz = z + 0.15;
-  gb.mm('grayPlastic', tx - 1.1, 0.72, tz - 0.4, tx + 1.1, 0.76, tz + 0.4);
-  for (const a of [-1, 1]) { gb.box('tentPole', tx + a * 0.95, 0.36, tz, 0.03, 0.03, 0.85, 0, 0.6); gb.box('tentPole', tx + a * 0.95, 0.36, tz, 0.03, 0.03, 0.85, 0, -0.6); }
-  addCollider(tx - 1.12, tz - 0.42, tx + 1.12, tz + 0.42, 0.8);
+  gb.mm('grayPlastic', tx - 1.1, ty + 0.72, tz - 0.4, tx + 1.1, ty + 0.76, tz + 0.4);
+  for (const a of [-1, 1]) { gb.box('tentPole', tx + a * 0.95, ty + 0.36, tz, 0.03, 0.03, 0.85, 0, 0.6); gb.box('tentPole', tx + a * 0.95, ty + 0.36, tz, 0.03, 0.03, 0.85, 0, -0.6); }
+  addCollider(tx - 1.12, tz - 0.42, tx + 1.12, tz + 0.42, 0.8, false, ty);
   // clipboard (submit verdict)
-  const clip = new THREE.Group(); clip.position.set(tx - 0.85, 0.765, tz + 0.15); clip.rotation.y = 0.25; root.add(clip);
+  const clip = new THREE.Group(); clip.position.set(tx - 0.85, ty + 0.765, tz + 0.15); clip.rotation.y = 0.25; root.add(clip);
   const board = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.012, 0.32), MATS.cardboard); clip.add(board); board.castShadow = true;
   const paper = new THREE.Mesh(new THREE.PlaneGeometry(0.21, 0.28), new THREE.MeshStandardMaterial({ color: 0xd8d2c0, roughness: 0.9 })); paper.rotation.x = -Math.PI / 2; paper.position.y = 0.007; clip.add(paper);
   const cl = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.03), MATS.chrome); cl.position.set(0, 0.012, -0.145); clip.add(cl);
   INTERACT.push({ mesh: board, kind: 'clip', id: 0 });
   WORLD_EXTRA.clip = clip;
   // lantern
-  gb.cyl('tentPole', tx + 0.85, 0.79, tz - 0.2, 0.06, 0.07, 0.04, 12); gb.cyl('tentPole', tx + 0.85, 0.99, tz - 0.2, 0.05, 0.06, 0.03, 12);
+  gb.cyl('tentPole', tx + 0.85, ty + 0.79, tz - 0.2, 0.06, 0.07, 0.04, 12); gb.cyl('tentPole', tx + 0.85, ty + 0.99, tz - 0.2, 0.05, 0.06, 0.03, 12);
   const lg = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.16, 12), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffb36a, emissiveIntensity: 2.5, transparent: true, opacity: 0.95 }));
-  lg.position.set(tx + 0.85, 0.89, tz - 0.2); root.add(lg); WORLD_EXTRA.lantern = lg;
+  lg.position.set(tx + 0.85, ty + 0.89, tz - 0.2); root.add(lg); WORLD_EXTRA.lantern = lg;
   // chairs and crates
-  { const f = fur(gb, x + 1.0, z + 1.0, 2.6, 0); f.box('fabricBlue', 0, 0.45, 0, 0.5, 0.03, 0.45); f.box('fabricBlue', 0, 0.75, 0.22, 0.5, 0.55, 0.03, 0, -0.15); for (const a of [-1, 1]) { f.box('tentPole', a * 0.24, 0.23, 0, 0.02, 0.02, 0.6, 0, 0.7); f.box('tentPole', a * 0.24, 0.23, 0, 0.02, 0.02, 0.6, 0, -0.7); } f.solid(-0.28, -0.28, 0.28, 0.28, 0.8); }
-  { const f = fur(gb, x - 1.05, z - 1.05, 0.15, 0); f.box('grayPlastic', 0, 0.25, 0, 0.7, 0.5, 0.45); f.box('toyYellow', 0, 0.5, 0, 0.72, 0.02, 0.47); f.box('grayPlastic', 0.1, 0.65, 0, 0.5, 0.28, 0.35, 0.3); f.solid(-0.4, -0.28, 0.4, 0.28, 1); }
-  gb.mm('dirt', x - s - 0.5, 0.002, z - s - 0.5, x + s + 0.5, 0.006, z + s + 0.5);
+  { const f = fur(gb, x + 1.0, z + 1.0, 2.6, ty); f.box('fabricBlue', 0, 0.45, 0, 0.5, 0.03, 0.45); f.box('fabricBlue', 0, 0.75, 0.22, 0.5, 0.55, 0.03, 0, -0.15); for (const a of [-1, 1]) { f.box('tentPole', a * 0.24, 0.23, 0, 0.02, 0.02, 0.6, 0, 0.7); f.box('tentPole', a * 0.24, 0.23, 0, 0.02, 0.02, 0.6, 0, -0.7); } f.solid(-0.28, -0.28, 0.28, 0.28, 0.8); }
+  { const f = fur(gb, x - 1.05, z - 1.05, 0.15, ty); f.box('grayPlastic', 0, 0.25, 0, 0.7, 0.5, 0.45); f.box('toyYellow', 0, 0.5, 0, 0.72, 0.02, 0.47); f.box('grayPlastic', 0.1, 0.65, 0, 0.5, 0.28, 0.35, 0.3); f.solid(-0.4, -0.28, 0.4, 0.28, 1); }
+  if (ty > 0.05) {   // raised ground: a plank deck on posts the tent stands on
+    const d = s + 0.6; for (let k = -d; k < d - 0.01; k += 0.2) gb.mm('darkWood', x - d, ty - 0.05, z + k + 0.005, x + d, ty, z + k + 0.195);
+    for (const a of [-d, 0, d]) for (const b of [-d, 0, d]) gb.cyl('darkWood', x + a * 0.95, ty / 2 - 0.4, z + b * 0.95, 0.07, 0.07, ty + 0.8, 8);
+  } else gb.mm('dirt', x - s - 0.5, ty + 0.002, z - s - 0.5, x + s + 0.5, ty + 0.006, z + s + 0.5);
 }
