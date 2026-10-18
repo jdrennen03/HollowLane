@@ -607,7 +607,8 @@ function buildBarnYard(gb, root) {
   boardFence(gb, -40, 2.4, -19.5, 2.4, -1, 'fenceBoard', true); boardFence(gb, -40, 9.2, -19.5, 9.2, 1, 'fenceBoard', true);   // stops short of the parking pad and the tent
   // trees: big oaks shading the barnyard, pines on the far side, a couple of dead ones
   for (const [x, z, s] of [[-4, -9, 1.1], [-22, 13, 1.0], [-3, 16, 0.95], [28, -12, 1.05], [36, 26, 1.0]]) oakTree(gb, x, z, s);
-  for (const [x, z, s] of [[-30, -8, 1.2], [-34, 4, 1.0], [68, -4, 1.3], [70, 10, 1.1], [66, 24, 1.2], [20, 30, 1.0], [10, 34, 1.3]]) pineTree(gb, x, z, s);
+  for (const [x, z, s] of [[-30, -8, 1.2], [-34, 4, 1.0], [68, -4, 1.3], [70, 10, 1.1], [66, 24, 1.2], [20, 30, 1.0], [10, 34, 1.3]]) fir(x, z, s);
+  firBelt([-34, -30, 76, 40], 70, [[-200, 1.5, 0, 10.5]], 4, 18);
   for (const [x, z, s] of [[30, 30, 1.0], [-20, -22, 1.1]]) deadTree(gb, x, z, s);
   flushLeafCards(root);
 }

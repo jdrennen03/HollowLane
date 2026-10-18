@@ -50,20 +50,24 @@ function buildSky() {
 const GRASS_U = { uTime: { value: 0 } };
 // grass: each instance is a tuft of curved, tapering blades. Normals lean to the sky so tufts light like the ground
 // they grow from, and roots are darkened (self-shadowing) so tufts sit in the turf instead of floating on it.
+// grass blades cut from the scanned blade atlas (u0, u1, v0, v1 per blade); a tuft is a few bent cards
+const GRASS_BLADES = [[0.0518, 0.0713, 0.0586, 0.9639], [0.1113, 0.1387, 0.0137, 0.9854], [0.1768, 0.2021, 0.0098, 0.9951], [0.2412, 0.2695, 0.0117, 0.9854], [0.3516, 0.3809, 0.0166, 0.9492], [0.4629, 0.4941, 0.0508, 0.9668], [0.5225, 0.5449, 0.0537, 0.8076], [0.585, 0.6064, 0.0605, 0.8184], [0.6377, 0.6562, 0.0615, 0.9736], [0.6953, 0.7158, 0.1143, 0.9541], [0.7666, 0.7891, 0.0117, 0.9287], [0.8203, 0.8369, 0.0137, 0.9561], [0.8721, 0.8867, 0.0127, 0.9102]];
 function grassTuft(rnd) {
-  const geos = [], nb = 6;
+  const geos = [], nb = 7;
   for (let k = 0; k < nb; k++) {
-    const h = 0.32 + rnd() * 0.36, w = 0.03 + rnd() * 0.03, g = new THREE.PlaneGeometry(w, h, 1, 2); g.translate(0, h / 2, 0);
-    const lean = (rnd() - 0.2) * 0.5, p = g.attributes.position, nrm = g.attributes.normal;
-    for (let i = 0; i < p.count; i++) { const t = p.getY(i) / h; p.setX(i, p.getX(i) * (1 - t * 0.92)); p.setZ(i, lean * t * t * h); nrm.setXYZ(i, 0, 0.8, 0.6); }
-    const a = k / nb * Math.PI * 2 + rnd(), r = rnd() * 0.07;
+    const [u0, u1, v0, v1] = GRASS_BLADES[(rnd() * GRASS_BLADES.length) | 0], h = 0.3 + rnd() * 0.4, w = h * (u1 - u0) / (v1 - v0) * 2.2;
+    const g = new THREE.PlaneGeometry(w, h, 1, 2); g.translate(0, h / 2, 0);
+    const lean = (rnd() - 0.2) * 0.5, p = g.attributes.position, nrm = g.attributes.normal, uv = g.attributes.uv;
+    for (let i = 0; i < p.count; i++) { const t = p.getY(i) / h; p.setZ(i, lean * t * t * h); nrm.setXYZ(i, 0, 0.8, 0.6); uv.setXY(i, u0 + uv.getX(i) * (u1 - u0), v0 + uv.getY(i) * (v1 - v0)); }
+    const a = k / nb * Math.PI * 2 + rnd(), r = rnd() * 0.09;
     g.applyMatrix4(mat4(Math.cos(a) * r, 0, Math.sin(a) * r, a + rnd(), 0, 0)); geos.push(g);
   }
   const out = BufferGeometryUtils.mergeGeometries(geos); out.normalizeNormals(); return out;
 }
 function buildGrass() {
   const rnd = mulberry32(5), blade = grassTuft(rnd);
-  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, side: THREE.DoubleSide });
+  const tex = new THREE.TextureLoader().load('grass-blades.png'); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: tex, alphaTest: 0.45, roughness: 0.9, side: THREE.DoubleSide });
   mat.onBeforeCompile = sh => { sh.uniforms.uTime = GRASS_U.uTime;
     sh.vertexShader = 'uniform float uTime; varying float vGy;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       vec4 ip = instanceMatrix * vec4(0.,0.,0.,1.); float k = position.y*position.y*1.6; vGy = position.y;
@@ -81,7 +85,7 @@ function buildGrass() {
     e.set((rnd() - 0.5) * 0.25, rnd() * 6.28, (rnd() - 0.5) * 0.25); q.setFromEuler(e); const h = 0.45 + rnd() * clump * 0.8, wd = 0.8 + rnd() * 0.7; s.set(wd, h, wd);
     m4.compose(new V3(x, terrainY(x, z), z), q, s); mesh.setMatrixAt(n, m4);
     // mostly green, some dry straw
-    if (rnd() < 0.18) c.setHSL(0.11 + rnd() * 0.04, 0.25, 0.13 + rnd() * 0.06); else c.setHSL(0.2 + rnd() * 0.07, 0.3, 0.08 + rnd() * 0.06);
+    if (rnd() < 0.18) c.setHSL(0.1 + rnd() * 0.04, 0.35, 0.42 + rnd() * 0.12); else c.setHSL(0.2 + rnd() * 0.06, 0.12, 0.3 + rnd() * 0.12);   // tints over the blade texture
     mesh.setColorAt(n, c); n++;
   }
   mesh.count = n; mesh.userData.full = n;

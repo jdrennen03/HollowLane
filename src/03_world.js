@@ -138,8 +138,9 @@ function buildWorld(scene) {
     if (!R.noCeil) for (const q of rectsMinus(R.r, holesFor(lv, 'ceil'))) gb.mm(R.ceil || 'ceiling', q[0], R.y + WALL_H, q[1], q[2], R.y + WALL_H + 0.06, q[3]);
   }
   const nKids = root.children.length;
-  MIRROR_X = MAP.mirror ?? null;
+  MIRROR_X = MAP.mirror ?? null; TREE_LIST.length = 0;
   try { MAP.build(gb, root); } finally { MIRROR_X = null; }
+  placeTrees(root);
   if (MAP.mirror !== undefined) for (const o of root.children.slice(nKids)) { o.position.x = MAP.mirror - o.position.x; o.rotation.y = -o.rotation.y; o.rotation.z = -o.rotation.z; }
   for (let i = 0; i < NROOM; i++) buildFixture(gb, root, i);
   for (let i = 0; i < NROOM; i++) buildSwitch(root, i);
@@ -656,6 +657,9 @@ function buildExterior(gb, root) {
   addCollider(-6, -15.6, 26, -15.4, 3);
   // dead trees
   for (const [x, z, s] of [[-2.8, -5.5, 1.1], [22.5, -9, 1.3], [-3.5, 12, 1.0], [23.5, 9.5, 1.2], [6.5, -12.4, 0.8], [12.5, 18, 1.0], [-14, -30, 1.4], [32, -32, 1.3]]) deadTree(gb, x, z, s);
+  // fir woods behind the lots on three sides; the street side stays open
+  firBelt([-5.8, -14.4, 26, 19.8], 46, [[-200, -40, 200, -12]], 3, 16);
+  for (const [x, z, s] of [[-9, 4, 1.2], [-10.5, 14, 1.35], [30, 2, 1.25], [31, 15, 1.1], [8, 25, 1.3]]) fir(x, z, s);
   // abandoned car in the driveway
   car(gb, 15.5, -6.5, 0.05);
   // mailbox

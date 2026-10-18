@@ -137,12 +137,6 @@ function railRun(gb, x0, z0, x1, z1, y, h = 0.95, post = true) {
   if (post) for (const [x, z] of [[x0, z0], [x1, z1]]) gb.mm('trim', x - 0.055, y, z - 0.055, x + 0.055, y + h + 0.08, z + 0.055);
   addCollider(Math.min(x0, x1) - 0.06, Math.min(z0, z1) - 0.06, Math.max(x0, x1) + 0.06, Math.max(z0, z1) + 0.06, h + 0.1, false, y);
 }
-function pineTree(gb, x, z, s) {
-  const y0 = terrainY(x, z);
-  gb.cyl('bark', x, y0 + 1.2 * s, z, 0.12 * s, 0.2 * s, 2.4 * s, 8);
-  for (let i = 0; i < 5; i++) { const r = (1.9 - i * 0.33) * s, h = 1.9 * s, y = y0 + (1.4 + i * 1.15) * s; gb.add(new THREE.ConeGeometry(r, h, 9), mat4(x, y, z, WR() * 6), 'pine', false, 2); }
-  addCollider(x - 0.3 * s, z - 0.3 * s, x + 0.3 * s, z + 0.3 * s, 6, false, y0 - 1);
-}
 function tubAt(gb, x, z, ry, y) { const f = fur(gb, x, z, ry, y); f.box('enamel', 0, 0.3, 0, 0.76, 0.56, 1.66); f.box('porcelain', 0, 0.6, 0, 0.8, 0.05, 1.7); f.box('screen', 0, 0.62, 0, 0.6, 0.02, 1.48); f.cyl('chrome', 0, 0.75, 0.78, 0.015, 0.015, 0.3, 6); f.solid(-0.4, -0.85, 0.4, 0.85, 0.65); }
 function toiletAt(gb, x, z, ry, y) { const f = fur(gb, x, z, ry, y); toilet(f); f.solid(-0.25, -0.35, 0.25, 0.35, 0.8); }
 function vanityAt(gb, root, x, z, ry, y) {
@@ -322,7 +316,9 @@ function buildFarm(gb, root) {
   // ---------- yard: gravel drive & turnaround, trees, yard light, bounds
   gb.mm('gravel', 7.4, 0.0, -8.6, 14.8, 0.025, -3.75); gb.mm('gravel', 8.7, 0.0, -40, 12.7, 0.024, -9.3);
   for (let i = 0; i < 14; i++) { const z = -3.7 - i * 0.55; gb.cyl('chrome', 4.45 + (i % 2) * 0.02, 0.15, z * 1.0 - 0.0, 0.035, 0.035, 0.3, 6); }
-  for (const [x, z, s] of [[-7, -6, 1.2], [-9, 4, 1.4], [-8, 14, 1.3], [24, -8, 1.3], [25, 3, 1.1], [26, 16, 1.4], [3, 22, 1.3], [12, 24, 1.2], [-4, 24, 1.1], [20, 23, 1.5], [-10, -16, 1.4], [26, -18, 1.2]]) pineTree(gb, x, z, s);
+  for (const [x, z, s] of [[-7, -6, 1.2], [-9, 4, 1.4], [-8, 14, 1.3], [24, -8, 1.3], [25, 3, 1.1], [26, 16, 1.4], [3, 22, 1.3], [12, 24, 1.2], [-4, 24, 1.1], [20, 23, 1.5], [-10, -16, 1.4], [26, -18, 1.2]]) fir(x, z, s);
+  for (const [x, z, s] of [[-2, -14, 0.6], [17, 26, 0.55], [-11, 8, 0.7], [27, 10, 0.6]]) fir(x, z, s);   // young firs
+  firBelt([-13, -26, 29, 27], 60, [[5, -80, 16, -8]], 4, 18);
   for (const [x, z, s] of [[-5, -12, 1.1], [19, -14, 1.2], [-6, 9, 1.0], [22, 9, 1.1], [8, 20, 1.2]]) { const g0 = terrainY(x, z); deadTreeAt(gb, x, z, s, g0); }
   // dusk-to-dawn yard light on a pole by the drive
   gb.cyl('darkWood', 21.5, 3.0, -7.0, 0.11, 0.14, 6.0, 10); gb.cyl('metal', 21.0, 5.8, -7.0, 0.03, 0.03, 1.0, 6, 0, 0, Math.PI / 2); gb.box('metal', 20.5, 5.72, -7.0, 0.36, 0.14, 0.3);

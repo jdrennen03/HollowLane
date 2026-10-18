@@ -237,7 +237,7 @@ function buildBayou(gb, root) {
     f.box('concreteFound', 0, 0.3, 0, 1.6, 0.6, 2.3); f.box('concreteFound', 0, 1.0, 0, 1.4, 0.8, 2.1); f.box('concreteFound', 0, 1.5, 0, 1.7, 0.2, 2.4);
     f.box('screen', 0, 0.95, -1.06, 0.7, 0.8, 0.02); f.box('concreteFound', 0, 2.0, -0.8, 0.1, 0.6, 0.1); f.box('concreteFound', 0, 2.1, -0.8, 0.4, 0.1, 0.1); f.solid(-0.85, -1.2, 0.85, 1.2, 1.9); }
   for (const [x, z, r] of [[1.6, 4.5, 0.3], [-4.0, 1.0, 0.9]]) { const f = fur(gb, x, z, r, BY0); f.box('concreteFound', 0, 0.4, 0, 0.55, 0.8, 0.12); f.solid(-0.3, -0.1, 0.3, 0.1, 0.9); }
-  deadTreeAt(gb, -3.8, -3.8, 1.3, BY0);
+  snag(-3.8, -3.8, 1.0, BY0);
   { const mm = new THREE.MeshStandardMaterial({ map: mossTex(), transparent: true, alphaTest: 0.08, side: THREE.DoubleSide, roughness: 1, color: 0xa8b098, depthWrite: false });
     for (let k = 0; k < 10; k++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 1.3 + WR() * 1.2), mm); m.position.set(-3.8 + (WR() - 0.5) * 4, BY0 + 2.6 + WR() * 1.2, -3.8 + (WR() - 0.5) * 4); m.rotation.y = WR() * 3.14; root.add(m); } }
   { const f = fur(gb, 4.0, 3.6, 0, BY0); f.cyl('concreteFound', 0, 0.42, 0, 0.6, 0.65, 0.84, 14); f.cyl('screen', 0, 0.85, 0, 0.47, 0.47, 0.02, 14); f.box('darkWood', -0.55, 1.05, 0, 0.07, 1.2, 0.07); f.box('darkWood', 0.55, 1.05, 0, 0.07, 1.2, 0.07); f.box('darkWood', 0, 1.65, 0, 1.3, 0.07, 0.09); f.cyl('chrome', 0.1, 1.15, 0, 0.11, 0.09, 0.22, 10); f.solid(-0.7, -0.7, 0.7, 0.7, 1.2); }
@@ -264,7 +264,11 @@ function buildBayou(gb, root) {
     placed.push([x, z]); cypress(gb, root, x, z, 0.6 + WR() * 0.45);
   }
   flushLeafCards(root);
-  for (let k = 0; k < 4; k++) { const a = WR() * 6.28, r = 16 + WR() * 8, x = Math.cos(a) * r, z = Math.sin(a) * r; if (BAYOU_HOUSES.some(h => Math.hypot(x - h.px, z - h.pz) < 7)) continue; deadTreeAt(gb, x, z, 0.9 + WR() * 0.4, bayouTerrain(x, z, false)); }
+  for (let k = 0; k < 4; k++) { const a = WR() * 6.28, r = 16 + WR() * 8, x = Math.cos(a) * r, z = Math.sin(a) * r; if (BAYOU_HOUSES.some(h => Math.hypot(x - h.px, z - h.pz) < 7)) continue; snag(x, z, 0.8 + WR() * 0.4, bayouTerrain(x, z, false)); }
+  // dead snags standing out of the water among the cypress
+  for (let k = 0, n = 0; k < 200 && n < 12; k++) { const a = WR() * 6.28, r = YARD + 3 + WR() * 20, x = Math.cos(a) * r, z = Math.sin(a) * r;
+    if (Math.abs(r - BW_R) < 3 || placed.some(([px, pz]) => Math.hypot(px - x, pz - z) < 3.5) || BAYOU_HOUSES.some(h => Math.hypot(x - h.px, z - h.pz) < 8) || (Math.abs(x) < 5 && z < -BW_R + 1)) continue;
+    placed.push([x, z]); snag(x, z, 0.6 + WR() * 0.6, bayouTerrain(x, z, false)); n++; }
   for (let k = 0; k < 90; k++) { const a = WR() * 6.28, r = 27 + WR() * 10; gb.cyl('pine', Math.cos(a) * r, -0.035, Math.sin(a) * r, 0.22 + WR() * 0.28, 0.22, 0.01, 10); }
   // fireflies
   { const n = 180, pos = new Float32Array(n * 3); for (let k = 0; k < n; k++) { const a = WR() * 6.28, r = YARD + 1 + WR() * 18; pos[k * 3] = Math.cos(a) * r; pos[k * 3 + 1] = 0.5 + WR() * 2.3; pos[k * 3 + 2] = Math.sin(a) * r; }
