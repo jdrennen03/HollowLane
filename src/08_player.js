@@ -135,6 +135,8 @@ function interact() {
   else if (h.kind === 'prop') pickProp(h.id);
   else if (h.kind === 'cat') request('pet', h.id);
   else if (h.kind === 'horse' && HORSE.state === 'buck') { sub('You hold out a hand and talk low and slow…', 'sys'); request('calm'); }
+  else if (h.kind === 'egg' && MAP.id === 'bayou' && h.id === 2) { if (!G.gatorBait) { sub('You tip the bucket off the end of the dock. The chicken necks sink in a slow swirl of bubbles… and the frogs go quiet.', 'sys'); request('egg', 2); } }
+  else if (h.kind === 'egg' && MAP.id === 'bayou' && h.id === 3) { if (!G.eggOn) { if (!G.gatorBait) sub('The bell clangs out across the water. Nothing answers. Maybe it wants feeding first.', 'sys'); request('egg', 3); } }
   else if (h.kind === 'egg' && !G.eggOn && MAP.id === 'barn') { sfx('creak', 0.6); sub('You lift Bonnie Blue\'s halter off its hook. It is still warm. Inside her stall, something screams and kicks.', 'sys'); request('egg'); }
   else if (h.kind === 'egg' && !G.eggOn) { sfx('radio', 0.8, 0.5); sub('The tape clunks into place and the arcade screen fills with static…', 'sys'); request('egg'); }
 }
@@ -305,6 +307,7 @@ function hotspot() {
     else if (hot.kind === 'prop') text = 'Pick up ' + propName(PROPO[hot.id]);
     else if (hot.kind === 'cat') text = 'Pet ' + CATS[hot.id].def.name;
     else if (hot.kind === 'horse') text = 'Calm the horse';
+    else if (hot.kind === 'egg' && MAP.id === 'bayou') text = hot.id === 2 ? (G.gatorBait ? 'An empty bait bucket' : 'Toss the chicken necks into the bayou') : (G.eggOn ? 'The bell is still humming' : 'Ring the old dinner bell');
     else if (hot.kind === 'egg') text = MAP.id === 'barn' ? (G.eggOn ? 'An empty hook' : 'Take down Bonnie Blue\'s halter') : G.eggOn ? 'The tape is jammed in the slot' : 'Play the strange tape';
   }
   hudPrompt(text);

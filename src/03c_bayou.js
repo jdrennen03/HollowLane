@@ -53,7 +53,7 @@ function bayouData() {
     const topAtMin = axisX ? Math.abs(top[0] - sr[0]) < 0.01 : Math.abs(top[1] - sr[1]) < 0.01;
     stairs.push({ x0: sr[0], z0: sr[1], x1: sr[2], z1: sr[3], axis: axisX ? 'x' : 'z', lo: 0, hi: 1, flip: topAtMin });
   }
-  rooms.push({ id: 'yard', name: 'Courtyard', r: [-YARD, -YARD, YARD, YARD], lv: 0, outdoor: true, floor: 'mud', wall: 'plankWall', sw: [0.92, -5.9, -1, 0], lamp: [0.5, -5.9] });
+  rooms.push({ id: 'yard', name: 'Courtyard', r: [-8, -9, 8, 8], lv: 0, outdoor: true, floor: 'mud', wall: 'plankWall', sw: [1.32, -8.6, -1, 0], lamp: [0.9, -8.6] });
   for (const c of closets) {
     const { h } = c, cu1 = h.U0 + 1.4, cv0 = h.V1 - 1.3;
     const di = door(h, h.U0 + 0.3, cv0, h.U0 + 1.15, cv0, 0, -1, { closet: rooms.length });
@@ -231,17 +231,30 @@ function buildBayou(gb, root) {
   // the dock and an old pirogue tied up
   gb.mm('deckGray', -3.5, 0.24, -27.5, 3.5, 0.34, -25.8); for (const x of [-3.4, 0, 3.4]) gb.cyl('bark', x, 0.3, -27.6, 0.09, 0.1, 1.1, 6);
   { const p = []; for (let i = 0; i <= 8; i++) { const t = i / 8; p.push(new THREE.Vector2(Math.sin(t * Math.PI) * 0.42 + 0.02, (t - 0.5) * 4.4)); } const g = new THREE.LatheGeometry(p, 10, 0, Math.PI); g.rotateZ(Math.PI / 2); g.rotateX(Math.PI); gb.add(g, mat4(-2.0, 0.02, -29.0, 0.1), 'darkWood', false); }
+  // the easter egg: a bait bucket of chicken necks at the end of the dock, and the old dinner bell on its post
+  { const bx = 2.6, bz = -26.6, by = 0.34;
+    gb.cyl('metal', bx, by + 0.15, bz, 0.15, 0.12, 0.3, 14); gb.add(new THREE.TorusGeometry(0.15, 0.006, 4, 16, Math.PI), mat4(bx, by + 0.3, bz, 0.4), 'metal', false);
+    for (let k = 0; k < 6; k++) gb.sphere('fabricRose', bx + Math.cos(k * 2.1) * 0.06, by + 0.29, bz + Math.sin(k * 2.1) * 0.06, 0.035, 1.6, 0.6, 0.8);
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.45), PROP_HIT_MAT); hit.position.set(bx, by + 0.25, bz); root.add(hit); INTERACT.push({ mesh: hit, kind: 'egg', id: 2 }); addCollider(bx - 0.17, bz - 0.17, bx + 0.17, bz + 0.17, 0.3, true, by); }
+  { const px = -3.0, pz = -26.1, py = 0.34;
+    gb.cyl('darkWood', px, py + 0.9, pz, 0.06, 0.07, 1.8, 8); gb.box('darkWood', px + 0.22, py + 1.75, pz, 0.5, 0.06, 0.06);
+    const bell = new THREE.LatheGeometry([0.02, 0.05, 0.08, 0.1, 0.115, 0.12].map((r, i) => new THREE.Vector2(r, 0.16 - i * 0.032)), 16); gb.add(bell, mat4(px + 0.38, py + 1.52, pz), 'brass', false);
+    gb.cyl('metal', px + 0.38, py + 1.69, pz, 0.008, 0.008, 0.06, 5);
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), PROP_HIT_MAT); hit.position.set(px + 0.3, py + 1.55, pz); root.add(hit); INTERACT.push({ mesh: hit, kind: 'egg', id: 3 }); addCollider(px - 0.08, pz - 0.08, px + 0.08, pz + 0.08, 2, false, py); }
   // ---------- shacks
   BAYOU_HOUSES.forEach((h, n) => { buildShack(gb, root, h, n); furnishShack(gb, root, h, n); });
-  // ---------- courtyard: the old family graveyard (mausoleums, rows of headstones, the dead oak), a lamp post at the gate
-  placeModel(root, { url: 'prop-graveyard.json', x: 0, z: 0.3, y: BY0 - 0.02, len: 10.5, axis: 'x', cols: 'parts', minH: 0.3, maxW: 2.6 });
+  // ---------- courtyard: the old family graveyard (mausoleums, rows of headstones, the dead oak), a lamp post at the gate.
+  // Drawn large so the rows are easy to walk; graves that would fall out past the yard's edge are left out.
+  const GK = 15 / 10.5, gp = (x, z) => [x * GK, 0.3 + (z - 0.3) * GK];   // positions measured at the old size -> the new
+  placeModel(root, { url: 'prop-graveyard.json', x: 0, z: 0.3, y: BY0 - 0.02, len: 15, axis: 'x', cols: 'parts', minH: 0.3, maxW: 3.7, crop: 8.2 });
   // the dead oak and the headstones its roots have grown into come as one piece, so they get their own blockers
-  addCollider(2.85, 3.3, 3.75, 4.2, 3, false, BY0);
-  for (const [x, z] of [[0, 3.5], [-0.5, 3.5], [5, 4.5], [5, 2.25], [-2, 2.25], [0, 2.15]]) addCollider(x - 0.25, z - 0.25, x + 0.25, z + 0.25, 1.1, true, BY0);
-  // offerings left at the graves: candles, flowers, a teddy; the ghost can knock them about
-  for (const [t, x, z, r] of [['candle', -2.6, -5.35, 0], ['candle', -2.3, -5.4, 0], ['vase', -1.2, -5.3, 0.4], ['teddy', 0.3, -5.35, 2.8], ['candle', 1.9, -5.3, 0], ['vase', 2.9, -5.35, 1.1], ['bottle', 3.6, -5.2, 0.5], ['jbox', -3.6, -5.25, 0.2], ['basket', -0.4, -5.45, 0]]) prop(t, x, BY0, z, r);
+  { const [x, z] = gp(3.3, 3.75); addCollider(x - 0.6, z - 0.6, x + 0.6, z + 0.6, 4, false, BY0); }
+  for (const [x0, z0] of [[0, 3.5], [-0.5, 3.5], [5, 4.5], [5, 2.25], [-2, 2.25], [0, 2.15]]) { const [x, z] = gp(x0, z0); if (Math.hypot(x, z - 0.3) < 8.2) addCollider(x - 0.33, z - 0.33, x + 0.33, z + 0.33, 1.5, true, BY0); }
+  // offerings left in front of the graves: candles, flowers, a teddy; the ghost can knock them about
+  for (const [t, x, z, r] of [['candle', -3.1, -7.5, 0], ['candle', -2.8, -7.55, 0], ['vase', -1.6, -7.5, 0.4], ['teddy', 0.3, -7.55, 2.8], ['candle', 2.3, -7.5, 0], ['vase', 3.2, -7.45, 1.1], ['bottle', 3.8, -7.3, 0.5], ['jbox', -4.0, -7.3, 0.2], ['basket', -0.6, -7.65, 0]]) prop(t, x, bayouTerrain(x, z, false), z, r);
   // lamp post by the gate (the courtyard's light; its switch is on the post)
-  gb.cyl('darkWood', 1.0, BY0 + 1.5, -5.9, 0.08, 0.1, 3.0, 8); gb.box('darkWood', 0.75, BY0 + 2.95, -5.9, 0.55, 0.07, 0.07); gb.cyl('tentPole', 0.5, BY0 + 2.92, -5.9, 0.006, 0.006, 0.08, 4); addCollider(0.85, -6.05, 1.15, -5.75, 3, false, BY0);
+  { const lx = 1.4, lz = -8.6, ly = bayouTerrain(lx, lz, false);
+    gb.cyl('darkWood', lx, ly + 1.5, lz, 0.08, 0.1, 3.0, 8); gb.box('darkWood', lx - 0.25, ly + 2.95, lz, 0.55, 0.07, 0.07); gb.cyl('tentPole', lx - 0.5, ly + 2.92, lz, 0.006, 0.006, 0.08, 4); addCollider(lx - 0.15, lz - 0.15, lx + 0.15, lz + 0.15, 3, false, ly); }
   // ---------- cypress swamp around the ring
   const placed = [];
   for (let k = 0; k < 400 && placed.length < 24; k++) {

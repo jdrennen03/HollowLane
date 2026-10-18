@@ -470,7 +470,7 @@ function frame(now) {
       if (G.isHost) { ghostThink(dt); stepProps(dt, T); }
       syncNetProps(dt);
     }
-    updateDoors(dt); updateAvatars(dt); syncItemParents(); updateItems(T, dt); updateCarry(); updateGiant(T, dt); updateGhostHorse(dt); updateAtmos(T); updateCats(T, dt); updateSmoke(dt); updateRoomLights(T, dt); updateGhostView(T, dt); updateBreath(dt);
+    updateDoors(dt); updateAvatars(dt); syncItemParents(); updateItems(T, dt); updateCarry(); updateGiant(T, dt); updateGhostHorse(dt); updateGator(dt); updateAtmos(T); updateCats(T, dt); updateSmoke(dt); updateRoomLights(T, dt); updateGhostView(T, dt); updateBreath(dt);
     hudUpdate(dt);
     if (G.mp) Net.flush(false);
     // flashlight

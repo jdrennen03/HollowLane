@@ -395,7 +395,8 @@ function buildFurniture(gb, root) {
 //      part: name of one node to use on its own (a picture out of a collection), height: scale to this height,
 //      noFlip: on a mirrored map move it but don't reflect it (pictures with writing on them),
 //      back: put the model's back (its -z side) on (x, z) instead of its middle, for things hung on a wall,
-//      minH / maxW: with cols 'parts', skip parts lower or wider than this (in metres) }
+//      minH / maxW: with cols 'parts', skip parts lower or wider than this (in metres),
+//      crop: leave out parts whose middle lies further than this from (x, z) }
 // The model is centred on (x, z) with its base on y. Each file loads once and is cloned for later placements.
 const MODEL_TPL = {};
 function placeModel(root, P) {
@@ -410,6 +411,8 @@ function placeModel(root, P) {
     g.position.set(P.x, y, P.z); g.rotation.y = ry;
     if (MX !== null && P.noFlip) { g.position.x = MX - P.x; g.rotation.y = -ry; root.add(g); }
     else { const w = new THREE.Group(); w.add(g); if (MX !== null) { w.scale.x = -1; w.position.x = MX; } root.add(w); }
+    const cropped = new Set();
+    if (P.crop) { let k = 0; m.traverse(o => { if (!o.isMesh) return; const b = T.parts[k++]; if (!b) return; const lx = ((b.min.x + b.max.x) / 2 - c.x) * s, lz = ((b.min.z + b.max.z) / 2 - c.z) * s; if (Math.hypot(lx, lz) > P.crop) { o.visible = false; cropped.add(b); } }); }
     const col = (b, k) => {   // a model-space box, turned and scaled into the world
       const hw = (b.max.x - b.min.x) * s / 2 * k, hd = (b.max.z - b.min.z) * s / 2 * k, cs = Math.cos(ry), sn = Math.sin(ry);
       const lx = ((b.min.x + b.max.x) / 2 - c.x) * s, lz = ((b.min.z + b.max.z) / 2 - c.z) * s, wx = P.x + lx * cs + lz * sn, wz = P.z - lx * sn + lz * cs;
@@ -417,7 +420,7 @@ function placeModel(root, P) {
       const x0 = wx - ex, x1 = wx + ex;
       COLL.push({ x0: MX !== null ? MX - x1 : x0, x1: MX !== null ? MX - x0 : x1, z0: wz - ez, z1: wz + ez, y0: y, y1: y + (b.max.y - T.b.min.y) * s, h: (b.max.y - T.b.min.y) * s, furn: true });
     };
-    if (P.cols === 'parts') { for (const b of T.parts) if ((b.max.y - b.min.y) * s >= (P.minH || 0) && Math.max(b.max.x - b.min.x, b.max.z - b.min.z) * s <= (P.maxW || 1e9)) col(b, 0.85); }
+    if (P.cols === 'parts') { for (const b of T.parts) if (!cropped.has(b) && (b.max.y - b.min.y) * s >= (P.minH || 0) && Math.max(b.max.x - b.min.x, b.max.z - b.min.z) * s <= (P.maxW || 1e9)) col(b, 0.85); }
     else if (P.cols !== false) col(T.b, 0.85);
   };
   const T = MODEL_TPL[P.url];

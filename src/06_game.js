@@ -18,7 +18,7 @@ function startRound({ seed, ghostIdx, ghostRoom, roster, mode }) {
   const base = GHOSTS[ghostIdx]; G.ghost = { ...base, allEv: base.ev }; G.hiddenEv = null;
   if (G.mode === 'nightmare') { const h = Math.abs(seed | 0) % 3; G.hiddenEv = base.ev[h]; G.ghost.ev = base.ev.filter((_, i) => i !== h); }
   G.seed = seed; G.ghostIdx = ghostIdx; G.ghostRoom = ghostRoom;
-  G.elapsed = 0; G.ended = false; G.eggOn = false; G.frontLocked = false; G.stats = { deaths: 0 }; G.journal = { ev: {}, pick: -1 };
+  G.elapsed = 0; G.ended = false; G.eggOn = false; G.gatorBait = false; G.frontLocked = false; G.stats = { deaths: 0 }; G.journal = { ev: {}, pick: -1 };
   G.lights = new Array(NROOM).fill(false);
   G.players = roster.map(r => makePlayer(r.slot, r.nick));
   if (G.players[0]) G.players[0].nick = 'Claire';   // the host plays Claire
@@ -114,6 +114,8 @@ function hostRequest(slot, r) {
   else if (t === 'pdrop') hostPropDrop(r[2], slot, r[3], r[4], r[5], r[6], r[7], r[8], r[9]);
   else if (t === 'egg' && MAP.id === 'farm' && !G.eggOn) { G.eggOn = true; hostEvent(['egg', (Math.random() * 1e9) | 0]); }
   else if (t === 'egg' && MAP.id === 'barn' && !G.eggOn) { G.eggOn = true; hostEvent(['horse', r2(G.elapsed)]); }
+  else if (t === 'egg' && MAP.id === 'bayou' && r[2] === 2 && !G.gatorBait) { G.gatorBait = true; hostEvent(['gbait']); hostEvent(['snd', 'splash', 0, 0, -28.5, 0.9]); }
+  else if (t === 'egg' && MAP.id === 'bayou' && r[2] === 3) { hostEvent(['snd', 'bell', -3.0, 1.6, -26.1, 1]); if (G.gatorBait && !G.eggOn) { G.eggOn = true; hostEvent(['gator']); } }
   else if (t === 'calm' && HORSE.state === 'buck' && HORSE.calmT === null) { const P = G.players[slot]; if (P && HORSE.root && Math.hypot(P.pos.x - HORSE.root.position.x, P.pos.z - HORSE.root.position.z) < 4.5) hostEvent(['hcalm', r2(G.elapsed + 0.3), (Math.random() * 1e9) | 0]); }
 }
 // local wrapper: host applies at once, clients send a request
@@ -136,6 +138,8 @@ function applyEvent(ev) {
   else if (t === 'repel') onRepel();
   else if (t === 'egg') startGiant(ev[1]);
   else if (t === 'horse') { G.eggOn = true; startGhostHorse(ev[1]); }
+  else if (t === 'gbait') G.gatorBait = true;
+  else if (t === 'gator') startGator();
   else if (t === 'hcalm') calmGhostHorse(ev[1], ev[2]);
   else if (t === 'throw') { const p = PROPO[ev[1]]; if (p && !G.isHost) { p.sleep = false; p.settle = 0; } }
 }

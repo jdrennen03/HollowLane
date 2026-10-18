@@ -527,6 +527,17 @@ const PROP_DEF = {
   basket: () => ({ geo: new THREE.CylinderGeometry(0.25, 0.2, 0.3, 14, 1, true), mat: 'lightWood', hh: 0.15, r: 0.25 }),
 };
 function mergeGeos(gs) { const gb = new GB(); for (const g of gs) gb.add(g, new THREE.Matrix4(), 'x'); const B = gb.buf.x; const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(B.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(B.n, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(B.u, 2)); return g; }
+// props drawn with a loaded model instead of their simple shape (which stays as the invisible physics body)
+const PROP_MODELS = { teddy: { url: 'prop-teddy.json', h: 0.3 } };
+const PROP_TPL = {};
+function propModel(type, mesh, hh) {
+  const M = PROP_MODELS[type], put = T => { const o = T.m.clone(), s = M.h / T.sz.y, c = T.b.getCenter(new V3()); o.scale.setScalar(s); o.position.set(-c.x * s, -T.b.min.y * s - hh, -c.z * s); mesh.add(o); };
+  mesh.material = PROP_HIT_MAT;
+  const T = PROP_TPL[type]; if (T && T.m) return put(T); if (T) return T.wait.push(put);
+  const W = PROP_TPL[type] = { wait: [put] };
+  loadModelFile(M.url, gl => { const m = gl.scene; m.traverse(o => { if (o.isMesh) { o.material = leanMat(Array.isArray(o.material) ? o.material[0] : o.material); o.castShadow = true; o.receiveShadow = true; } });
+    m.updateMatrixWorld(true); W.m = m; W.b = new THREE.Box3().setFromObject(m); W.sz = W.b.getSize(new V3()); for (const f of W.wait) f(W); W.wait = []; }, e => { console.warn('prop model', type, e); delete PROP_TPL[type]; });
+}
 const PROPO = [];
 const PROP_HIT_MAT = new THREE.MeshBasicMaterial({ visible: false });
 function buildProps() {
@@ -536,6 +547,7 @@ function buildProps() {
     const P = PROPS[i], d = PROP_DEF[P.type]();
     const m = new THREE.Mesh(d.geo, MATS[d.mat]); m.castShadow = true; m.receiveShadow = true;
     if (d.sy) m.scale.y = d.sy;
+    if (PROP_MODELS[P.type]) propModel(P.type, m, d.hh);
     const y = P.y + d.hh;
     m.position.set(P.x, y, P.z); m.rotation.y = P.ry; WORLD.root.add(m);
     const hit = new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.09, d.r * 0.9), 8, 6), PROP_HIT_MAT); m.add(hit); INTERACT.push({ mesh: hit, kind: 'prop', id: i });

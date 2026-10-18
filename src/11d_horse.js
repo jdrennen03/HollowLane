@@ -91,7 +91,7 @@ function stopGhostHorse() {
   HORSE.on = false; HORSE.t0 = null; HORSE.calmT = null; HORSE.legs = null; HORSE.state = 'off'; HORSE_U.uFade.value = 0; if (HORSE.root) HORSE.root.visible = false;
   if (WORLD_EXTRA.halter) WORLD_EXTRA.halter.visible = true;
 }
-function stopEggs() { stopGiant(); stopGhostHorse(); }
+function stopEggs() { stopGiant(); stopGhostHorse(); stopGator(); }
 function setHorseGait(name, rate, dt) {
   for (const n in HORSE.acts) { const a = HORSE.acts[n], w = a.getEffectiveWeight(), tw = n === name ? 1 : 0; a.setEffectiveWeight(w + (tw - w) * clamp(dt * 6, 0, 1)); }
   HORSE.acts[name].timeScale = rate; HORSE.cur = name;
