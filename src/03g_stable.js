@@ -5,10 +5,11 @@
 // The host owns the tack and animal state; every change goes out as one small snapshot event ('stb').
 const STB_DEFS = [
   // stall: [x, z, heading] (heading 0 faces +z). seat/head/neck are fractions of the scaled model's height (y) and length (z)
-  { name: 'Agrippa', url: 'prop-agrippa.json', kind: 'horse', len: 2.3, rot: 0, stall: [9.0, 1.95, 0], seat: [0.79, 0.04], head: [0.86, 0.44], neck: [0.74, 0.27], hip: 0.8 },
-  { name: 'Dakota', url: 'prop-horse2.json', kind: 'horse', len: 2.35, rot: 0, color: 0x7a4a2a, stall: [5.4, 1.95, 0], seat: [0.66, 0.02], head: [0.9, 0.42], neck: [0.7, 0.28], hip: 0.68 },
-  // Juniper: the animated donkey at home, the one with the pack saddle out on a job
-  { name: 'Juniper', url: 'prop-donkey.json', home: { url: 'prop-donkey2.json', len: 1.8 }, kind: 'donkey', len: 1.75, rot: Math.PI / 2, stall: [1.8, 9.45, Math.PI], seat: [0.66, 0.0], head: [0.86, 0.43], neck: [0.7, 0.3], hip: 0.66 },
+  { name: 'Agrippa', url: 'prop-agrippa.json', kind: 'horse', len: 2.3, rot: 0, saddleLen: 0.8, stall: [9.0, 1.95, 0], seat: [0.79, 0.04], head: [0.86, 0.44], neck: [0.74, 0.27], hip: 0.8 },
+  { name: 'Dakota', url: 'prop-horse2.json', kind: 'horse', len: 2.35, rot: 0, draft: true, saddleLen: 0.86, stall: [5.4, 1.95, 0], seat: [0.66, 0.02], head: [0.9, 0.42], neck: [0.7, 0.28], hip: 0.68 },
+  // Juniper: for riding (saddle and bridle) or as a tag-along, never for the wagon; the animated donkey at home, the one
+  // with the pack out on a job (unless she's saddled: the riding saddle replaces the pack)
+  { name: 'Juniper', url: 'prop-donkey.json', home: { url: 'prop-donkey2.json', len: 1.8 }, kind: 'donkey', len: 1.75, saddleLen: 0.66, rot: Math.PI / 2, stall: [1.8, 9.45, Math.PI], seat: [0.66, 0.0], head: [0.86, 0.43], neck: [0.7, 0.3], hip: 0.66 },
 ];
 const STB_TACK = [   // where each piece lives in the tack room: [x, y, z, ry]
   { kind: 'saddle', rack: [14.82, BA0 + 1.15, 0.9, Math.PI / 2] }, { kind: 'saddle', rack: [14.82, BA0 + 1.15, 2.0, Math.PI / 2] },
@@ -39,7 +40,7 @@ function stbInit() {
   STB_DEFS.forEach((def, i) => {
     const root = new THREE.Group(), body = new THREE.Group(); root.add(body); root.visible = false; scene.add(root);
     const hit = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.5, def.len * 0.9), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.95; root.add(hit);
-    const A = { i, def, root, body, hit, x: def.stall[0], z: def.stall[1], y: BA0, yaw: def.stall[2], speed: 0, saddle: -1, bridle: -1, harness: -1, rider: -1, leader: -1, H: 1.6, L: def.len, bob: 0, beatT: 0, lastBeat: -1, coll: null };
+    const A = { i, def, root, body, hit, x: def.stall[0], z: def.stall[1], y: BA0, yaw: def.stall[2], speed: 0, saddle: -1, bridle: -1, harness: -1, rider: -1, leader: -1, buddy: -1, H: 1.6, L: def.len, bob: 0, beatT: 0, lastBeat: -1, coll: null };
     STB.animals.push(A);
   });
   STB_TACK.forEach((d, i) => {
@@ -55,7 +56,7 @@ function stbInit() {
 function stbEnsure() {
   for (const A of STB.animals) if (!A.away && !A.req) { A.req = true; stbLoad(A.def.url, A.def.rot, A.def.len, T => {
     A.H = T.H; A.body.add(T.m);
-    if (A.def.color) T.m.traverse(o => { if (o.isMesh) { o.material.color.setHex(A.def.color); o.material.roughness = 0.85; } });
+    if (A.def.draft) draftDetails(A, T.m);
     A.packM = T.m; A.packH = T.H; stbLook(A);
   }); }
   for (const A of STB.animals) if (A.def.home && !A.away && !A.reqHome) { A.reqHome = true; stbLoad(A.def.home.url, A.def.rot === Math.PI / 2 ? 0 : A.def.rot, A.def.home.len, T => {
@@ -65,7 +66,7 @@ function stbEnsure() {
     stbLook(A);
   }); }
   const W = STB.wagon; if (!W.away && !W.req) { W.req = true; stbLoad(WAGON_DEF.url, WAGON_DEF.rot, WAGON_DEF.len, T => W.root.add(T.m)); }
-  if (!STB.saddleReq && (MAP.id === 'barn' || STB.tack.some(t => t.kind === 'saddle' && t.at !== 'rack'))) { STB.saddleReq = true; stbLoad('prop-saddle.json', 0, 0.62, T => { STB.saddleTpl = T; for (const t of STB.tack) if (t.kind === 'saddle') { t.shown = null; stbAttach(t); } }); }
+  if (!STB.saddleReq && (MAP.id === 'barn' || STB.tack.some(t => t.kind === 'saddle' && t.at !== 'rack'))) { STB.saddleReq = true; stbLoad('prop-saddle.json', -Math.PI / 2, SADDLE_LEN, T => { STB.saddleTpl = T; for (const t of STB.tack) if (t.kind === 'saddle') { t.shown = null; stbAttach(t); } }); }
 }
 
 // ---------- tack meshes: the saddle is the imported model; bridle and harness are built to fit the animal wearing them
@@ -75,9 +76,9 @@ function strap(g, mat, a, b, w = 0.03, t = 0.008) {
   m.quaternion.setFromUnitVectors(new V3(0, 0, 1), d.normalize()); m.castShadow = true; g.add(m);
 }
 function ring(g, mat, p, r, tube, rx = 0, ry = 0, sy = 1) { const m = new THREE.Mesh(new THREE.TorusGeometry(r, tube, 6, 18), mat); m.position.copy(p); m.rotation.set(rx, ry, 0); m.scale.y = sy; m.castShadow = true; g.add(m); return m; }
-function bridleMesh(A) {
+function bridleMesh() {
   const g = new THREE.Group(), lm = leatherMat(), bit = MATS.chrome;
-  if (!A) {   // hanging on its hook: crown loop, cheeks, a coiled rein
+  {   // hanging on its hook: crown loop, cheeks, a coiled rein
     ring(g, lm, new V3(0, -0.12, 0), 0.11, 0.009, 0, 0, 1.6); ring(g, bit, new V3(0, -0.3, 0.02), 0.03, 0.006, Math.PI / 2);
     ring(g, lm, new V3(0, -0.45, 0.03), 0.09, 0.008, 0, 0, 1.9); return g;
   }
@@ -96,9 +97,9 @@ function bridleMesh(A) {
   }
   return g;
 }
-function harnessMesh(A) {
+function harnessMesh() {
   const g = new THREE.Group(), lm = leatherMat(), brass = MATS.brass;
-  if (!A) {   // on its peg: the collar with the hames, traces coiled underneath
+  {   // on its peg: the collar with the hames, traces coiled underneath
     ring(g, lm, new V3(0, 0, 0), 0.24, 0.055, 0, 0, 1.35); for (const s of [-1, 1]) { const h = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.62, 6), MATS.darkWood); h.position.set(s * 0.22, 0, 0.04); h.rotation.z = s * 0.12; g.add(h); }
     ring(g, lm, new V3(0, -0.5, 0.05), 0.16, 0.02, Math.PI / 2 - 0.3); return g;
   }
@@ -118,23 +119,27 @@ function harnessMesh(A) {
 // put a tack piece where its state says it is: on its rack, in my hands, on an animal (or out of sight)
 function stbAttach(t) {
   const A = t.at === 'on' ? STB.animals[t.who] : null, mine = t.at === 'hand' && t.who === G.mySlot;
-  const key = t.at + ':' + t.who + ':' + (A ? A.H.toFixed(2) : '');
+  if (A && !stbShown(A)) { t.obj.visible = false; t.shown = null; return; }   // wait for the animal's model
+  const key = t.at + ':' + t.who + ':' + (A ? stbShown(A).uuid : '');
   if (t.shown === key) return; t.shown = key;
   for (const c of [...t.obj.children]) if (c !== t.hit) t.obj.remove(c);
   let vis;
-  if (t.kind === 'saddle') { if (!STB.saddleTpl) { t.shown = null; return; } vis = new THREE.Group(); vis.add(STB.saddleTpl.m.clone()); if (A) vis.scale.setScalar(A.def.kind === 'donkey' ? 0.85 : 1); }   // wrapped: the clone keeps its centring offset
-  else vis = t.kind === 'bridle' ? bridleMesh(A) : harnessMesh(A);
+  if (t.kind === 'saddle') { if (!STB.saddleTpl) { t.shown = null; return; } if (A) vis = saddleOn(A, t); else { vis = new THREE.Group(); vis.add(STB.saddleTpl.m.clone()); } }   // wrapped: the clone keeps its centring offset
+  else if (A) vis = t.kind === 'bridle' ? bridleFit(A) : harnessFit(A);
+  else vis = t.kind === 'bridle' ? bridleMesh() : harnessMesh();
+  if (t.vis) stbReinsOff(t.vis); t.vis = vis;
   t.obj.add(vis);
   const par = A ? A.body : mine ? PL.hand : t.at === 'rack' ? scene : null;
   if (!par) { t.obj.visible = false; return; }
   par.add(t.obj); t.obj.visible = true; t.obj.rotation.set(0, 0, 0); t.obj.scale.setScalar(1); t.hit.visible = t.at === 'rack';
   if (A) {
     t.obj.position.set(0, 0, 0);
-    if (t.kind === 'saddle') { const H = A.H, s = A.def.kind === 'donkey' ? 0.85 : 1; vis.position.set(0, H * A.def.seat[0] - 0.6 * s, A.L * A.def.seat[1]); }
+    // the bridle rides on the head bone so it moves with the head (measured and attached in the standing pose)
+    if (t.kind === 'bridle' && vis.userData.bone) { if (A.mixer && A.home) { for (const n in A.acts) A.acts[n].setEffectiveWeight(n === 'idle' ? 1 : 0); A.mixer.setTime(0); } A.root.updateMatrixWorld(true); vis.userData.bone.attach(t.obj); }
   } else if (mine) {
     t.obj.position.set(0.32, -0.42, -0.62); t.obj.rotation.set(0.15, 0.4, 0); if (t.kind === 'saddle') { t.obj.scale.setScalar(0.55); vis.position.y = -0.4; } else { t.obj.scale.setScalar(0.8); vis.position.y = 0.25; }
   } else {
-    const [x, y, z, ry] = t.rack; t.obj.position.set(x, y, z); t.obj.rotation.y = ry; if (t.kind === 'saddle') vis.position.y = -0.62;
+    const [x, y, z, ry] = t.rack; t.obj.position.set(x, y, z); t.obj.rotation.y = ry; if (t.kind === 'saddle') vis.position.y = -SADDLE_SEAT;
     t.hit.position.set(0, t.kind === 'saddle' ? -0.1 : -0.25, 0);
   }
   if (t.at === 'rack') t.obj.visible = MAP.id === 'barn';
@@ -143,11 +148,11 @@ function stbAttach(t) {
 // ---------- state, snapshots and placement
 function stbSnap() {
   const W = STB.wagon;
-  return [STB.animals.map(A => [r2(A.x), r2(A.z), r2(A.yaw), A.saddle, A.bridle, A.harness, A.rider, A.leader]), STB.tack.map(t => [t.at === 'rack' ? 0 : t.at === 'hand' ? 1 : 2, t.who]), [r2(W.x), r2(W.z), r2(W.yaw), W.animal, W.driver, ...W.pass]];
+  return [STB.animals.map(A => [r2(A.x), r2(A.z), r2(A.yaw), A.saddle, A.bridle, A.harness, A.rider, A.leader, A.buddy]), STB.tack.map(t => [t.at === 'rack' ? 0 : t.at === 'hand' ? 1 : 2, t.who]), [r2(W.x), r2(W.z), r2(W.yaw), W.animal, W.driver, ...W.pass]];
 }
 function stbApply(s) {
-  s[0].forEach((q, i) => { const A = STB.animals[i]; if (!A) return; const ridden = A.rider >= 0 || A.leader >= 0;
-    [A.saddle, A.bridle, A.harness, A.rider, A.leader] = q.slice(3); if (!(A.rider >= 0 || A.leader >= 0) || !ridden) { A.x = q[0]; A.z = q[1]; A.yaw = q[2]; } });
+  s[0].forEach((q, i) => { const A = STB.animals[i]; if (!A) return; const moving = A.rider >= 0 || A.leader >= 0 || A.buddy >= 0;
+    [A.saddle, A.bridle, A.harness, A.rider, A.leader, A.buddy] = q.slice(3); if (!(A.rider >= 0 || A.leader >= 0 || A.buddy >= 0) || !moving) { A.x = q[0]; A.z = q[1]; A.yaw = q[2]; } });
   s[1].forEach((q, i) => { const t = STB.tack[i]; if (!t) return; t.at = q[0] === 0 ? 'rack' : q[0] === 1 ? 'hand' : 'on'; t.who = q[1]; stbAttach(t); });
   const W = STB.wagon, w = s[2]; if (W.driver < 0 || w[4] < 0) { W.x = w[0]; W.z = w[1]; W.yaw = w[2]; } W.animal = w[3]; W.driver = w[4]; W.pass = w.slice(5);
   for (const t of STB.tack) stbAttach(t);
@@ -157,7 +162,7 @@ function hostStb() { hostEvent(['stb', stbSnap()]); }
 // everything back home: tack on the racks, animals in their stalls, the wagon where the tent used to stand
 function stbReset() {
   stbInit();
-  for (const A of STB.animals) { [A.x, A.z, A.yaw] = A.def.stall; A.saddle = A.bridle = A.harness = A.rider = A.leader = -1; A.speed = 0; A.trail = null; }
+  for (const A of STB.animals) { [A.x, A.z, A.yaw] = A.def.stall; A.saddle = A.bridle = A.harness = A.rider = A.leader = A.buddy = -1; A.speed = 0; A.trail = null; }
   for (const t of STB.tack) { t.at = 'rack'; t.who = -1; stbAttach(t); }
   const W = STB.wagon; [W.x, W.z, W.yaw] = WAGON_DEF.home; W.animal = W.driver = -1; W.pass = [-1, -1, -1]; W.speed = 0;
   STB.along = null; stbVis();
@@ -206,7 +211,7 @@ function stbArrive() {
     const z0 = -3.2, z1 = W.animal >= 0 ? WAGON_DEF.front + STB.animals[W.animal].L : 3.2, [x, z, yaw] = spot(1.3, z1 - z0), c = (z0 + z1) / 2;
     W.x = x - Math.sin(yaw) * c; W.z = z - Math.cos(yaw) * c; W.yaw = yaw;
   }
-  for (const A of STB.animals) { A.rider = A.leader = -1; A.speed = 0; A.trail = null; if (!al.animals.includes(A.i) || W.animal === A.i) continue; const [x, z, yaw] = spot(0.75, A.L); A.x = x; A.z = z; A.yaw = yaw; }
+  for (const A of STB.animals) { A.rider = A.leader = -1; A.speed = 0; A.trail = null; if (A.buddy >= 0 && !G.players[A.buddy]) A.buddy = -1; if (!al.animals.includes(A.i) || W.animal === A.i) continue; const [x, z, yaw] = spot(0.75, A.L); A.x = x; A.z = z; A.yaw = yaw; }
   W.driver = -1; W.pass = [-1, -1, -1]; W.speed = 0;
   for (const t of STB.tack) if (t.at === 'hand') { t.at = 'rack'; t.who = -1; }
   stbVis();
@@ -215,9 +220,9 @@ function stbArrive() {
 // Juniper wears whichever body fits: the animated one at the stables, the pack donkey on a job
 function stbLook(A) {
   if (!A.packM) return;
-  const home = !!A.homeM && MAP.id === 'barn' && STB.phase !== 'hunt';
+  const home = !!A.homeM && ((MAP.id === 'barn' && STB.phase !== 'hunt') || A.saddle >= 0);
   if (A.homeM) A.homeM.visible = home; A.packM.visible = !home;
-  const H = home ? A.homeH : A.packH; if (A.H !== H) { A.H = H; for (const t of STB.tack) if (t.at === 'on' && t.who === A.i) stbAttach(t); }
+  const H = home ? A.homeH : A.packH; if (A.home !== home || A.H !== H) { A.H = H; A.home = home; for (const t of STB.tack) if (t.at === 'on' && t.who === A.i) stbAttach(t); }
   A.home = home;
 }
 // the animated donkey's clips: idle and grazing at rest, walk / trot / run by speed
@@ -247,7 +252,7 @@ function hostStable(slot, r) {
   else if (t === 'tback') { if (!hand) return true; hand.at = 'rack'; hand.who = -1; }
   else if (t === 'tput') {
     if (!A || !hand) return true;
-    if (hand.kind !== 'harness' && A.def.kind !== 'horse') { say('That ' + hand.kind + ' is made for a horse. ' + A.def.name + ' only wears the harness.'); return true; }
+    if (hand.kind === 'harness' && A.def.kind !== 'horse') { say(A.def.name + ' is for riding, not for pulling the wagon. The harness is for the horses.'); return true; }
     if (A[hand.kind] >= 0) { say(A.def.name + ' already has a ' + hand.kind + ' on.'); return true; }
     if (hand.kind === 'harness' && A.rider >= 0) { say('Get ' + A.def.name + '\'s rider down first.'); return true; }
     A[hand.kind] = hand.i; hand.at = 'on'; hand.who = A.i; hostEvent(['snd', 'pickup', A.x, 1.2, A.z, 0.6]);
@@ -258,18 +263,22 @@ function hostStable(slot, r) {
     const p = STB.tack[A[k]]; A[k] = -1; p.at = 'hand'; p.who = slot;
   }
   else if (t === 'mount') {
-    if (!A || A.def.kind !== 'horse' || A.rider >= 0 || mounted(slot) || W.animal === A.i) return true;
+    if (!A || A.rider >= 0 || mounted(slot) || W.animal === A.i) return true;
     if (A.bridle < 0) { say('You can\'t ride ' + A.def.name + ' without a bridle. They hang in the tack room.'); return true; }
     if (A.harness >= 0) { say(A.def.name + ' is in the wagon harness. Take it off first (G).'); return true; }
-    A.rider = slot; A.leader = -1; A.x = r[3]; A.z = r[4];
+    A.rider = slot; A.leader = A.buddy = -1; A.x = r[3]; A.z = r[4];
   }
   else if (t === 'dis') { const B = riding(slot); if (B) { B.rider = -1; B.x = r[2]; B.z = r[3]; B.yaw = r[4]; B.speed = 0; } }
   else if (t === 'lead') {
     if (!A || A.rider >= 0 || W.animal === A.i) return true;
-    if (A.leader === slot) { A.leader = -1; A.x = r[3]; A.z = r[4]; A.yaw = r[5]; } else A.leader = slot;
+    if (A.leader === slot) { A.leader = -1; A.x = r[3]; A.z = r[4]; A.yaw = r[5]; } else { A.leader = slot; A.buddy = -1; }
+  }
+  else if (t === 'buddy') {   // tag along: follows on its own, no rope
+    if (!A || A.rider >= 0 || W.animal === A.i) return true;
+    if (A.buddy === slot) { A.buddy = -1; A.x = r[3]; A.z = r[4]; A.yaw = r[5]; } else { A.buddy = slot; A.leader = -1; }
   }
   else if (t === 'hitch') {
-    const B = STB.animals.filter(B => B.harness >= 0 && B.rider < 0 && W.animal !== B.i).sort((a, b) => (b.leader === slot) - (a.leader === slot) || Math.hypot(a.x - W.x, a.z - W.z) - Math.hypot(b.x - W.x, b.z - W.z))[0];
+    const B = STB.animals.filter(B => B.def.kind === 'horse' && B.harness >= 0 && B.rider < 0 && W.animal !== B.i).sort((a, b) => (b.leader === slot) - (a.leader === slot) || Math.hypot(a.x - W.x, a.z - W.z) - Math.hypot(b.x - W.x, b.z - W.z))[0];
     if (W.animal >= 0) return true;
     if (!B) { say('Nothing here is wearing the harness. Put it on one of the animals first.'); return true; }
     if (B.leader !== slot && Math.hypot(B.x - W.x, B.z - W.z) > 9) { say('Lead ' + B.def.name + ' over to the wagon first (E on ' + B.def.name + ').'); return true; }
@@ -288,14 +297,14 @@ function hostStable(slot, r) {
 }
 function hostDepart(slot) {
   if (STB.phase !== 'base' || G.departing) return;
-  const W = STB.wagon, al = { animals: STB.animals.filter(A => A.rider >= 0 || A.leader >= 0 || W.animal === A.i).map(A => A.i), wagon: W.driver >= 0 || W.animal >= 0 };
+  const W = STB.wagon, al = { animals: STB.animals.filter(A => A.rider >= 0 || A.leader >= 0 || A.buddy >= 0 || W.animal === A.i).map(A => A.i), wagon: W.driver >= 0 || W.animal >= 0 };
   G.departing = true; hostEvent(['stb', stbSnap()]); hostEvent(['depart', slot, al.animals, al.wagon ? 1 : 0]);
 }
 // host tick: riders who died or left fall off; anyone mounted who reaches the end of the drive takes the team out
 function hostStableTick() {
   if (!STB.animals.length) return;
   let ch = false;
-  for (const A of STB.animals) for (const k of ['rider', 'leader']) if (A[k] >= 0 && (!G.players[A[k]] || !G.players[A[k]].alive)) { const P = G.players[A[k]]; if (P) { A.x = P.pos.x; A.z = P.pos.z; } A[k] = -1; ch = true; }
+  for (const A of STB.animals) for (const k of ['rider', 'leader', 'buddy']) if (A[k] >= 0 && (!G.players[A[k]] || !G.players[A[k]].alive)) { const P = G.players[A[k]]; if (P) { A.x = P.pos.x; A.z = P.pos.z; } A[k] = -1; ch = true; }
   const W = STB.wagon; if (W.driver >= 0 && (!G.players[W.driver] || !G.players[W.driver].alive)) { W.driver = -1; W.speed = 0; ch = true; }
   W.pass = W.pass.map(s => s >= 0 && G.players[s] && G.players[s].alive ? s : -1);
   if (ch) hostStb();
@@ -341,9 +350,9 @@ function stbInteract(h) {
   if (h.kind === 'anim') {
     const A = STB.animals[h.id];
     if (hand) { request('stb', 'tput', A.i); return; }
-    if (A.def.kind === 'horse' && A.bridle >= 0 && A.harness < 0 && W.animal !== A.i && A.rider < 0) { if (mounted(G.mySlot)) return; request('stb', 'mount', A.i, r2(A.x), r2(A.z)); sfx('hoof', 0.4); return; }
+    if (A.bridle >= 0 && A.harness < 0 && W.animal !== A.i && A.rider < 0) { if (mounted(G.mySlot)) return; request('stb', 'mount', A.i, r2(A.x), r2(A.z)); sfx('hoof', 0.4); return; }
     if (W.animal === A.i) { sub(A.def.name + ' is hitched to the wagon.', 'sys'); return; }
-    if (A.def.kind === 'horse' && A.harness < 0 && A.bridle < 0 && A.leader < 0) { sub('Put a bridle on ' + A.def.name + ' to ride. The bridles hang in the tack room.', 'sys'); }
+    if (A.harness < 0 && A.bridle < 0 && A.leader < 0) { sub('Put a bridle on ' + A.def.name + ' to ride. The bridles hang in the tack room.', 'sys'); }
     request('stb', 'lead', A.i, r2(A.x), r2(A.z), r2(A.yaw));
     return;
   }
@@ -352,6 +361,10 @@ function stbInteract(h) {
     if (W.animal < 0) { request('stb', 'hitch', 0); return; }
     if (W.driver < 0 && !riding(G.mySlot)) request('stb', 'drive', 0); else if (!riding(G.mySlot)) request('stb', 'board', 0);
   }
+}
+function stbBuddy() {   // B on the donkey: tag along (or stop)
+  const h = PL.hot; if (!h || h.kind !== 'anim') return false; const A = STB.animals[h.id]; if (A.def.kind !== 'donkey') return false;
+  request('stb', 'buddy', A.i, r2(A.x), r2(A.z), r2(A.yaw)); sub(A.buddy === G.mySlot ? A.def.name + ' stays put.' : A.def.name + ' tags along after you.', 'sys'); return true;
 }
 function stbG() {   // the G key: hang tack back up, take tack off an animal, unhitch
   const hand = carryingTack(), h = PL.hot;
@@ -368,8 +381,9 @@ function stbPrompt(h) {
     if (hand) return 'Put the ' + hand.kind + ' on ' + A.def.name;
     if (W.animal === A.i) return A.def.name + ' (hitched to the wagon)';
     if (A.rider >= 0) return A.def.name;
-    if (A.def.kind === 'horse' && A.bridle >= 0 && A.harness < 0) return 'Ride ' + A.def.name + (A.saddle >= 0 ? '' : ' bareback') + off;
-    return (A.leader === G.mySlot ? 'Let go of ' : 'Lead ') + A.def.name + off;
+    const bud = A.def.kind === 'donkey' ? ' · {B} ' + (A.buddy === G.mySlot ? 'Stop tagging along' : 'Tag along') : '';
+    if (A.bridle >= 0 && A.harness < 0) return 'Ride ' + A.def.name + (A.saddle >= 0 ? '' : ' bareback') + off + bud;
+    return (A.leader === G.mySlot ? 'Let go of ' : 'Lead ') + A.def.name + off + bud;
   }
   if (h.kind === 'wagon') {
     if (W.animal < 0) return 'Hitch an animal in harness to the wagon';
@@ -397,7 +411,7 @@ function stbMove(P, dt, blocked) {
     P.pos.set(p.x, W.y, p.z); P.moving = 0; cam.position.set(p.x, W.y + WAGON_DEF.bedY + 0.95, p.z); cam.rotation.set(PL.pitch, PL.yaw, 0, 'YXZ'); return true;
   }
   const E = A || W, fast = !blocked && (k.ShiftLeft || k.ShiftRight), fw = !blocked && (k.KeyW || k.ArrowUp), bk = !blocked && (k.KeyS || k.ArrowDown);
-  const top = A ? (fast ? 6.8 : 2.6) : (fast ? 5.2 : 2.6), want = fw ? top : bk ? -1.1 : 0;
+  const donkey = A && A.def.kind === 'donkey', top = A ? (fast ? (donkey ? 4.8 : 6.8) : (donkey ? 2.0 : 2.6)) : (fast ? 5.2 : 2.6), want = fw ? top : bk ? -1.1 : 0;
   E.speed = lerp(E.speed, want, clamp(dt * (want === 0 ? 3 : 1.6), 0, 1)); if (Math.abs(E.speed) < 0.02 && !fw && !bk) E.speed = 0;
   // the animal turns toward where you look, and A/D rein it round
   const turn = A ? 2.0 : 1.2, mv = Math.abs(E.speed) > 0.1 || fw;
@@ -413,7 +427,7 @@ function stbMove(P, dt, blocked) {
   P.pos.set(E.x, E.y, E.z); P.moving = Math.abs(E.speed);
   E.bob = (E.bob || 0) + dt * Math.abs(E.speed) * (Math.abs(E.speed) > 4 ? 2.2 : 3.4);
   const amp = A ? (Math.abs(E.speed) > 4 ? 0.07 : 0.04) * Math.min(1, Math.abs(E.speed)) : 0.015 * Math.min(1, Math.abs(E.speed));
-  const seat = A ? animalLocal(A, 0, A.H * A.def.seat[0] + 0.78, A.L * A.def.seat[1] - 0.1) : wagonLocal(0, WAGON_DEF.seatY + 0.82, WAGON_DEF.seatZ);
+  const st = A && stbSeat(A), seat = A ? animalLocal(A, 0, st.y + 0.8, st.z - 0.06) : wagonLocal(0, WAGON_DEF.seatY + 0.82, WAGON_DEF.seatZ);
   cam.position.set(seat.x, seat.y + Math.sin(E.bob * 2) * amp, seat.z); cam.rotation.set(PL.pitch, PL.yaw, Math.sin(E.bob) * amp * 0.12, 'YXZ');
   stbHooves(A || STB.animals[W.animal], dt, 0.9);
   if (!A) { E.creakT = (E.creakT || 0) - dt * Math.abs(E.speed); if (E.creakT <= 0 && Math.abs(E.speed) > 0.3) { E.creakT = rr(2, 5); sfx('creak', 0.25, rr(0.6, 0.9)); } }
@@ -450,12 +464,13 @@ function updateStable(dt) {
   const W = STB.wagon;
   for (const A of STB.animals) {
     if (A.away) continue;
-    const R = A.rider >= 0 ? G.players[A.rider] : null, L = A.leader >= 0 ? G.players[A.leader] : null;
+    const R = A.rider >= 0 ? G.players[A.rider] : null, L = A.leader >= 0 ? G.players[A.leader] : A.buddy >= 0 ? G.players[A.buddy] : null, loose = A.leader < 0;
     if (R && A.rider !== G.mySlot) { A.x = R.pos.x; A.z = R.pos.z; A.y = R.pos.y; A.yaw += angDiff(A.yaw, R.mountYaw ?? A.yaw) * clamp(dt * 8, 0, 1); A.speed = R.moving || 0; stbHooves(A, dt, 0.8); }
     else if (L && W.animal !== A.i) {   // follow the leader's footsteps, a body length behind
       const lp = new V3(L.pos.x, 0, L.pos.z), tr = A.trail || (A.trail = [lp.clone()]);
       if (lp.distanceTo(tr[tr.length - 1]) > 0.25) { tr.push(lp.clone()); if (tr.length > 80) tr.shift(); }
-      const lagD = 1.2 + A.L * 0.5 + (riding(A.leader) ? 1.2 : 0);
+      const who = A.leader >= 0 ? A.leader : A.buddy, lagD = (loose ? 2.6 : 1.2) + A.L * 0.5 + (riding(who) ? 1.2 : 0);
+      if (loose && Math.hypot(L.pos.x - A.x, L.pos.z - A.z) > 30 && tr.length > 8) { const q = tr[tr.length - 8]; A.x = q.x; A.z = q.z; }   // a tag-along that fell far behind catches up
       let d = 0, tgt = tr[0]; for (let i = tr.length - 1; i > 0; i--) { d += tr[i].distanceTo(tr[i - 1]); if (d >= lagD) { tgt = tr[i - 1]; break; } }
       const dx = tgt.x - A.x, dz = tgt.z - A.z, dist = Math.hypot(dx, dz);
       if (dist > 0.15 && d >= lagD) { const sp = Math.min(dist * 2.2, 7.5); A.x += dx / dist * sp * dt; A.z += dz / dist * sp * dt; A.yaw += angDiff(A.yaw, Math.atan2(dx, dz)) * clamp(dt * 5, 0, 1); A.speed = sp; } else A.speed = lerp(A.speed, 0, clamp(dt * 4, 0, 1));
@@ -465,6 +480,8 @@ function updateStable(dt) {
     if (A.rider === G.mySlot) A.trail = null;
     // a walking bob and a slow breath at rest (except Juniper at home, whose model walks for itself)
     stbLook(A); stbAnimate(A, dt);
+    stbRope(A, A.leader >= 0 && W.animal !== A.i && A.rider < 0);
+    const br = A.bridle >= 0 && STB.tack[A.bridle].vis; if (br && br.userData.bits) stbReins(A, br);
     A.bob = (A.bob || 0) + dt * (0.6 + Math.abs(A.speed) * 2.6);
     const g = Math.abs(A.speed), amp = A.home ? 0 : g > 4 ? 0.06 : g > 0.3 ? 0.025 : 0.004;
     A.root.position.set(A.x, A.y + Math.abs(Math.sin(A.bob)) * amp, A.z); A.root.rotation.set(g > 0.3 ? Math.sin(A.bob * 2) * amp * 0.6 : 0, A.yaw, 0, 'YXZ');
@@ -486,7 +503,7 @@ function updateStable(dt) {
 function stbAvatarOffset(P, out) {
   out.set(0, 0, 0); P.ride = false;
   const A = riding(P.slot), w = onWagon(P.slot);
-  if (A) { P.ride = true; out.set(0, A.H * A.def.seat[0] - 0.82, 0); const c = Math.cos(A.yaw), s = Math.sin(A.yaw), lz = A.L * A.def.seat[1] - 0.12; out.x = lz * s; out.z = lz * c; }
+  if (A) { P.ride = true; const st = stbSeat(A); out.set(0, st.y - 0.86, 0); const c = Math.cos(A.yaw), s = Math.sin(A.yaw), lz = st.z - 0.08; out.x = lz * s; out.z = lz * c; }
   else if (w === 'drive') { P.ride = true; out.y = WAGON_DEF.seatY - 0.45; const s = Math.sin(STB.wagon.yaw), c = Math.cos(STB.wagon.yaw); out.x = WAGON_DEF.seatZ * s; out.z = WAGON_DEF.seatZ * c; }
   else if (w === 'pass') { P.ride = true; out.y = WAGON_DEF.bedY - 0.45; }
   return out;

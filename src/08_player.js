@@ -41,6 +41,7 @@ function bindInput(canvas) {
     else if (k === 'KeyQ') cycleSlot(1);
     else if (k === 'KeyC') { PL.crouch = !PL.crouch; $('crouchTag').hidden = !PL.crouch; }
     else if (k === 'KeyV') dogMenuToggle();
+    else if (k === 'KeyB') stbBuddy();
     else if (UI.dogMenu && /^Digit[1-5]$/.test(k)) dogCommand(+k.slice(-1) - 1);
     else if (k === 'Digit1' || k === 'Digit2' || k === 'Digit3') selectSlot(+k.slice(-1) - 1);
   });
