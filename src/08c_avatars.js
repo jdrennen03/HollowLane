@@ -54,7 +54,15 @@ function makeCharacter(ch, root) {
 }
 function animateCharacter(c, P, t, dt) {
   for (const b of c.gait) b.bone.quaternion.copy(b.q0);
-  gaitPose(c, t, dt, { moving: P.moving * (P.crouch ? 0.6 : 1), mode: 0 });
+  gaitPose(c, t, dt, { moving: P.ride ? 0 : P.moving * (P.crouch ? 0.6 : 1), mode: 0 });
+  // astride a horse or on the wagon seat: thighs forward, knees bent
+  if (P.ride) {
+    const ax = _gax.set(1, 0, 0).applyQuaternion(c.root.getWorldQuaternion(_gq));
+    for (const b of c.gait) {
+      const lat = { thigh: 1.35, calf: -1.25, foot: 0.3 }[b.kind]; if (!lat) continue;
+      b.bone.parent.getWorldQuaternion(_gq2).invert(); _gl.copy(ax).applyQuaternion(_gq2); b.bone.quaternion.premultiply(_gr.setFromAxisAngle(_gl, lat));
+    }
+  }
   // crouch: knees and hips fold, the back leans in, the head stays level, the whole body sinks
   c.cw = lerp(c.cw, P.crouch ? 1 : 0, clamp(dt * 8, 0, 1));
   if (c.cw > 0.01) {

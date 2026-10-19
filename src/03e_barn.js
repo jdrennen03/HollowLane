@@ -105,16 +105,13 @@ function barnTextures() {
   defMat('barnCeil', TEX.barnCeil, 2, { ns: 0.7 });
   defMat('pinePanel', TEX.pinePanel, 2, { ns: 0.6 });
   defMat('roofGreen', TEX.tin, 2, { color: 0x71907a, metalness: 0.35, ns: 1.2, side: THREE.DoubleSide });
-  defMat('barrelBlue', null, 1, { color: 0x1d4c96, roughness: 0.4, metalness: 0.35 });
-  defMat('barrelRed', null, 1, { color: 0x9c1f1a, roughness: 0.45, metalness: 0.3 });
-  defMat('galv', null, 1, { color: 0x8c908c, roughness: 0.42, metalness: 0.75 });
-  defMat('fenceBoard', TEX.stallBoard, 1.4, { color: 0xd6d2c6, ns: 0.6 });
+  defMat('galv', null, 1, { color: 0x6c6a64, roughness: 0.6, metalness: 0.6 });   // old, dull iron
+  defMat('fenceBoard', TEX.stallBoard, 1.4, { color: 0xa89478, ns: 0.6 });
+  defMat('barrelWood', TEX.stallBoard, 0.9, { color: 0xb08a62, ns: 0.9 });
   defMat('rubberBlack', null, 1, { color: 0x141414, roughness: 0.85 });
   defMat('saltBlock', null, 1, { color: 0xc89a92, roughness: 0.75 });
-  defMat('greenPaint', null, 1, { color: 0x2d5a3a, roughness: 0.5, metalness: 0.2 });
   defMat('sackCloth', TEX.canvas, 0.6, { color: 0xc9b48a, ns: 0.8 });
-  defMat('heatLamp', null, 1, { color: 0x401010, emissive: 0x801808, emissiveIntensity: 0.6, roughness: 0.3 });
-  Object.assign(BEVEL, { stallBoard: [0.008, 1], fenceBoard: [0.01, 1], hayBale: [0.035, 2], sackCloth: [0.05, 2], galv: [0.006, 1], rubberBlack: [0.01, 1], saltBlock: [0.012, 1], barrelBlue: [0.01, 1], barrelRed: [0.01, 1], pinePanel: [0.006, 1], greenPaint: [0.01, 1] });
+    Object.assign(BEVEL, { stallBoard: [0.008, 1], fenceBoard: [0.01, 1], hayBale: [0.035, 2], sackCloth: [0.05, 2], galv: [0.006, 1], rubberBlack: [0.01, 1], saltBlock: [0.012, 1], barrelWood: [0.01, 1], pinePanel: [0.006, 1] });
 }
 function plateTex(txt) {
   return artTex(256, 76, (x, w, h) => {
@@ -131,7 +128,7 @@ function barnData() {
   const di = (o) => { doors.push(o); return doors.length - 1; };
   const front = di({ x: 0, s: 4.7, e: 6.7, hinge: 's', into: 1, front: true, style: 'barn', mat: 'barnRed' });   // door 0 is the one hunts lock
   const back = di({ x: BW, s: 4.7, e: 6.7, hinge: 'e', into: -1, ext: true, style: 'barn', mat: 'barnRed' });
-  const stallNames = [["Bonnie Blue's Stall", 'BONNIE BLUE'], ["Dakota's Stall", 'DAKOTA'], ["Whiskey's Stall", 'WHISKEY'], ['Foaling Stall', 'FOALING'],
+  const stallNames = [["Bonnie Blue's Stall", 'BONNIE BLUE'], ["Dakota's Stall", 'DAKOTA'], ["Agrippa's Stall", 'AGRIPPA'], ['Foaling Stall', 'FOALING'],
     ["Juniper's Stall", 'JUNIPER'], ["Ranger's Stall", 'RANGER'], ['Wash Bay', null], ["Cisco's Stall", 'CISCO']];
   rooms.push({ id: 'aisle', name: 'Centre Aisle', r: [0, AZ0, BW, AZ1], floor: 'aislePave', wall: 'stallBoard', ceil: 'barnCeil', sw: [0.105, 7.12, 1, 0], lamp: [12.6, 5.7], noGhost: true, cage: true, lampPow: 2.4, lampRange: 16 });
   // south row (rooms 1-6), north row (7-12)
@@ -189,18 +186,18 @@ function barnTerrain(x, z) {   // flat barnyard and arena, a gentle roll out in 
 }
 MAPS.barn = {
   id: 'barn', title: 'Whitlock Stables', eyebrow: 'Bell Buckle, Tennessee',
-  lede: 'On the eve of the 1994 state finals a storm cut the power, and seventeen-year-old Sadie Whitlock went down to the barn to settle her barrel mare, Bonnie Blue. By morning the mare\'s stall was latched from the outside and neither of them was ever seen again. The barn has been padlocked ever since, yet folks driving past at night still hear hoofbeats in the arena. Set up by the trailer, find what still keeps the barn, and get out before it hunts you.',
+  lede: 'On the eve of the 1994 state finals a storm cut the power, and seventeen-year-old Sadie Whitlock went down to the barn to settle her barrel mare, Bonnie Blue. By morning the mare\'s stall was latched from the outside and neither of them was ever seen again. The barn has been padlocked ever since, yet folks driving past at night still hear hoofbeats in the arena. Every investigation starts here, at the stables: tack up a horse in the tack room, or harness one of the animals to the covered wagon, and ride out to the haunted place you picked. Pick Whitlock Stables itself and the ride out starts the investigation right here.',
   levels: [BA0, BA1], extBase: [0, BA1 - 0.12], extTop: [BA1, BA1 + WALL_H], siding: 'barnRed', skirt: null, shutter: 'barnRed', crooked: true, noCurtains: true,
   noShutters: wd => !!wd.o.grille || wd.fy > 1 || wd.o.open,
   trimColor: 0xe8e4da, tempBase: 9.5, outsideTemp: 6, fog: [0x0b0e12, 0.028], moonI: 2.8, hemiI: 0.45, moonSpan: 46,
-  tent: { x: -10.5, z: 1.2 }, lure: 0, moonTarget: [24, 0, 6], grassBox: [-34, -30, 76, 40],
+  tent: { x: -10.5, z: 1.2 }, rusticBase: true, lure: 0, moonTarget: [24, 0, 6], grassBox: [-34, -30, 76, 40],
   street: [-5.2, 6.4, -3.2], porch: [-0.45, 3.05, 5.7],
   navBox: [-0.5, -6.5, 61.5, 18.5], navCs: 0.3,
   rooms: BARN.rooms, walls: BARN.walls, doors: BARN.doors, stairs: BARN.stairs, slabs: BARN.slabs,
   terrain: barnTerrain,
   // the ghost can walk the path between the barn's back door and the arena gate
   navWalk(l, x, z) { return l === 0 && x > BW - 0.2 && x < ARENA.x0 + 0.6 && z > 4.6 && z < 6.8; },
-  yardName: p => p.x > BW && p.x < ARENA.x0 && p.z > 2 && p.z < 10 ? 'Arena path' : p.x < 0 && p.x > -16 && p.z > -6 && p.z < 16 ? 'Barnyard' : p.z < -2 && p.x > 0 && p.x < BW ? 'Paddock' : 'Pasture',
+  yardName: p => p.x > BW && p.x < ARENA.x0 && p.z > 2 && p.z < 10 ? 'Arena path' : p.x < -19 && p.z > 2 && p.z < 10 ? 'The lane out' : p.x < 0 && p.x > -16 && p.z > -6 && p.z < 16 ? 'Barnyard' : p.z < -2 && p.x > 0 && p.x < BW ? 'Paddock' : 'Pasture',
   outsideStep(p) { return (p.x < 0 && p.x > -24 && p.z > 3 && p.z < 8.6) || (p.x > BW && p.x < ARENA.x0 && p.z > 4 && p.z < 7.4) || (p.x < -6 && p.x > -18 && p.z > -6 && p.z < 9) ? 'step_concrete' : 'step_grass'; },
   menuCam(T, cam) { const a = -2.2 + Math.sin(T * 0.03) * 0.8; cam.position.set(20 + Math.sin(a) * 34, 7 + Math.sin(T * 0.1) * 0.4, 6 - Math.cos(a) * 34); cam.lookAt(22, 3.2, 6); },
   grassOK(x, z) {
@@ -287,23 +284,19 @@ function buildBarnExterior(gb, root) {
   gb.mm('gravel', BW + 0.3, -0.02, 4.4, ARENA.x0 + 0.1, 0.03, 7.0);
   gb.mm('concreteFound', -2.2, -0.02, 4.2, 0, BA0 - 0.005, 7.2); gb.mm('concreteFound', BW, -0.02, 4.2, BW + 2.0, BA0 - 0.005, 7.2);
   for (const [a, b, c, d] of [[-0.24, -0.24, BW + 0.24, -0.1], [-0.24, BD + 0.1, BW + 0.24, BD + 0.24], [-0.24, -0.1, -0.1, 4.2], [-0.24, 7.2, -0.1, BD + 0.1], [BW + 0.1, -0.1, BW + 0.24, 4.2], [BW + 0.1, 7.2, BW + 0.24, BD + 0.1]]) gb.mm('concreteFound', a, -0.05, b, c, 0.28, d);   // foundation curb
-  // gooseneck lights over both big doors, the barn sign, the hay door and hoist
-  for (const [x, d] of [[0, -1], [BW, 1]]) {
-    rod(gb, 'greenPaint', [x + d * 0.1, 3.4, 5.7], [x + d * 0.45, 3.45, 5.7], 0.02); rod(gb, 'greenPaint', [x + d * 0.45, 3.45, 5.7], [x + d * 0.5, 3.18, 5.7], 0.02);
-    gb.add(new THREE.ConeGeometry(0.2, 0.14, 16, 1, true), mat4(x + d * 0.5, 3.12, 5.7), 'greenPaint', false);
-  }
+  // iron brackets with oil lanterns over both big doors, the barn sign, the hay door and hoist
+  for (const [x, d] of [[0, -1], [BW, 1]]) { rod(gb, 'railBlack', [x + d * 0.1, 3.4, 5.7], [x + d * 0.5, 3.4, 5.7], 0.016); rod(gb, 'railBlack', [x + d * 0.1, 3.1, 5.7], [x + d * 0.45, 3.4, 5.7], 0.012); hangLantern(gb, x + d * 0.5, 3.4, 5.7); }
   { const b = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffc070, emissiveIntensity: 0 })); b.position.set(-0.5, 3.06, 5.7); root.add(b); WORLD_EXTRA.porchBulb = b; }
   plane(root, signTex([['WHITLOCK STABLES', '700 50px Georgia, serif'], ['EST. 1962', '600 28px Georgia, serif']], 512, 128, '#e9e4d6', '#2a1a12'), 2.4, 0.6, -0.17, 2.55, 5.7, -Math.PI / 2);
   gb.mm('trimWhite', -0.14, 2.22, 4.45, -0.1, 2.88, 6.95);
-  plane(root, signTex([['NO SMOKING', '700 54px Arial, sans-serif'], ['NO ADMITTANCE AFTER DARK', '600 26px Arial, sans-serif']], 512, 160, '#c42a1e', '#fff3e0'), 0.62, 0.2, BW + 0.13, 1.7, 7.35, Math.PI / 2);
+  plane(root, signTex([['NO SMOKING', '700 54px Georgia, serif'], ['NO ADMITTANCE AFTER DARK', '600 26px Georgia, serif']], 512, 160, '#5e3f26', '#f0e2c0'), 0.62, 0.2, BW + 0.13, 1.7, 7.35, Math.PI / 2);
   // hay door leaves swung open flat against the gable, hoist beam and pulley above
   for (const [z0, z1] of [[3.82, 4.75], [6.65, 7.58]]) { const zc = (z0 + z1) / 2, w = z1 - z0; gb.box('barnRed', -0.14, BA1 + 1.7, zc, 0.06, 1.5, w); gb.box('trimWhite', -0.18, BA1 + 1.7, zc, 0.03, 1.5, 0.08); for (const sg of [1, -1]) gb.box('trimWhite', -0.18, BA1 + 1.7, zc, 0.025, Math.hypot(1.4, w), 0.08, 0, sg * Math.atan2(w, 1.4)); }
   gb.box('darkWood', -0.7, GAMBREL[2][1] - 0.45, 5.7, 1.6, 0.2, 0.2); gb.add(new THREE.TorusGeometry(0.13, 0.03, 6, 16), mat4(-1.35, GAMBREL[2][1] - 0.7, 5.7), 'railBlack', false);
   rod(gb, 'sackCloth', [-1.48, GAMBREL[2][1] - 0.7, 5.7], [-1.48, BA1 + 0.9, 5.7], 0.015); gb.add(new THREE.TorusGeometry(0.06, 0.012, 5, 10, Math.PI * 1.4), mat4(-1.48, BA1 + 0.82, 5.7, 0, 0, 2.2), 'railBlack', false);
-  // the yard light by the parking pad
-  gb.cyl('darkWood', -5.2, 3.2, -3.4, 0.11, 0.14, 6.4, 10); rod(gb, 'greenPaint', [-5.2, 6.2, -3.4], [-5.2, 6.4, -3.0], 0.025);
-  gb.add(new THREE.ConeGeometry(0.32, 0.2, 16, 1, true), mat4(-5.2, 6.42, -3.0), 'greenPaint', false);
-  { const lh = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffd0a0, emissiveIntensity: 3 })); lh.position.set(-5.2, 6.33, -3.0); root.add(lh); WORLD_EXTRA.streetBulb = lh; }
+  // the yard lantern on its post by the hitching rail
+  gb.cyl('darkWood', -5.2, 3.2, -3.4, 0.11, 0.14, 6.4, 10); gb.box('darkWood', -5.2, 6.3, -3.0, 0.08, 0.08, 0.9); hangLantern(gb, -5.2, 6.26, -2.62, 1.6);
+  { const lh = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffd0a0, emissiveIntensity: 3 })); lh.position.set(-5.2, 5.68, -2.62); root.add(lh); WORLD_EXTRA.streetBulb = lh; }
   addCollider(-5.35, -3.55, -5.05, -3.25, 6.5);
 }
 // a western saddle sitting on a rack arm; horn toward local +x
@@ -326,8 +319,8 @@ function hayBale(gb, x, y, z, ry, tw = true) {
 function buildBarnInterior(gb, root) {
   const F0 = (x, z, ry = 0) => fur(gb, x, z, ry, BA0), F1 = (x, z, ry = 0) => fur(gb, x, z, ry, BA1);
   const Y = BA0, art = roomArtBarn();
-  // ---------- the aisle: dead jelly-jar lights, blanket bars, halters, tools, a fire extinguisher
-  for (let x = 1.8; x < BW; x += 3.6) { if (Math.abs(x - 12.6) < 1) continue; gb.cyl('railBlack', x, Y + 2.64, 5.7, 0.05, 0.05, 0.12, 8); gb.cyl('glass', x, Y + 2.5, 5.7, 0.075, 0.075, 0.16, 12); gb.add(new THREE.TorusGeometry(0.088, 0.005, 4, 18), mat4(x, Y + 2.44, 5.7, 0, Math.PI / 2), 'railBlack', false); }
+  // ---------- the aisle: cold lanterns on their hooks, blanket bars, halters, tools, a fire bucket
+  for (let x = 1.8; x < BW; x += 3.6) { if (Math.abs(x - 12.6) < 1) continue; rod(gb, 'railBlack', [x, Y + 2.72, 5.7], [x, Y + 2.5, 5.7], 0.008); hangLantern(gb, x, Y + 2.5, 5.7); }
   const blankets = ['blanketRed', 'fabricGreen', 'fabricBlue', 'beddingHorse', 'fabricBrown', 'blanketRed', 'fabricBlue', 'beddingGame'];
   for (const side of [0, 1]) for (let k = 0; k < 4; k++) {
     const c = STALL_X[k] + 1.8, wz = side ? AZ1 : AZ0, out = side ? -1 : 1, face = wz + out * 0.07;
@@ -337,12 +330,12 @@ function buildBarnInterior(gb, root) {
     // halter and lead rope on a hook left of the door (Bonnie Blue's is the secret)
     if (!(side === 0 && k === 0)) { gb.cyl('brass', c - 0.95, Y + 1.62, face + out * 0.03, 0.008, 0.008, 0.07, 6, 0, Math.PI / 2, 0); gb.add(new THREE.TorusGeometry(0.11, 0.012, 5, 16), mat4(c - 0.95, Y + 1.48, face + out * 0.03, 0, 0, 0, 1, 1.4, 1), pick(['leather', 'ribbonRed', 'toyGreen', 'ribbonPurple']), false); gb.cyl('sackCloth', c - 0.95, Y + 1.0, face + out * 0.04, 0.012, 0.012, 0.85, 5); }
   }
-  // fire extinguisher, chalkboard and a bench by the front door; wheelbarrow and muck fork by the feed room
-  gb.cyl('ribbonRed', 24.75, Y + 1.05, 7.36, 0.08, 0.08, 0.45, 14); gb.cyl('blackPlastic', 24.75, Y + 1.33, 7.36, 0.03, 0.03, 0.08, 8); gb.box('railBlack', 24.75, Y + 1.25, 7.43, 0.06, 0.06, 0.04);
+  // fire bucket, chalkboard and a bench by the front door; wheelbarrow and muck fork by the feed room
+  gb.box('darkWood', 24.75, Y + 1.5, 7.43, 0.06, 0.06, 0.06); gb.cyl('ribbonRed', 24.75, Y + 1.24, 7.36, 0.14, 0.11, 0.28, 14); gb.add(new THREE.TorusGeometry(0.14, 0.006, 4, 16, Math.PI), mat4(24.75, Y + 1.38, 7.36), 'railBlack', false);
   wallArt(root, 0.12, Y + 1.6, 4.25, Math.PI / 2, art.chalk, 0.6, 0.8, 'darkWood');
   { const f = F0(7.2, 4.15, 0); f.box('darkWood', 0, 0.44, 0, 1.4, 0.05, 0.36); for (const a of [-0.6, 0.6]) f.box('darkWood', a, 0.21, 0, 0.06, 0.42, 0.3); f.solid(-0.7, -0.19, 0.7, 0.19, 0.5); }
   { const f = F0(17.2, 6.95, Math.PI / 2 + 0.12);   // wheelbarrow
-    f.box('greenPaint', 0, 0.48, 0.1, 0.62, 0.28, 0.8, 0, 0.12); f.cyl('tire', 0, 0.2, -0.5, 0.2, 0.2, 0.1, 16, 0, Math.PI / 2);
+    f.box('darkWood', 0, 0.48, 0.1, 0.62, 0.28, 0.8, 0, 0.12); f.cyl('darkWood', 0, 0.2, -0.5, 0.2, 0.2, 0.07, 12, 0, Math.PI / 2); f.cyl('railBlack', 0, 0.2, -0.5, 0.205, 0.205, 0.03, 12, 0, Math.PI / 2);
     for (const a of [-0.25, 0.25]) { f.box('darkWood', a, 0.45, 0.45, 0.04, 0.04, 1.3, 0, 0.18); f.box('railBlack', a, 0.2, 0.45, 0.03, 0.4, 0.03); }
     f.box('shavings', 0, 0.62, 0.1, 0.52, 0.06, 0.66); f.solid(-0.34, -0.7, 0.34, 0.8, 0.8); }
   rod(gb, 'lightWood', [18.0, Y, 7.38], [18.25, Y + 1.5, 7.4], 0.016); for (let k = 0; k < 4; k++) rod(gb, 'railBlack', [17.92 + k * 0.05, Y + 0.02, 7.33], [17.95 + k * 0.05, Y + 0.32, 7.36], 0.007);
@@ -393,16 +386,15 @@ function buildBarnInterior(gb, root) {
     const hit = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.15), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = -0.1; h.add(hit);
     WORLD_EXTRA.halter = h; INTERACT.push({ mesh: hit, kind: 'egg', id: 1 });
   }
-  // foaling stall: a red heat lamp and an old camera in the corner
-  { gb.cyl('railBlack', 12.6, Y + 2.35, 1.95, 0.004, 0.004, 0.7, 4); gb.add(new THREE.ConeGeometry(0.16, 0.2, 14, 1, true), mat4(12.6, Y + 1.95, 1.95), 'metal', false); gb.sphere('heatLamp', 12.6, Y + 1.88, 1.95, 0.07);
-    gb.box('grayPlastic', 14.15, Y + 2.45, 0.3, 0.12, 0.09, 0.2, 0.6, 0.3); gb.cyl('screen', 14.08, Y + 2.42, 0.4, 0.03, 0.03, 0.03, 10, 0.6, Math.PI / 2 + 0.3); }
+  // foaling stall: a lantern hung low over the straw
+  { rod(gb, 'railBlack', [12.6, Y + 2.72, 1.95], [12.6, Y + 2.1, 1.95], 0.006); hangLantern(gb, 12.6, Y + 2.1, 1.95); }
   // ---------- wash bay: drain, mat, cross-ties, hose reel, shelf of shampoo
   { gb.cyl('screen', 9.0, Y + 0.004, 9.4, 0.12, 0.12, 0.01, 16); gb.box('rubberBlack', 9.0, Y + 0.01, 9.6, 2.0, 0.02, 2.6);
     for (const x of [7.26, 10.74]) { gb.box('galv', x, Y + 1.5, 9.4, 0.04, 0.08, 0.08); for (let i = 0; i < 6; i++) gb.add(new THREE.TorusGeometry(0.02, 0.005, 4, 8), mat4(x + (x < 9 ? 1 : -1) * (0.04 + i * 0.035), Y + 1.5 - Math.sin(i / 5 * 1.5) * 0.2, 9.4, 0, i % 2 ? Math.PI / 2 : 0), 'metal', false); }
-    gb.add(new THREE.TorusGeometry(0.22, 0.05, 8, 20), mat4(9.0, Y + 1.4, BD - 0.18), 'greenPaint', false); gb.cyl('galv', 9.0, Y + 1.4, BD - 0.15, 0.05, 0.05, 0.08, 10, Math.PI / 2);
+    gb.add(new THREE.TorusGeometry(0.22, 0.05, 8, 20), mat4(9.0, Y + 1.4, BD - 0.18), 'sackCloth', false); gb.cyl('galv', 9.0, Y + 1.4, BD - 0.15, 0.05, 0.05, 0.08, 10, Math.PI / 2);
     gb.box('darkWood', 8.0, Y + 1.5, BD - 0.22, 1.0, 0.03, 0.22); }
   // ---------- tack room: saddles on wall racks, bridles, pads, ribbons, a trunk with her initials
-  { for (const [z, y] of [[0.9, 1.15], [2.0, 1.15], [3.0, 1.15], [0.9, 1.75], [2.0, 1.75]]) { const f = F0(14.5, z, 0); f.box('darkWood', 0.25, y - 0.06, 0, 0.5, 0.06, 0.12); westernSaddle(f, 0.32, y, 0, pick(['blanketRed', 'fabricBlue', 'beddingHorse', 'fabricGreen'])); f.solid(0, -0.3, 0.7, 0.3, y + 0.3); }
+  { for (const [z, y] of [[0.9, 1.15], [2.0, 1.15], [3.0, 1.15], [0.9, 1.75], [2.0, 1.75]]) { const f = F0(14.5, z, 0); f.box('darkWood', 0.25, y - 0.06, 0, 0.5, 0.06, 0.12); if (!(y < 1.5 && z < 2.5)) westernSaddle(f, 0.32, y, 0, pick(['blanketRed', 'fabricBlue', 'beddingHorse', 'fabricGreen'])); f.solid(0, -0.3, 0.7, 0.3, y + 0.3); }
     for (let i = 0; i < 6; i++) { const x = 15.4 + i * 0.42; gb.cyl('brass', x, Y + 1.85, 0.17, 0.01, 0.01, 0.1, 6, 0, Math.PI / 2, 0); gb.add(new THREE.TorusGeometry(0.13, 0.01, 4, 16), mat4(x, Y + 1.6, 0.2, 0, 0, 0, 1, 1.8, 1), 'leatherDark', false); gb.cyl('chrome', x, Y + 1.36, 0.22, 0.04, 0.04, 0.012, 10, Math.PI / 2); }
     { const f = F0(18.0, 2.4, -Math.PI / 2); for (let i = 0; i < 5; i++) f.box(pick(['blanketRed', 'fabricBlue', 'beddingHorse', 'fabricGreen', 'beddingGame']), 0, 0.5 + i * 0.07, 0, 0.8, 0.065, 0.6); f.box('darkWood', 0, 0.22, 0, 0.84, 0.44, 0.64); f.solid(-0.42, -0.32, 0.42, 0.32, 0.9); }
     for (const [x, m] of [[16.7, 'ribbonBlue'], [17.0, 'ribbonRed'], [17.3, 'ribbonBlue'], [17.6, 'ribbonYellow'], [16.85, 'ribbonPurple'], [17.15, 'ribbonBlue'], [17.45, 'ribbonRed']]) rosette(gb, x, Y + (x * 10 % 3 < 1.5 ? 1.75 : 1.45), AZ0 - 0.065, m);
@@ -412,11 +404,11 @@ function buildBarnInterior(gb, root) {
   // ---------- office: desk under the window, filing cabinet, trophies, the calendar still on October 1994
   { const f = F0(24.6, 2.55, Math.PI / 2);
     f.box('darkWood', 0, 0.74, 0, 1.4, 0.05, 0.7); for (const a of [-0.65, 0.65]) f.box('darkWood', a, 0.37, 0, 0.06, 0.72, 0.66); f.box('darkWood', 0.45, 0.45, 0, 0.42, 0.55, 0.62);
-    f.box('grayPlastic', -0.35, 0.85, 0.1, 0.3, 0.16, 0.22); f.cyl('chrome', -0.25, 0.95, 0.1, 0.004, 0.004, 0.25, 4); f.box('paper', 0.2, 0.775, 0.05, 0.3, 0.01, 0.22, 0.2); f.box('paper', 0.24, 0.79, -0.05, 0.3, 0.01, 0.22, -0.15);
+    f.box('railBlack', -0.35, 0.85, 0.1, 0.3, 0.16, 0.22); f.cyl('chrome', -0.25, 0.95, 0.1, 0.004, 0.004, 0.25, 4); f.box('paper', 0.2, 0.775, 0.05, 0.3, 0.01, 0.22, 0.2); f.box('paper', 0.24, 0.79, -0.05, 0.3, 0.01, 0.22, -0.15);
     f.box('blackPlastic', 0.5, 0.79, -0.15, 0.2, 0.06, 0.16); f.solid(-0.72, -0.36, 0.72, 0.36, 0.8);
     tableLamp(f, -0.55, 0.765, -0.15);
     const [cx, cz] = f.pt(0, -0.65); const c = F0(cx, cz, Math.PI / 2); chair(c, 'darkWood', 'leather'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); }
-  { const f = F0(20.25, 0.4, 0); f.box('grayPlastic', 0, 0.66, 0, 0.45, 1.32, 0.6); for (let i = 0; i < 4; i++) { f.box('grayPlastic', 0, 0.2 + i * 0.32, 0.305, 0.4, 0.28, 0.01); f.box('chrome', 0, 0.28 + i * 0.32, 0.315, 0.12, 0.02, 0.02); } f.solid(-0.23, -0.3, 0.23, 0.3, 1.35); }
+  { const f = F0(20.25, 0.4, 0); f.box('darkWood', 0, 0.66, 0, 0.45, 1.32, 0.6); for (let i = 0; i < 4; i++) { f.box('lightWood', 0, 0.2 + i * 0.32, 0.305, 0.4, 0.28, 0.01); f.box('brass', 0, 0.28 + i * 0.32, 0.315, 0.12, 0.02, 0.02); } f.solid(-0.23, -0.3, 0.23, 0.3, 1.35); }
   { gb.box('darkWood', 22.4, Y + 1.55, AZ0 - 0.18, 1.6, 0.04, 0.24); gb.box('darkWood', 22.4, Y + 1.95, AZ0 - 0.18, 1.6, 0.04, 0.24); }
   wallArt(root, 21.0, Y + 1.6, 0.115, 0, art.calendar, 0.42, 0.56, null);
   wallArt(root, 25.08, Y + 1.7, 3.1, -Math.PI / 2, art.sadie2, 0.36, 0.28, 'darkWood');
@@ -441,7 +433,7 @@ function buildBarnInterior(gb, root) {
   { const f = F0(21.2, 10.95, Math.PI); f.box('lightWood', 0, 0.86, 0, 2.0, 0.07, 0.62); for (const a of [-0.95, 0.95]) for (const b of [-0.26, 0.26]) f.box('lightWood', a, 0.42, b, 0.07, 0.84, 0.07); f.box('lightWood', 0, 0.2, 0, 1.9, 0.03, 0.55); f.box('metal', 0.7, 0.98, 0.2, 0.18, 0.16, 0.12); f.solid(-1.0, -0.31, 1.0, 0.31, 0.95); }
   gb.box('lightWood', 21.2, Y + 1.7, BD - 0.115, 2.0, 0.9, 0.02);
   for (let i = 0; i < 12; i++) { const x = 20.5 + (i % 6) * 0.28, y = Y + 1.95 - Math.floor(i / 6) * 0.38; gb.cyl('chrome', x, y + 0.07, BD - 0.14, 0.005, 0.005, 0.05, 4, Math.PI / 2); gb.add(new THREE.TorusGeometry(0.055, 0.01, 5, 12, Math.PI * 1.35), mat4(x, y, BD - 0.13, 0, 0, Math.PI * 0.32), 'metal', false); }
-  { const f = F0(24.6, 8.2, 0); f.cyl('barrelBlue', 0, 0.4, 0, 0.29, 0.29, 0.8, 18); f.cyl('screen', 0, 0.79, 0, 0.27, 0.27, 0.01, 18); f.solid(-0.3, -0.3, 0.3, 0.3, 0.85); }
+  { const f = F0(24.6, 8.2, 0); f.cyl('barrelWood', 0, 0.4, 0, 0.29, 0.29, 0.8, 18); for (const h of [0.1, 0.7]) f.cyl('railBlack', 0, h, 0, 0.296, 0.296, 0.04, 18); f.cyl('screen', 0, 0.79, 0, 0.27, 0.27, 0.01, 18); f.solid(-0.3, -0.3, 0.3, 0.3, 0.85); }
   // ---------- hayloft: stacks of square bales, loose hay, the stairwell rail, a rope swing, Sadie's trunk
   const baleStack = (x0, z0, nx, nz, h, rot) => {
     for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) { const hh = Math.max(1, h - Math.floor(j * 0.8)); for (let k = 0; k < hh; k++) { const bx = x0 + (rot ? j * 0.47 : i * 0.94) + (WR() - 0.5) * 0.04, bz = z0 + (rot ? i * 0.94 : j * 0.47) + (WR() - 0.5) * 0.04; hayBale(gb, bx, BA1 + k * 0.36, bz, rot ? Math.PI / 2 + (WR() - 0.5) * 0.06 : (WR() - 0.5) * 0.06, k === hh - 1); } }
@@ -517,9 +509,20 @@ function boardFence(gb, x0, z0, x1, z1, out, key = 'fenceBoard', collide = true,
   }
   if (collide) addCollider(Math.min(x0, x1) - 0.1, Math.min(z0, z1) - 0.1, Math.max(x0, x1) + 0.1, Math.max(z0, z1) + 0.1, 1.4, false, y);
 }
-function barrel55(gb, x, z, y = 0, m = 'barrelBlue') {
-  gb.cyl(m, x, y + 0.44, z, 0.29, 0.29, 0.88, 22); for (const h of [0.03, 0.3, 0.6, 0.86]) gb.cyl(h < 0.1 || h > 0.8 ? 'metal' : 'barrelRed', x, y + h, z, 0.296, 0.296, 0.05, 22);
-  gb.cyl('metal', x, y + 0.885, z, 0.27, 0.27, 0.01, 20); gb.cyl('metal', x + 0.15, y + 0.89, z + 0.08, 0.03, 0.03, 0.015, 8);
+// a wooden barrel: bulged staves and four iron hoops
+function barrel55(gb, x, z, y = 0, m = 'barrelWood') {
+  const pr = []; for (let i = 0; i <= 8; i++) { const t = i / 8; pr.push(new THREE.Vector2(0.26 + Math.sin(t * Math.PI) * 0.045, t * 0.88)); }
+  gb.add(new THREE.LatheGeometry(pr, 20), mat4(x, y, z), m, false);
+  for (const h of [0.08, 0.28, 0.6, 0.8]) { const r = 0.265 + Math.sin(h / 0.88 * Math.PI) * 0.045; gb.cyl('railBlack', x, y + h, z, r, r, 0.035, 20); }
+  gb.cyl('lightWood', x, y + 0.87, z, 0.255, 0.255, 0.02, 20);
+}
+// an oil lantern hanging by its bail from (x, y, z): cap, glass chimney with the wick, base
+function hangLantern(gb, x, y, z, s = 1) {
+  gb.add(new THREE.TorusGeometry(0.035 * s, 0.004 * s, 4, 10, Math.PI), mat4(x, y - 0.035 * s, z), 'railBlack', false);
+  gb.add(new THREE.ConeGeometry(0.06 * s, 0.07 * s, 10), mat4(x, y - 0.1 * s, z), 'railBlack', false);
+  gb.cyl('glass', x, y - 0.2 * s, z, 0.045 * s, 0.05 * s, 0.14 * s, 12);
+  for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2; gb.cyl('railBlack', x + Math.cos(a) * 0.055 * s, y - 0.2 * s, z + Math.sin(a) * 0.055 * s, 0.004 * s, 0.004 * s, 0.15 * s, 4); }
+  gb.cyl('railBlack', x, y - 0.29 * s, z, 0.065 * s, 0.07 * s, 0.04 * s, 12);
 }
 function buildArena(gb, root) {
   const { x0, z0, x1, z1 } = ARENA, i = 0.3, Y = BA0;
@@ -532,10 +535,8 @@ function buildArena(gb, root) {
   { const gx = x0 + i - 0.12; for (const h of [0.35, 0.7, 1.05, 1.35]) gb.cyl('galv', gx, h, 8.05, 0.025, 0.025, 2.4, 8, Math.PI / 2); for (const zz of [6.9, 9.2]) gb.cyl('galv', gx, 0.75, zz, 0.03, 0.03, 1.1, 8); rod(gb, 'galv', [gx, 0.35, 6.9], [gx, 1.35, 9.2], 0.02); }   // swung-open tube gate
   // the barrels
   for (const [bx, bz] of BARRELS) { barrel55(gb, bx, bz, Y); addCollider(bx - 0.32, bz - 0.32, bx + 0.32, bz + 0.32, 0.9, true, Y); }
-  // timing eyes either side of the start line
-  for (const zz of [3.4, 8.0]) { for (let k = 0; k < 3; k++) { const a = k * 2.1; rod(gb, 'railBlack', [34 + Math.cos(a) * 0.25, Y, zz + Math.sin(a) * 0.25], [34, Y + 1.0, zz], 0.012); } gb.box('toyYellow', 34, Y + 1.05, zz, 0.12, 0.14, 0.1); gb.box('screen', 34, Y + 1.05, zz + (zz < 6 ? 0.051 : -0.051), 0.06, 0.06, 0.01); }
   // bleachers outside the north fence, announcer's stand in the far corner
-  for (let r = 0; r < 4; r++) { const z = z1 + 0.6 + r * 0.55, y = 0.4 + r * 0.42; gb.box('darkWood', 46, y, z, 10, 0.05, 0.32); gb.box('darkWood', 46, y - 0.22, z + 0.2, 10, 0.2, 0.03); for (let k = 0; k <= 4; k++) gb.box('galv', 41.1 + k * 2.45, y / 2, z, 0.06, y, 0.06); }
+  for (let r = 0; r < 4; r++) { const z = z1 + 0.6 + r * 0.55, y = 0.4 + r * 0.42; gb.box('darkWood', 46, y, z, 10, 0.05, 0.32); gb.box('darkWood', 46, y - 0.22, z + 0.2, 10, 0.2, 0.03); for (let k = 0; k <= 4; k++) gb.box('darkWood', 41.1 + k * 2.45, y / 2, z, 0.08, y, 0.08); }
   addCollider(41, z1 + 0.4, 51, z1 + 2.8, 2.0);
   { const sx = 63.2, sz = 19.8; for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) gb.box('darkWood', sx + a * 1.05, 1.2, sz + b * 1.05, 0.14, 2.4, 0.14);
     gb.box('plankFloor', sx, 2.45, sz, 2.4, 0.1, 2.4); gb.box('barnRed', sx, 3.0, sz + 1.15, 2.4, 1.1, 0.08); gb.box('barnRed', sx + 1.15, 3.0, sz, 0.08, 1.1, 2.4); gb.box('barnRed', sx - 1.15, 3.2, sz, 0.08, 1.5, 2.4); gb.box('barnRed', sx, 3.3, sz - 1.15, 2.4, 0.3, 0.08);
@@ -543,32 +544,12 @@ function buildArena(gb, root) {
     plane(root, signTex([['ANNOUNCER', '700 40px Arial, sans-serif']], 256, 64, '#e9e4d6', '#2a1a12'), 1.2, 0.3, sx, 3.3, sz - 1.2, Math.PI);
     addCollider(sx - 1.2, sz - 1.2, sx + 1.2, sz + 1.2, 4.2); }
   // light poles at the corners (bulbs long dead) and the one that still works
-  for (const [px, pz] of [[x0 - 0.6, z0 - 0.6], [x1 + 0.6, z0 - 0.6], [x0 - 0.6, z1 + 0.6], [x1 + 0.6, z1 + 0.6]]) { gb.cyl('darkWood', px, 4.5, pz, 0.13, 0.17, 9, 10); gb.mm('railBlack', px - 0.5, 9.0, pz - 0.1, px + 0.5, 9.07, pz + 0.1); for (const dx of [-0.32, 0, 0.32]) gb.box('railBlack', px + dx, 8.9, pz, 0.26, 0.2, 0.2, 0, 0.35); addCollider(px - 0.2, pz - 0.2, px + 0.2, pz + 0.2, 9); }
+  for (const [px, pz] of [[x0 - 0.6, z0 - 0.6], [x1 + 0.6, z0 - 0.6], [x0 - 0.6, z1 + 0.6], [x1 + 0.6, z1 + 0.6]]) { gb.cyl('darkWood', px, 4.5, pz, 0.13, 0.17, 9, 10); gb.mm('railBlack', px - 0.5, 9.0, pz - 0.1, px + 0.5, 9.07, pz + 0.1); for (const dx of [-0.32, 0, 0.32]) gb.box('railBlack', px + dx, 8.9, pz, 0.26, 0.2, 0.2, 0, 0.35); addCollider(px - 0.2, pz - 0.2, px + 0.2, pz + 0.2, 9); }   // their lamps went dark long ago
   gb.cyl('darkWood', 46, (Y + 9) / 2, z1 - 0.62, 0.12, 0.16, 9, 10); addCollider(45.85, z1 - 0.78, 46.15, z1 - 0.46, 9, false, 0);
   // outside the gate: water trough, mounting block, the drag harrow parked by the fence
-  { gb.box('galv', 29.4, 0.3, 2.6, 0.7, 0.6, 1.8); gb.box('screen', 29.4, 0.58, 2.6, 0.6, 0.01, 1.7); addCollider(29.0, 1.65, 29.8, 3.55, 0.65); }
+  { gb.box('darkWood', 29.4, 0.3, 2.6, 0.7, 0.6, 1.8); gb.box('screen', 29.4, 0.58, 2.6, 0.56, 0.01, 1.66); addCollider(29.0, 1.65, 29.8, 3.55, 0.65); }
   { for (let k = 0; k < 3; k++) gb.box('darkWood', 29.6, 0.12 + k * 0.2, 9.2 - k * 0.25, 0.8, 0.24 + k * 0.4 - k * 0.4, 0.3); gb.box('darkWood', 29.6, 0.3, 8.95, 0.8, 0.6, 0.8); addCollider(29.2, 8.5, 30.0, 9.4, 0.7); }
   { const hx = 62.5, hz = 4; gb.box('metal', hx, 0.12, hz, 1.2, 0.08, 2.6); for (let k = 0; k < 8; k++) gb.box('metal', hx, 0.06, hz - 1.2 + k * 0.34, 1.3, 0.12, 0.02); rod(gb, 'metal', [hx - 0.6, 0.15, hz], [hx - 1.6, 0.4, hz], 0.03); }
-}
-function goosenecktrailer(gb, x, z, ry) {
-  const f = fur(gb, x, z, ry, 0);
-  f.box('chrome', 0, 1.35, 0, 2.3, 2.0, 5.2); f.box('chrome', 0, 2.05, -3.3, 2.2, 0.95, 1.5);   // box and gooseneck
-  f.box('railBlack', 0, 0.32, 0, 2.2, 0.12, 5.0); f.box('railBlack', 0, 1.62, -3.9, 0.12, 0.12, 0.5);
-  for (let k = 0; k < 7; k++) f.box('screen', 1.16, 1.95, -2.0 + k * 0.6, 0.02, 0.18, 0.4);   // slat windows
-  f.box('ribbonRed', 1.16, 1.2, 0, 0.01, 0.08, 5.1); f.box('ribbonRed', -1.16, 1.2, 0, 0.01, 0.08, 5.1);
-  for (const b of [0.6, 1.5]) for (const a of [-1.1, 1.1]) f.cyl('tire', a, 0.36, b, 0.36, 0.36, 0.24, 16, 0, Math.PI / 2);
-  f.cyl('railBlack', 0, 0.72, -3.95, 0.05, 0.05, 1.4, 8);
-  f.solid(-1.2, -4.1, 1.2, 2.65, 2.4);
-}
-function pickupTruck(gb, x, z, ry) {
-  const f = fur(gb, x, z, ry, 0);
-  f.box('carPaint', 0, 0.75, -1.35, 1.9, 0.6, 1.9); f.box('carPaint', 0, 1.35, -0.25, 1.86, 0.65, 1.3); f.box('carPaint', 0, 0.8, 1.15, 1.9, 0.7, 2.5);
-  f.box('screen', 0, 1.04, 1.15, 1.7, 0.02, 2.3);
-  f.box('glass', 0, 1.42, -0.92, 1.66, 0.5, 0.05, 0, 0.35); f.box('glass', 0, 1.42, 0.42, 1.6, 0.45, 0.03); for (const a of [-0.94, 0.94]) f.box('glass', a, 1.4, -0.25, 0.02, 0.42, 1.1);
-  f.box('chrome', 0, 0.62, -2.32, 1.9, 0.22, 0.08); f.box('chrome', 0, 0.62, 2.42, 1.9, 0.16, 0.08); f.box('screen', 0, 0.85, -2.31, 1.4, 0.3, 0.02);
-  for (const [a, b] of [[-0.88, -1.5], [0.88, -1.5], [-0.88, 1.55], [0.88, 1.55]]) f.cyl('tire', a, 0.38, b, 0.38, 0.38, 0.26, 18, 0, Math.PI / 2);
-  for (let i = 0; i < 3; i++) f.box('hayBale', -0.3 + i * 0.3, 1.33, 1.3, 0.3, 0.36, 0.92, 0.05);
-  f.solid(-1.0, -2.4, 1.0, 2.45, 1.8);
 }
 function oakTree(gb, x, z, s) {
   const y0 = terrainY(x, z);
@@ -582,23 +563,19 @@ function oakTree(gb, x, z, s) {
   for (let j = 0; j < 16; j++) LEAF_CARDS.push([x + (WR() - 0.5) * 3 * s, y0 + (5.2 + WR() * 1.6) * s, z + (WR() - 0.5) * 3 * s, (1.5 + WR() * 0.9) * s]);
   addCollider(x - 0.45 * s, z - 0.45 * s, x + 0.45 * s, z + 0.45 * s, 6, false, y0 - 1);
 }
-// imported models dressing the yard: loaded once, cloned per build, with a collider sized from the model itself
-const BARN_MODELS = [
-  { url: 'prop-truck.json', x: -15.6, z: 6.1, ry: -1.42, len: 5.3, axis: 'z', cols: 'box' },
-  { url: 'prop-tractor.json', x: 63.0, z: 8.4, ry: 1.75, len: 2.9, axis: 'x', cols: 'box' },
-];
-function placeBarnModels(root) { for (const P of BARN_MODELS) placeModel(root, P); }
 function buildBarnYard(gb, root) {
-  goosenecktrailer(gb, -14.2, -2.8, Math.PI / 2 + 0.06);
-  placeBarnModels(root);   // the crashed truck on the parking pad, the Ferguson by the arena harrow
-  // notice board by the tent: the missing poster and the county's closure order
+  // hitching rail by the wagon, and the sign at the end of the drive where the team rides out
+  { for (const x of [-8.2, -5.6]) gb.box('darkWood', x, 0.55, 3.2 - 1.4, 0.12, 1.1, 0.12); gb.cyl('darkWood', -6.9, 1.02, 1.8, 0.05, 0.05, 2.9, 8, 0, 0, Math.PI / 2); addCollider(-8.3, 1.7, -5.5, 1.9, 1.1); }
+  { const sx = -21.2, sz = 9.9; gb.box('darkWood', sx - 0.75, 1.1, sz, 0.12, 2.2, 0.12); gb.box('darkWood', sx + 0.75, 1.1, sz, 0.12, 2.2, 0.12); addCollider(sx - 0.85, sz - 0.1, sx + 0.85, sz + 0.1, 2.2);
+    const [c, x] = mkCanvas(512, 192), tex = canvasTex(c, true, false); WORLD_EXTRA.departSign = { ctx: x, tex }; drawDepartSign();
+    plane(root, tex, 1.5, 0.56, sx, 1.75, sz - 0.07, Math.PI, { rough: 0.9 }); gb.box('darkWood', sx, 1.75, sz, 1.56, 0.6, 0.05); }  // notice board by the tent: the missing poster and the county's closure order
   { gb.box('darkWood', -7.4, 1.0, -0.6, 0.1, 2.0, 0.1); gb.box('darkWood', -6.1, 1.0, -0.6, 0.1, 2.0, 0.1); gb.box('darkWood', -6.75, 1.55, -0.62, 1.5, 1.0, 0.04); gb.box('roofGreen', -6.75, 2.12, -0.6, 1.7, 0.04, 0.4, 0, 0.2);
     plane(root, roomArtBarn().notice, 0.62, 0.8, -7.03, 1.55, -0.595, 0, { rough: 0.9 });
     plane(root, signTex([['CLOSED', '700 46px Georgia, serif'], ['BY ORDER OF', '600 22px Georgia, serif'], ['BEDFORD COUNTY', '600 22px Georgia, serif'], ['Nov. 1994', 'italic 20px Georgia, serif']], 256, 256, '#f2eee2', '#1e1a14'), 0.5, 0.5, -6.4, 1.6, -0.595, 0, { rough: 0.9 });
     addCollider(-7.5, -0.7, -6.0, -0.5, 2.0); }
   // paddock behind the barn's south side, with its trough and a round-bale feeder
   boardFence(gb, 1, -2.6, 24, -2.6, -1); boardFence(gb, 1, -12, 24, -12, -1); boardFence(gb, 1, -12, 1, -2.6, -1); boardFence(gb, 24, -12, 24, -8.5, 1); boardFence(gb, 24, -6.5, 24, -2.6, 1);
-  { gb.box('galv', 6, 0.3, -4.0, 1.8, 0.6, 0.7); gb.box('screen', 6, 0.58, -4.0, 1.7, 0.01, 0.6); addCollider(5.0, -4.4, 7.0, -3.6, 0.65); }
+  { gb.box('darkWood', 6, 0.3, -4.0, 1.8, 0.6, 0.7); gb.box('screen', 6, 0.58, -4.0, 1.66, 0.01, 0.56); addCollider(5.0, -4.4, 7.0, -3.6, 0.65); }
   { const bx = 15, bz = -7.5; for (let k = 0; k < 10; k++) { const a = k / 10 * 6.28; gb.cyl('galv', bx + Math.cos(a) * 1.0, 0.65, bz + Math.sin(a) * 1.0, 0.025, 0.025, 1.3, 6); } gb.add(new THREE.TorusGeometry(1.0, 0.03, 6, 24), mat4(bx, 1.3, bz, 0, Math.PI / 2), 'galv', false);
     gb.cyl('hayBale', bx, 0.62, bz, 0.78, 0.82, 1.2, 20); addCollider(bx - 1.05, bz - 1.05, bx + 1.05, bz + 1.05, 1.4); }
   // round bales out in the fields, a manure heap behind the barn, fence lines along the drive

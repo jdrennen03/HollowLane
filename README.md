@@ -1,7 +1,18 @@
 # Hollow lane (Claires version!)
 
-First-person co-op ghost hunting for 1–4 players, built with three.js. Investigate a house, a farm or
+First-person co-op ghost hunting for 1–4 players, built with three.js. Investigate a house, a farm, a bayou or
 the Whitlock Stables, gather evidence, and name the ghost before it takes you.
+
+Every round starts at home base, the Whitlock Stables. Tack up in the tack room and ride out down the drive to
+start the investigation:
+
+- **Ride**: put a bridle on Agrippa or Dakota (the saddle is optional), then press E on the horse. You can't ride
+  without a bridle. W to walk on, Shift to canter, steer with the mouse or A/D, E to get down.
+- **Wagon**: put the harness on any animal (either horse, or Juniper the donkey), lead it to the covered wagon
+  (E on the animal), press E on the wagon to hitch it, then E again to drive. Teammates can climb in the back.
+- **Bring the donkey**: press E on Juniper to lead her on a rope. Anything you ride, lead or hitch when the team
+  leaves comes along and waits by the base at the haunted location.
+- G takes tack off an animal, hangs carried tack back up, or unhitches the wagon.
 
 ## Download
 

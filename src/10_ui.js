@@ -29,7 +29,7 @@ function hudReadout(t, minT) {
   el.classList.toggle('freeze', t <= 0);
 }
 let _lastPrompt = null;
-function hudPrompt(t) { if (t === _lastPrompt) return; _lastPrompt = t; $('prompt').innerHTML = t ? '<kbd>E</kbd>' + t.replace(/</g, '&lt;') : ''; $('xhair').classList.toggle('hot', !!t); }
+function hudPrompt(t) { if (t === _lastPrompt) return; _lastPrompt = t; $('prompt').innerHTML = t ? '<kbd>E</kbd>' + t.replace(/</g, '&lt;').replace(/\{(\w)\}/g, '<kbd>$1</kbd>') : ''; $('xhair').classList.toggle('hot', !!t); }
 function hudBuildInventory() {
   const el = $('inv'); el.innerHTML = '';
   const its = myItems();
@@ -57,8 +57,9 @@ function hudUpdate(dt) {
   $('stamBar').style.width = (PL.stamina * 100) + '%';
   const m = Math.floor(G.elapsed / 60), s = Math.floor(G.elapsed % 60); $('clockVal').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
   const ri = roomIdxAt(P.pos.x, P.pos.z, P.pos.y);
-  $('roomLbl').textContent = ri >= 0 ? ROOMS[ri].name : (Math.hypot(P.pos.x - TENT.x, P.pos.z - TENT.z) < 2.4 ? 'Base tent' : MAP.yardName(P.pos));
-  $('clockLbl').textContent = G.huntOn ? 'Hunt in progress' : 'Investigation';
+  $('roomLbl').textContent = ri >= 0 ? ROOMS[ri].name : (Math.hypot(P.pos.x - TENT.x, P.pos.z - TENT.z) < 2.4 ? (MAP.rusticBase ? 'By the wagon' : 'Base tent') : MAP.yardName(P.pos));
+  $('clockLbl').textContent = G.huntOn ? 'Hunt in progress' : STB.phase === 'base' ? 'Home base · ride out to begin' : 'Investigation';
+  stbHud();
   $('huntVig').classList.toggle('on', !!G.huntOn || PL.deathT >= 0);
   hudInventory();
   if (G.mp) hudTeam();

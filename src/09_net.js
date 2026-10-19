@@ -69,6 +69,7 @@ const Net = {
       const pr = p.presence; const slot = roster.findIndex(r => r[0] === p.peer); if (slot < 0) continue;
       const P = G.players[slot]; if (!P) continue;
       if (pr.p) { P.tpos.set(pr.p[0], pr.p[1], pr.p[2]); P.yaw = pr.p[3]; P.pitch = pr.p[4]; }
+      P.mountYaw = pr.mt ?? null;
       if (pr.s !== undefined) P.sanity = pr.s; P.flash = !!pr.f; P.held = pr.hd ?? -1; P.moving = pr.m || 0; P.crouch = !!pr.c;
       P.inside = insideHouse(P.tpos.x, P.tpos.z, P.tpos.y); P.room = logicalRoom(P.tpos.x, P.tpos.z, P.tpos.y);
       const ri = roomIdxAt(P.tpos.x, P.tpos.z, P.tpos.y); P.hidden = ri >= 0 && !!ROOMS[ri].closet && DOORS[ROOMS[ri].door].angle < 0.15;
@@ -106,7 +107,7 @@ const Net = {
     const now = performance.now(); if (!force && now - this.sendT < 66) return; this.sendT = now;
     const P = me(); if (!P) return;
     const cam = PL.cam;
-    const out = { p: [r2(P.pos.x), r2(P.pos.y), r2(P.pos.z), r2(P.yaw), r2(P.pitch)], s: Math.round(P.sanity), f: P.flash ? 1 : 0, hd: P.held, m: r2(P.moving || 0), c: P.crouch ? 1 : 0, rq: this.reqs };
+    const out = { p: [r2(P.pos.x), r2(P.pos.y), r2(P.pos.z), r2(P.yaw), r2(P.pitch)], s: Math.round(P.sanity), f: P.flash ? 1 : 0, hd: P.held, m: r2(P.moving || 0), c: P.crouch ? 1 : 0, rq: this.reqs, mt: riding(G.mySlot) ? r2(riding(G.mySlot).yaw) : onWagon(G.mySlot) === 'drive' ? r2(STB.wagon.yaw) : null };
     if (this.isHost) {
       const tnow = performance.now() / 1000;
       const moving = PROPO.filter(p => tnow - p.moved < 1.5).sort((a, b) => (b.holder >= 0) - (a.holder >= 0)).slice(0, 8).map(p => { const m = p.mesh; return [p.i, r2(m.position.x), r2(m.position.y), r2(m.position.z), r2(m.quaternion.x), r2(m.quaternion.y), r2(m.quaternion.z), r2(m.quaternion.w), p.holder]; });

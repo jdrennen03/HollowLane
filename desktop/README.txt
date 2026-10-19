@@ -22,6 +22,19 @@ CONTROLS
   Loose objects (mugs, books, horse figures...): E to carry one in your free hand,
   G to drop it, left click to throw it.  F11 (or Alt+Enter) toggles fullscreen.
 
+HOME BASE: THE STABLES
+  Every round starts in the barn at Whitlock Stables. To start the investigation, ride out
+  down the drive past the sign.
+  Ride:  take a bridle from the tack room (E), put it on Agrippa or Dakota (E on the horse),
+         then E on the horse to climb on. No bridle, no riding. The saddle is optional.
+         W walk, Shift canter, mouse or A/D to steer, E to get down.
+  Wagon: take the harness and put it on any animal (a horse or Juniper the donkey), lead the
+         animal to the wagon (E on it), E on the wagon to hitch, E again to drive.
+         Teammates press E on the wagon to climb in the back.
+  Lead:  E on Juniper (or any animal you're not riding) to lead it on a rope.
+  G takes tack off an animal, hangs carried tack back up, or unhitches the wagon.
+  Animals you ride, lead or hitch when the team leaves come along to the haunted place.
+
 NEW GEAR
   Camcorder - switch it on (R) to look through night vision. Some ghosts show as floating
               orbs in their room, visible only on the camcorder.

@@ -393,7 +393,7 @@ function loadMap(id) {
   for (const m of PRINTS) m.parent && m.parent.remove(m); PRINTS.length = 0; EMF_SRC.length = 0;
   for (const k in WORLD_EXTRA) delete WORLD_EXTRA[k];
   loadMapData(id);
-  buildWorld(scene); setItemHomes(); buildProps(); buildNav(); buildGrass(); buildMist();
+  buildWorld(scene); setItemHomes(); buildProps(); buildNav(); buildGrass(); buildMist(); stbAfterMap();
   LIGHTS.lantern.position.set(TENT.x + 0.85, 1.05 + terrainY(TENT.x, TENT.z), TENT.z - 0.05);
   const st = MAP.street; LIGHTS.street.position.set(st[0], st[1], st[2]); LIGHTS.street.target.position.set(st[0], st[1] - 5, st[2] + 0.5);
   LIGHTS.porch.position.set(...MAP.porch);
@@ -409,18 +409,19 @@ function loadMap(id) {
 // ---------------------------------------------------------------- game lifecycle
 function beginGame(o) {
   G.mp = o.mp; G.isHost = o.host; G.mySlot = o.mySlot;
-  if (o.map && o.map !== CURMAP) loadMap(o.map);
   G.ghostModel = o.gm ?? 0; useGhostModel(G.ghostModel); o.mode = o.mode || 'pro';
-  startRound(o);
+  beginAtStables(o);   // every round opens at the stables; riding out takes the team to o.map
   G.state = 'play'; UI.results = false;
   PL.yaw = Math.PI; PL.pitch = -0.05; PL.crouch = false; PL.eyeH = 1.62; $('crouchTag').hidden = true; $('readout').hidden = true; PL.deathT = -1; PL.spectate = false; PL.stamina = 1; PL.slotIdx = 0; POST.death = 0;
-  const P = me(); P.pos.set(TENT.x - 0.6 + G.mySlot * 0.45, 0, TENT.z + 0.95); P.pos.y = terrainY(P.pos.x, P.pos.z); P.flash = true;
+  const P = me(); P.pos.set(16.6 - G.mySlot * 0.6, BA0, 5.3 + (G.mySlot % 2) * 0.8); P.flash = true; PL.yaw = Math.PI / 2;   // the barn aisle, facing the front doors
   UI.show('menu', false); UI.show('lobby', false); UI.show('results', false); UI.show('pause', false); UI.show('dead', false);
   $('hud').classList.add('show'); $('fade').style.opacity = 1; setTimeout(() => $('fade').style.opacity = 0, 100);
   requestLock(canvas);
   hudTeam(); hudBuildInventory();
-  sub('Pick up gear from the table (E). The house is across the yard.', 'sys');
-  setTimeout(() => sub('Up to four lights can be on at once. Darkness costs sanity.', 'sys'), 4000);
+  const dest = MAPS[STB.dest];
+  sub('Home base: Whitlock Stables. Tonight\'s job: ' + (STB.dest === 'barn' ? 'the Whitlock place itself' : dest.title) + '.', 'sys');
+  setTimeout(() => sub('Tack up in the tack room: a bridle to ride (the saddle is up to you), or the harness to hitch an animal to the wagon outside.', 'sys'), 3000);
+  setTimeout(() => sub('Then ride out down the drive. Animals you ride, lead or hitch come along.', 'sys'), 8000);
 }
 // multiplayer: after a round everyone goes back to the same lobby and stays connected until they press Leave
 async function backToLobby() {
@@ -438,7 +439,7 @@ function resetToIdle() {
   for (const P of G.players) if (P.avatar) { P.avatar.parent && P.avatar.parent.remove(P.avatar); P.avatar = null; }
   G.players = [makePlayer(0, 'menu')]; G.mySlot = 0; G.lights.fill(false); G.lights[MAP.lure] = true;
   for (const it of ITEMS) { it.holder = -1; it.on = false; it.pos.copy(it.home); it.ry = Math.PI; placeItemInWorld(it); }
-  stopEggs();
+  stopEggs(); stbStop();
 }
 async function quitToMenu() {
   G.state = 'menu'; UI.results = false; UI.journalOpen = false; UI.paused = false;
@@ -451,6 +452,7 @@ async function quitToMenu() {
   for (const P of G.players) if (P.avatar) { P.avatar.parent && P.avatar.parent.remove(P.avatar); P.avatar = null; }
   G.players = [makePlayer(0, 'menu')]; G.mySlot = 0; G.lights.fill(false); G.lights[MAP.lure] = true;
   for (const it of ITEMS) { it.holder = -1; it.on = false; it.pos.copy(it.home); it.ry = Math.PI; placeItemInWorld(it); }
+  stbStop();
 }
 
 // ---------------------------------------------------------------- boot
@@ -467,10 +469,10 @@ function frame(now) {
     if (live && !(UI.paused && !G.mp)) {
       G.elapsed += G.isHost ? dt : 0;
       updatePlayer(dt);
-      if (G.isHost) { ghostThink(dt); stepProps(dt, T); }
+      if (G.isHost) { if (STB.phase !== 'base') ghostThink(dt); stepProps(dt, T); }
       syncNetProps(dt);
     }
-    updateDoors(dt); updateAvatars(dt); syncItemParents(); updateItems(T, dt); updateCarry(); updateGiant(T, dt); updateGhostHorse(dt); updateGator(dt); updateAtmos(T); updateCats(T, dt); updateSmoke(dt); updateRoomLights(T, dt); updateGhostView(T, dt); updateBreath(dt);
+    updateDoors(dt); updateAvatars(dt); syncItemParents(); updateItems(T, dt); updateCarry(); updateGiant(T, dt); updateGhostHorse(dt); updateGator(dt); updateStable(dt); updateAtmos(T); updateCats(T, dt); updateSmoke(dt); updateRoomLights(T, dt); updateGhostView(T, dt); updateBreath(dt);
     hudUpdate(dt);
     if (G.mp) Net.flush(false);
     // flashlight
@@ -491,7 +493,7 @@ function frame(now) {
   } else {
     // menu flyover
     MAP.menuCam(T, camera);
-    updateRoomLights(T, dt);
+    updateRoomLights(T, dt); updateStable(dt);
     PL.flash.intensity = 0; PL.flashCone.visible = false; DUST_U.uFlOn.value = 0;
     finalPass.uniforms.uNV.value = 0; camHud(0, true);
     finalPass.uniforms.uSan.value = 1; finalPass.uniforms.uHunt.value = 0; finalPass.uniforms.uDeath.value = 0; finalPass.uniforms.uScare.value = 0;

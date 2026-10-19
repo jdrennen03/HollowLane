@@ -110,6 +110,7 @@ function hostRequest(slot, r) {
   else if (t === 'ask') hostAsk(slot, r[2], r[3], r[4], r[5]);
   else if (t === 'guess') hostEvent(['end', r[2], slot]);
   else if (t === 'ppick') hostPropPick(r[2], slot);
+  else if (t === 'stb') hostStable(slot, r.slice(1));
   else if (t === 'pet') hostPet(r[2], slot);
   else if (t === 'pdrop') hostPropDrop(r[2], slot, r[3], r[4], r[5], r[6], r[7], r[8], r[9]);
   else if (t === 'egg' && MAP.id === 'farm' && !G.eggOn) { G.eggOn = true; hostEvent(['egg', (Math.random() * 1e9) | 0]); }
@@ -156,6 +157,8 @@ function applyEvent(ev) {
   else if (t === 'gbait') G.gatorBait = true;
   else if (t === 'gator') startGator();
   else if (t === 'hcalm') calmGhostHorse(ev[1], ev[2]);
+  else if (t === 'stb') stbApply(ev[1]);
+  else if (t === 'depart') onDepart(ev[1], ev[2], ev[3]);
   else if (t === 'throw') { const p = PROPO[ev[1]]; if (p && !G.isHost) { p.sleep = false; p.settle = 0; } }
 }
 

@@ -36,7 +36,7 @@ function bindInput(canvas) {
     if (k === 'KeyE') interact();
     else if (k === 'KeyF') toggleFlash();
     else if (k === 'KeyR') toggleHeld();
-    else if (k === 'KeyG') { if (PL.carry >= 0) dropProp(false); else dropHeld(); }
+    else if (k === 'KeyG') { if (stbG()) return; if (PL.carry >= 0) dropProp(false); else dropHeld(); }
     else if (k === 'KeyT') askSpirit();
     else if (k === 'KeyQ') cycleSlot(1);
     else if (k === 'KeyC') { PL.crouch = !PL.crouch; $('crouchTag').hidden = !PL.crouch; }
@@ -123,7 +123,8 @@ function askSpirit() {
   const P = me(); request('ask', q, r2(P.pos.x), r2(P.pos.y), r2(P.pos.z));
 }
 function interact() {
-  const h = PL.hot; if (!h) return;
+  const h = PL.hot; if (!h) { stbGetOff(); return; }
+  if (h.kind === 'tack' || h.kind === 'anim' || h.kind === 'wagon') { stbInteract(h); return; }
   if (h.kind === 'door') request('door', h.id);
   else if (h.kind === 'switch') { request('light', h.id); sfx('switch', 0.8); }
   else if (h.kind === 'item') {
@@ -205,11 +206,13 @@ function buildAvatars() {
 function updateAvatars(dt) {
   for (const P of G.players) {
     const a = P.avatar; if (!a) continue; a.visible = P.alive;
+    const off = a.userData.off || (a.userData.off = new V3()); a.position.sub(off);
     a.position.lerp(P.tpos, clamp(dt * 12, 0, 1)); P.pos.copy(a.position);
+    a.position.add(stbAvatarOffset(P, off));
     let dy = angDiff(a.rotation.y, P.yaw); a.rotation.y += dy * clamp(dt * 12, 0, 1);
     const u = a.userData; u.head.rotation.x = P.pitch;
     a.scale.y = lerp(a.scale.y, P.crouch ? 0.64 : 1, clamp(dt * 9, 0, 1));
-    const sp = P.moving; u.phase += dt * sp * 4.2;
+    const sp = P.ride ? 0 : P.moving; u.phase += dt * sp * 4.2;
     if (u.chr) { a.scale.y = 1; animateCharacter(u.chr, P, performance.now() / 1000, dt); u.head.position.y = 1.62 - 0.46 * u.chr.cw; u.tag.position.y = 2.0 - 0.46 * u.chr.cw; }
     u.legs[0].rotation.x = Math.sin(u.phase) * 0.5 * Math.min(1, sp); u.legs[1].rotation.x = -Math.sin(u.phase) * 0.5 * Math.min(1, sp);
     u.arms[0].rotation.x = -Math.sin(u.phase) * 0.35 * Math.min(1, sp); u.arms[1].rotation.x = P.held >= 0 ? -1.1 + P.pitch * 0.6 : Math.sin(u.phase) * 0.35 * Math.min(1, sp);
@@ -246,6 +249,7 @@ function updatePlayer(dt) {
   if (PL.deathT >= 0) { updateDeath(dt); return; }
   if (!P.alive) { updateSpectator(dt); return; }
   const k = PL.keys, blocked = UI.journalOpen || UI.paused;
+  if (stbMove(P, dt, blocked)) { playerState(P, dt, P.moving); return; }
   let mx = 0, mz = 0;
   if (!blocked) { if (k.KeyW || k.ArrowUp) mz -= 1; if (k.KeyS || k.ArrowDown) mz += 1; if (k.KeyA || k.ArrowLeft) mx -= 1; if (k.KeyD || k.ArrowRight) mx += 1; }
   const len = Math.hypot(mx, mz); if (len > 0) { mx /= len; mz /= len; }
@@ -269,13 +273,15 @@ function updatePlayer(dt) {
   P.yaw = PL.yaw; P.pitch = PL.pitch;
   // hand sway
   PL.hand.position.set(Math.cos(PL.bob) * 0.008, Math.sin(PL.bob * 2) * 0.01, 0);
-  // state
+  playerState(P, dt, hs);
+}
+function playerState(P, dt, hs) {
   P.room = logicalRoom(P.pos.x, P.pos.z, P.pos.y); P.inside = insideHouse(P.pos.x, P.pos.z, P.pos.y);
   const ri = roomIdxAt(P.pos.x, P.pos.z, P.pos.y);
   P.hidden = ri >= 0 && !!ROOMS[ri].closet && DOORS[ROOMS[ri].door].angle < 0.15;
   const h = heldItem(); P.held = h ? h.id : -1;
   // sanity
-  if (P.inside && G.elapsed > 2) {
+  if (P.inside && G.elapsed > 2 && STB.phase !== 'base') {
     const lit = P.room >= 0 && G.lights[P.room];
     let drain = lit ? 0 : 0.11 * (G.mp ? 1 : 1.4) * (P.room === G.ghostRoom ? 1.6 : 1);
     P.sanity = clamp(P.sanity - drain * dt, 0, 100);
@@ -287,8 +293,9 @@ function updatePlayer(dt) {
 }
 const _ray = new THREE.Raycaster();
 function hotspot() {
-  const P = me(); _ray.setFromCamera({ x: 0, y: 0 }, PL.cam); _ray.far = 2.1;
-  const meshes = INTERACT.filter(o => o.kind === 'item' ? ITEMS[o.id].holder < 0 : o.kind === 'prop' ? PROPO[o.id] && PROPO[o.id].holder < 0 : o.kind === 'horse' ? HORSE.state === 'buck' && HORSE.calmT === null : true).map(o => o.mesh);
+  const P = me(), up = mounted(G.mySlot), A0 = riding(G.mySlot); _ray.setFromCamera({ x: 0, y: 0 }, PL.cam); _ray.far = up ? 3.4 : 2.1;
+  const meshes = INTERACT.filter(o => o.kind === 'item' ? ITEMS[o.id].holder < 0 : o.kind === 'prop' ? PROPO[o.id] && PROPO[o.id].holder < 0 : o.kind === 'horse' ? HORSE.state === 'buck' && HORSE.calmT === null
+    : o.kind === 'tack' ? STB.tack[o.id].at === 'rack' && MAP.id === 'barn' : o.kind === 'anim' ? !STB.animals[o.id].away && STB.animals[o.id] !== A0 : o.kind === 'wagon' ? !STB.wagon.away && !onWagon(G.mySlot) : true).map(o => o.mesh);
   const hits = _ray.intersectObjects(meshes, false);
   let hot = null;
   for (const hit of hits) {
@@ -307,6 +314,7 @@ function hotspot() {
     else if (hot.kind === 'prop') text = 'Pick up ' + propName(PROPO[hot.id]);
     else if (hot.kind === 'cat') text = 'Pet ' + CATS[hot.id].def.name;
     else if (hot.kind === 'horse') text = 'Calm the horse';
+    else if (hot.kind === 'tack' || hot.kind === 'anim' || hot.kind === 'wagon') text = stbPrompt(hot);
     else if (hot.kind === 'egg' && MAP.id === 'bayou') text = hot.id === 2 ? (G.gatorBait ? 'An empty bait bucket' : 'Toss the chicken necks into the bayou') : (G.eggOn ? 'The bell is still humming' : 'Ring the old dinner bell');
     else if (hot.kind === 'egg') text = MAP.id === 'barn' ? (G.eggOn ? 'An empty hook' : 'Take down Bonnie Blue\'s halter') : G.eggOn ? 'The tape is jammed in the slot' : 'Play the strange tape';
   }

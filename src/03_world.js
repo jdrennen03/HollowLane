@@ -529,6 +529,11 @@ function buildFixture(gb, root, i) {
     for (const dx of [-0.32, 0, 0.32]) { const h = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.2, 0.2), MATS.railBlack); h.position.set(dx, -0.08, 0); h.rotation.x = 0.35; g.add(h); const b = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.16), bulbMat); b.rotation.x = -Math.PI / 2 + 0.35; b.position.set(dx, -0.19, -0.03); g.add(b); }
     FIXTURES[i] = { pos: new V3(x, R.y + R.flood - 0.3, z), bulbMat, on: false, lvl: 0 }; return;
   }
+  if ((R.cage || R.bare) && MAP.rusticBase) {   // the stables: oil lanterns hanging from the joists
+    const drop = R.bare ? 0.6 : 0.25; gb.cyl('railBlack', x, CEIL - drop / 2, z, 0.006, 0.006, drop, 4); hangLantern(gb, x, CEIL - drop, z, 1.3);
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.12, 10), bulbMat); b.position.y = -drop - 0.26; g.add(b);
+    FIXTURES[i] = { pos: new V3(x, CEIL - drop - 0.4, z), bulbMat, on: false, lvl: 0 }; return;
+  }
   if (R.cage || R.bare) {   // barn lights: a jelly-jar globe in a wire cage, or a bare bulb on a cord
     const drop = R.bare ? 0.7 : 0.12;
     gb.cyl('railBlack', x, CEIL - drop / 2, z, R.bare ? 0.004 : 0.05, R.bare ? 0.004 : 0.05, drop, 6);
@@ -700,6 +705,8 @@ function deadTree(gb, x, z, s) {
 function car(root, x, z, ry) { placeModel(root, { url: 'prop-car.json', x, z, ry: ry + Math.PI, len: 4.5, axis: 'z', cols: 'box' }); }
 function buildTent(gb, root) {
   const { x, z } = TENT, s = 1.6, h = 2.15, ty = terrainY(x, z);   // ty: the ground under the tent (the bayou's plank deck)
+  const rustic = !!MAP.rusticBase;   // the stables: no tent, just a plank trestle table beside the wagon
+  if (!rustic) {
   for (const [a, b] of [[-s, -s], [s, -s], [-s, s], [s, s]]) { gb.cyl('tentPole', x + a, ty + h / 2, z + b, 0.025, 0.025, h, 8); addCollider(x + a - 0.06, z + b - 0.06, x + a + 0.06, z + b + 0.06, 2, false, ty); }
   // pyramid roof
   const rg = new THREE.ConeGeometry(s * Math.SQRT2 + 0.05, 0.75, 4, 1, true); rg.rotateY(Math.PI / 4);
@@ -716,10 +723,16 @@ function buildTent(gb, root) {
     const L = Math.hypot(0.8, 0.8, h); const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, 1, 0), new V3(-Math.sign(a) * 0.8, h, -Math.sign(b) * 0.8).normalize());
     gb.add(new THREE.CylinderGeometry(0.004, 0.004, L, 3), new THREE.Matrix4().compose(new V3(x + a - Math.sign(a) * 0.4, ty + h / 2, z + b - Math.sign(b) * 0.4), q, new V3(1, 1, 1)), 'tentPole', false);
   }
-  // folding table
+  }
+  // folding table (or planks on two trestles)
   const tx = x, tz = z + 0.15;
+  if (rustic) {
+    for (let k = 0; k < 4; k++) gb.mm('darkWood', tx - 1.1, ty + 0.72, tz - 0.4 + k * 0.2 + 0.005, tx + 1.1, ty + 0.76, tz - 0.2 + k * 0.2 - 0.005);
+    for (const a of [-1, 1]) { gb.box('darkWood', tx + a * 0.85, ty + 0.68, tz, 0.08, 0.06, 0.82); for (const b of [-1, 1]) gb.box('darkWood', tx + a * 0.85, ty + 0.34, tz + b * 0.22, 0.06, 0.72, 0.06, 0, b * 0.3); }
+  } else {
   gb.mm('grayPlastic', tx - 1.1, ty + 0.72, tz - 0.4, tx + 1.1, ty + 0.76, tz + 0.4);
   for (const a of [-1, 1]) { gb.box('tentPole', tx + a * 0.95, ty + 0.36, tz, 0.03, 0.03, 0.85, 0, 0.6); gb.box('tentPole', tx + a * 0.95, ty + 0.36, tz, 0.03, 0.03, 0.85, 0, -0.6); }
+  }
   addCollider(tx - 1.12, tz - 0.42, tx + 1.12, tz + 0.42, 0.8, false, ty);
   // clipboard (submit verdict)
   const clip = new THREE.Group(); clip.position.set(tx - 0.85, ty + 0.765, tz + 0.15); clip.rotation.y = 0.25; root.add(clip);
@@ -729,12 +742,15 @@ function buildTent(gb, root) {
   INTERACT.push({ mesh: board, kind: 'clip', id: 0 });
   WORLD_EXTRA.clip = clip;
   // lantern
-  gb.cyl('tentPole', tx + 0.85, ty + 0.79, tz - 0.2, 0.06, 0.07, 0.04, 12); gb.cyl('tentPole', tx + 0.85, ty + 0.99, tz - 0.2, 0.05, 0.06, 0.03, 12);
+  gb.cyl(rustic ? 'railBlack' : 'tentPole', tx + 0.85, ty + 0.79, tz - 0.2, 0.06, 0.07, 0.04, 12); gb.cyl(rustic ? 'railBlack' : 'tentPole', tx + 0.85, ty + 0.99, tz - 0.2, 0.05, 0.06, 0.03, 12);
   const lg = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.16, 12), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffb36a, emissiveIntensity: 2.5, transparent: true, opacity: 0.95 }));
   lg.position.set(tx + 0.85, ty + 0.89, tz - 0.2); root.add(lg); WORLD_EXTRA.lantern = lg;
-  // chairs and crates
+  // chairs and crates (a hay bale and a barrel at the stables)
+  if (rustic) { hayBale(gb, x + 1.1, ty, z + 1.2, 2.6); barrel55(gb, x - 1.5, z + 0.9, ty); addCollider(x + 0.65, z + 0.75, x + 1.55, z + 1.65, 0.4, true, ty); addCollider(x - 1.8, z + 0.6, x - 1.2, z + 1.2, 0.9, false, ty); }
+  else {
   { const f = fur(gb, x + 1.0, z + 1.0, 2.6, ty); f.box('fabricBlue', 0, 0.45, 0, 0.5, 0.03, 0.45); f.box('fabricBlue', 0, 0.75, 0.22, 0.5, 0.55, 0.03, 0, -0.15); for (const a of [-1, 1]) { f.box('tentPole', a * 0.24, 0.23, 0, 0.02, 0.02, 0.6, 0, 0.7); f.box('tentPole', a * 0.24, 0.23, 0, 0.02, 0.02, 0.6, 0, -0.7); } f.solid(-0.28, -0.28, 0.28, 0.28, 0.8); }
   { const f = fur(gb, x - 1.05, z - 1.05, 0.15, ty); f.box('grayPlastic', 0, 0.25, 0, 0.7, 0.5, 0.45); f.box('toyYellow', 0, 0.5, 0, 0.72, 0.02, 0.47); f.box('grayPlastic', 0.1, 0.65, 0, 0.5, 0.28, 0.35, 0.3); f.solid(-0.4, -0.28, 0.4, 0.28, 1); }
+  }
   if (ty > 0.05) {   // raised ground: a plank deck on posts the tent stands on
     const d = s + 0.6; for (let k = -d; k < d - 0.01; k += 0.2) gb.mm('darkWood', x - d, ty - 0.05, z + k + 0.005, x + d, ty, z + k + 0.195);
     for (const a of [-d, 0, d]) for (const b of [-d, 0, d]) gb.cyl('darkWood', x + a * 0.95, ty / 2 - 0.4, z + b * 0.95, 0.07, 0.07, ty + 0.8, 8);
