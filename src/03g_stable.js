@@ -187,7 +187,7 @@ function stbVis() {
   const W = STB.wagon; W.away = !here && !(al && al.wagon); W.root.visible = !W.away;
   stbEnsure(); for (const t of STB.tack) { t.shown = null; stbAttach(t); }
   if (WORLD_EXTRA.departSign) drawDepartSign();
-  stbHud();
+  drawJobBoard(); stbHud();
 }
 // at the haunted location the animals that came along wait in a row beside the base, the wagon parked behind them
 function stbArrive() {
@@ -323,8 +323,8 @@ function arriveAtSite() {
   const o = STB.trip; if (!o) return;
   if (STB.dest !== CURMAP) loadMap(STB.dest);
   G.departing = false; STB.phase = 'hunt';
-  const keep = G.players.map(p => p.alive);
-  startRound(o); G.players.forEach((p, i) => { if (!keep[i]) { p.alive = false; p.gone = true; } });
+  const keep = G.players.map(p => p.alive), R = mulberry32((o.seed ^ 0x5eed5) | 0), rooms = ROOMS.map((r, i) => i).filter(i => i < NROOM && !ROOMS[i].noGhost);
+  startRound({ ...o, ghostRoom: rooms[Math.floor(R() * rooms.length)] }); G.players.forEach((p, i) => { if (!keep[i]) { p.alive = false; p.gone = true; } });
   stbArrive();
   const P = me(); P.pos.set(TENT.x - 0.6 + G.mySlot * 0.45, 0, TENT.z + 0.95); P.pos.y = terrainY(P.pos.x, P.pos.z); P.flash = true;
   PL.yaw = Math.PI; PL.pitch = -0.05; PL.slotIdx = 0; hudTeam(); hudBuildInventory();
@@ -513,6 +513,31 @@ function stbHud() {
   const A = riding(G.mySlot), w = onWagon(G.mySlot);
   const txt = t ? 'Carrying the ' + (t.kind === 'harness' ? 'wagon harness' : t.kind) + ' · G to hang it back up' : A ? 'Riding ' + A.def.name + ' · W to walk on, Shift to canter, E to get down' : w === 'drive' ? 'Driving the wagon · W/S, steer with the mouse or A/D, E to get down' : w === 'pass' ? 'Riding in the wagon · E to climb down' : '';
   el.hidden = !txt; el.textContent = txt;
+}
+// ---------- the job board: pick tonight's place (E) and difficulty (G) before riding out; the host decides in team play
+const JOB_MAPS = ['lane', 'farm', 'bayou'];   // the stables are home, never a haunted place
+function jobMap(m) { if (JOB_MAPS.includes(m)) return m; let p = null; try { p = localStorage.getItem('hl-map'); } catch (e) { } return JOB_MAPS.includes(p) ? p : 'lane'; }
+function drawJobBoard() {
+  const S = WORLD_EXTRA.jobBoard; if (!S) return; const x = S.ctx, w = 512, h = 384, dest = MAPS[STB.dest] || MAP, mode = (STB.trip && STB.trip.mode) || CURMODE;
+  x.fillStyle = '#1f2a24'; x.fillRect(0, 0, w, h); x.strokeStyle = '#6b4a2e'; x.lineWidth = 18; x.strokeRect(9, 9, w - 18, h - 18);
+  x.fillStyle = 'rgba(236,236,226,0.9)'; x.textAlign = 'center'; x.font = '700 34px "Comic Sans MS", "Segoe Print", cursive'; x.fillText("TONIGHT'S JOB", w / 2, 66);
+  x.font = '700 40px Georgia, serif'; x.fillStyle = '#f4e3a8'; x.fillText(dest ? dest.title : '', w / 2, 140);
+  x.font = '500 24px Georgia, serif'; x.fillStyle = 'rgba(236,236,226,0.8)'; x.fillText(dest ? dest.eyebrow : '', w / 2, 176);
+  x.font = '700 30px "Comic Sans MS", "Segoe Print", cursive'; x.fillStyle = mode === 'nightmare' ? '#f08a7a' : mode === 'rookie' ? '#9fd89a' : '#e8d8a0'; x.fillText('Difficulty: ' + (MODES[mode] || 'Pro'), w / 2, 238);
+  x.font = '500 22px "Comic Sans MS", "Segoe Print", cursive'; x.fillStyle = 'rgba(236,236,226,0.7)'; x.fillText('E  change the place    G  change difficulty', w / 2, 300); x.fillText('then tack up and ride out!', w / 2, 334);
+  S.tex.needsUpdate = true;
+}
+function hostJob(slot, what) {
+  if (STB.phase !== 'base' || !STB.trip) return;
+  if (G.mp && slot !== 0) { hostEvent(['msg', slot, 'The host picks tonight\'s job.']); return; }
+  const ms = Object.keys(MODES), map = what === 'map' ? JOB_MAPS[(JOB_MAPS.indexOf(STB.dest) + 1) % JOB_MAPS.length] : STB.dest, mode = what === 'mode' ? ms[(ms.indexOf(STB.trip.mode) + 1) % ms.length] : STB.trip.mode;
+  hostEvent(['job', map, mode]);
+}
+function onJob(map, mode) {
+  if (!STB.trip || !MAPS[map]) return; STB.dest = map; STB.trip.map = map; STB.trip.mode = mode;
+  if (!G.mp || G.isHost) { CURMODE = mode; try { localStorage.setItem('hl-map', map); localStorage.setItem('hl-mode', mode); } catch (e) { } }
+  drawJobBoard(); drawDepartSign(); sfx('scribble', 0.4);
+  sub('Tonight\'s job: ' + MAPS[map].title + ' · ' + MODES[mode] + '.', 'sys');
 }
 // the board at the end of the drive names the place the team is headed
 function drawDepartSign() {

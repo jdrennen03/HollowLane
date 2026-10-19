@@ -114,7 +114,7 @@ function onRoundEnd(guess, bySlot) {
   G.state = 'over'; UI.results = true;
   if (document.pointerLockElement) document.exitPointerLock();
   const correct = guess === G.ghostIdx;
-  $('btnAgain').textContent = Net.lobby ? 'Back to the lobby' : 'Back to the street';
+  $('btnAgain').textContent = Net.lobby ? 'Back to the lobby' : 'Back to the stables';
   $('resEyebrow').textContent = guess < 0 ? 'Investigation failed' : 'Case closed';
   $('resTitle').textContent = guess < 0 ? 'No one made it out' : correct ? 'Correct' : 'Wrong ghost';
   $('resGhost').textContent = 'It was a ' + G.ghost.name + '. ' + G.ghost.allEv.map(e => EV_NAME[e] + (e === G.hiddenEv ? ' (hidden)' : '')).join(', ') + '.';
@@ -129,7 +129,7 @@ function bindUI() {
   const nick = $('nick'); let stored = ''; try { stored = localStorage.getItem('hl-nick') || ''; } catch (e) { }
   nick.value = stored || ('Investigator ' + (100 + (Math.random() * 900 | 0)));
   const nm = () => { const v = nick.value.trim().slice(0, 14) || 'Investigator'; try { localStorage.setItem('hl-nick', v); } catch (e) { } return v; };
-  $('btnSolo').onclick = () => { initAudio(); const n = nm(); beginGame({ map: CURMAP, mode: CURMODE, gm: (Math.random() * GHOST_FILES.length) | 0, seed: (Math.random() * 1e9) | 0, ghostIdx: (Math.random() * GHOSTS.length) | 0, ghostRoom: pickGhostRoom(), roster: [{ slot: 0, nick: n, peer: 'solo', ch: CURCHAR }], mySlot: 0, mp: false, host: true }); };
+  $('btnSolo').onclick = () => { initAudio(); startSolo(jobMap(CURMAP)); };
   $('btnHost').onclick = async () => { initAudio(); if (!Net.room) return; const code = randCode(); $('lobbyCode').textContent = code; UI.show('menu', false); UI.show('lobby', true); UI.lobbyNote('Opening lobby…'); try { await Net.open(code, true, nm()); } catch (e) { UI.lobbyNote('Could not open a lobby here (' + (e && e.code || 'error') + ').'); } };
   $('btnJoin').onclick = async () => { initAudio(); if (!Net.room) return; const code = $('joinCode').value.trim().toUpperCase().replace(/\s+/g, ''); if (!(window.hlDesktop ? /^[A-Z]{4}(@[A-Z0-9.:-]+)?$/ : /^[A-Z]{4}$/).test(code)) { $('mpNote').textContent = 'Lobby codes are four letters.'; return; } $('lobbyCode').textContent = code.slice(0, 4); UI.show('menu', false); UI.show('lobby', true); UI.lobbyNote('Joining…'); try { await Net.open(code, false, nm()); } catch (e) { UI.lobbyNote('Could not join (' + (e && e.code || 'error') + ').'); } };
   $('btnStart').onclick = () => { Net.hostStart(); };
@@ -138,7 +138,7 @@ function bindUI() {
   $('btnQuit').onclick = () => Net.lobby ? backToLobby(true) : quitToMenu();
   $('btnCloseJ').onclick = closeJournal;
   $('btnSubmit').onclick = () => { if (G.journal.pick < 0) return; request('guess', G.journal.pick); };
-  $('btnAgain').onclick = () => Net.lobby ? backToLobby() : quitToMenu();
+  $('btnAgain').onclick = () => Net.lobby ? backToLobby() : (resetToIdle(), startSolo(STB.dest || CURMAP));
   const sens = $('sens'); sens.oninput = () => { PL.sens = +sens.value; $('sensV').textContent = (+sens.value).toFixed(1); };
   const vol = $('vol'); vol.oninput = () => { AU.vol = +vol.value; if (AU.master) AU.master.gain.value = AU.vol; $('volV').textContent = Math.round(vol.value * 100); };
   const q = $('qual'); q.oninput = () => { setQuality(+q.value); $('qualV').textContent = ['Low', 'Medium', 'High'][+q.value]; };
@@ -170,10 +170,15 @@ function renderLobbySet(hostPeer) {
   }
   if (el.dataset.built === '1') { el.querySelectorAll('[data-lmap]').forEach(b => b.classList.toggle('sel', b.dataset.lmap === CURMAP)); el.querySelectorAll('[data-lmode]').forEach(b => b.classList.toggle('sel', b.dataset.lmode === CURMODE)); return; }
   el.dataset.built = '1';
-  el.innerHTML = '<div class="maps">' + Object.values(MAPS).map(m => '<button class="mapc" data-lmap="' + m.id + '">' + m.title + '</button>').join('') + '</div><div class="maps modes">' + Object.keys(MODES).map(k => '<button class="mapc" data-lmode="' + k + '">' + MODES[k] + '</button>').join('') + '</div>';
+  el.innerHTML = '<div class="maps">' + Object.values(MAPS).filter(m => JOB_MAPS.includes(m.id)).map(m => '<button class="mapc" data-lmap="' + m.id + '">' + m.title + '</button>').join('') + '</div><div class="maps modes">' + Object.keys(MODES).map(k => '<button class="mapc" data-lmode="' + k + '">' + MODES[k] + '</button>').join('') + '</div>';
   el.querySelectorAll('[data-lmap]').forEach(b => b.onclick = () => { if (b.dataset.lmap === CURMAP) return; loadMap(b.dataset.lmap); try { localStorage.setItem('hl-map', CURMAP); } catch (e) { } Net.announce(); renderLobbySet(); });
   el.querySelectorAll('[data-lmode]').forEach(b => b.onclick = () => { CURMODE = b.dataset.lmode; try { localStorage.setItem('hl-mode', CURMODE); } catch (e) { } menuForMode(); Net.announce(); renderLobbySet(); UI.lobbyNote('Difficulty: ' + MODES[CURMODE] + '.'); });
   renderLobbySet();
+}
+// a solo round at the stables, headed for `map` (the job board can change it before riding out)
+function startSolo(map) {
+  const nick = ($('nick').value || '').trim().slice(0, 14) || 'Investigator';
+  beginGame({ map: jobMap(map), mode: CURMODE, gm: (Math.random() * GHOST_FILES.length) | 0, seed: (Math.random() * 1e9) | 0, ghostIdx: (Math.random() * GHOSTS.length) | 0, ghostRoom: 0, roster: [{ slot: 0, nick, peer: 'solo', ch: CURCHAR }], mySlot: 0, mp: false, host: true });
 }
 function menuForMode() { document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('sel', b.dataset.mode === CURMODE)); }
 function menuForMap() {

@@ -483,9 +483,9 @@ function frame(now) {
     PL.flash.getWorldPosition(DUST_U.uFlPos.value); PL.flash.target.getWorldPosition(_td); DUST_U.uFlDir.value.copy(_td).sub(DUST_U.uFlPos.value).normalize(); DUST_U.uFlOn.value = flOn ? 1 : 0;
     // ambience
     const camRi = roomIdxAt(PL.cam.position.x, PL.cam.position.z, PL.cam.position.y - 1.4), inside = P && camRi >= 0 && !ROOMS[camRi].outdoor;
-    loopGain('wind', inside ? 0.12 : 0.4, 1.2); loopGain('crickets', inside ? 0.02 : (G.huntOn ? 0 : 0.18), 1.2); loopGain('drone', inside ? 0.16 : 0.03, 1.5);
+    loopGain('wind', inside ? 0.12 : 0.4, 1.2); loopGain('crickets', inside ? 0.02 : (G.huntOn ? 0 : 0.18), 1.2); loopGain('drone', inside && STB.phase !== 'base' ? 0.16 : 0.03, 1.5);   // home base isn't spooky
     if (AU.revIn) AU.revIn.gain.setTargetAtTime(inside ? 0.45 : 0.12, AU.ctx.currentTime, 0.5);
-    G.creakT = (G.creakT || rr(10, 25)) - dt; if (G.creakT <= 0 && inside) { G.creakT = rr(12, 30); const R = pick(ROOMS); sfxAt('creakHouse', new V3(rr(R.r[0], R.r[2]), R.y + WALL_H, rr(R.r[1], R.r[3])), 0.4); }
+    G.creakT = (G.creakT || rr(10, 25)) - dt; if (G.creakT <= 0 && inside && STB.phase !== 'base') { G.creakT = rr(12, 30); const R = pick(ROOMS); sfxAt('creakHouse', new V3(rr(R.r[0], R.r[2]), R.y + WALL_H, rr(R.r[1], R.r[3])), 0.4); }
     POST.scare = Math.max(0, POST.scare - dt * 1.2);
     finalPass.uniforms.uSan.value = P ? clamp(P.sanity / 100, 0, 1) : 1;
     finalPass.uniforms.uHunt.value = lerp(finalPass.uniforms.uHunt.value, G.huntOn ? 1 : 0, dt * 3);
@@ -508,8 +508,8 @@ function frame(now) {
 async function boot() {
   buildTextures(); buildMaterials(); makePrintMat();
   buildLights(); buildSky(); buildItems(scene); buildDust(); buildSmoke(); buildBeams();
-  let pref = 'lane'; try { pref = localStorage.getItem('hl-map') || 'lane'; } catch (e) { } if (!MAPS[pref]) pref = 'lane';
-  loadMap(pref);
+  const pref = jobMap(null);
+  loadMap('barn');   // no title screen: the game opens in the stables
   G.gh = G.ghProc = buildGhostModel(scene); G.gh.look = 'hidden';
   loadGhostModels(scene);
   initPlayer(scene, camera); bindInput(canvas); bindUI(); buildPost();
@@ -519,6 +519,10 @@ async function boot() {
   setGhostLook(G.gh, 'visible'); G.gh.root.position.set(10, -50, 7); renderer.compile(scene, camera); setGhostLook(G.gh, 'laser'); renderer.compile(scene, camera); setGhostLook(G.gh, 'hidden');
   requestAnimationFrame(t => { last = t; frame(t); });
   setTimeout(() => { $('fade').style.opacity = 0; }, 200);
+  // straight into the stables, headed for the last place picked; sound starts with the first click or key
+  setTimeout(() => startSolo(pref), 0);   // after the rest of the script (the easter eggs) has loaded
+  addEventListener('pointerdown', () => initAudio(), { once: true }); addEventListener('keydown', () => initAudio(), { once: true });
+  sub('Click to look around.', 'sys');
   const ok = await Net.init();
   $('mpNote').innerHTML = ok ? 'Team play is on. <b>Host</b> to get a 4-letter code, or type a teammate\'s code and <b>Join</b>.' : 'Team play needs this page open on claude.ai with a signed-in account. Solo works everywhere.';
   $('btnHost').disabled = !ok; $('btnJoin').disabled = !ok;

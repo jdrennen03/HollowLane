@@ -31,10 +31,10 @@ const Net = {
     this.gameId = 'g' + seed;
     this.evSeq = 0; this.evs = []; this.reqs = []; this.reqSeq = 0;
     const gm = (Math.random() * GHOST_FILES.length) | 0;
-    const start = { id: this.gameId, seed, gi, gr, ro, map: CURMAP, gm, mode: CURMODE };
+    const start = { id: this.gameId, seed, gi, gr, ro, map: jobMap(CURMAP), gm, mode: CURMODE };
     this.lobby.presence({ st: 'game', start, ev: [], w: null, g: null, rq: [] });
     this.roster = ro; this.hostPeer = mine.peer; this.inGame = true;
-    beginGame({ map: CURMAP, mode: CURMODE, gm, seed, ghostIdx: gi, ghostRoom: gr, roster: ro.map((r, i) => ({ slot: i, peer: r[0], nick: r[1], ch: r[2] })), mySlot: 0, mp: true, host: true });
+    beginGame({ map: jobMap(CURMAP), mode: CURMODE, gm, seed, ghostIdx: gi, ghostRoom: gr, roster: ro.map((r, i) => ({ slot: i, peer: r[0], nick: r[1], ch: r[2] })), mySlot: 0, mp: true, host: true });
   },
   onPeers(ch) {
     const peers = ch.peers;

@@ -185,8 +185,8 @@ function barnTerrain(x, z) {   // flat barnyard and arena, a gentle roll out in 
   return d > 0 ? (fbm(fract(x / 60 + 0.5), fract(z / 60 + 0.5), 3, 3, 3, 281) - 0.4) * Math.min(1, d / 12) * 2.2 : 0;
 }
 MAPS.barn = {
-  id: 'barn', title: 'Whitlock Stables', eyebrow: 'Bell Buckle, Tennessee',
-  lede: 'On the eve of the 1994 state finals a storm cut the power, and seventeen-year-old Sadie Whitlock went down to the barn to settle her barrel mare, Bonnie Blue. By morning the mare\'s stall was latched from the outside and neither of them was ever seen again. The barn has been padlocked ever since, yet folks driving past at night still hear hoofbeats in the arena. Every investigation starts here, at the stables: tack up a horse in the tack room, or harness one of the animals to the covered wagon, and ride out to the haunted place you picked. Pick Whitlock Stables itself and the ride out starts the investigation right here.',
+  id: 'barn', title: 'Whitlock Stables', eyebrow: 'Home base · Bell Buckle, Tennessee',
+  lede: 'Home base, and nothing haunts it. Every job starts here: pick tonight\'s place on the job board, tack up a horse or Juniper in the tack room, or hitch a horse to the covered wagon, then ride out down the drive. Scout comes too.',
   levels: [BA0, BA1], extBase: [0, BA1 - 0.12], extTop: [BA1, BA1 + WALL_H], siding: 'barnRed', skirt: null, shutter: 'barnRed', crooked: true, noCurtains: true,
   noShutters: wd => !!wd.o.grille || wd.fy > 1 || wd.o.open,
   trimColor: 0xe8e4da, tempBase: 9.5, outsideTemp: 6, fog: [0x0b0e12, 0.028], moonI: 2.8, hemiI: 0.45, moonSpan: 46,
@@ -289,7 +289,7 @@ function buildBarnExterior(gb, root) {
   { const b = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffc070, emissiveIntensity: 0 })); b.position.set(-0.5, 3.06, 5.7); root.add(b); WORLD_EXTRA.porchBulb = b; }
   plane(root, signTex([['WHITLOCK STABLES', '700 50px Georgia, serif'], ['EST. 1962', '600 28px Georgia, serif']], 512, 128, '#e9e4d6', '#2a1a12'), 2.4, 0.6, -0.17, 2.55, 5.7, -Math.PI / 2);
   gb.mm('trimWhite', -0.14, 2.22, 4.45, -0.1, 2.88, 6.95);
-  plane(root, signTex([['NO SMOKING', '700 54px Georgia, serif'], ['NO ADMITTANCE AFTER DARK', '600 26px Georgia, serif']], 512, 160, '#5e3f26', '#f0e2c0'), 0.62, 0.2, BW + 0.13, 1.7, 7.35, Math.PI / 2);
+  plane(root, signTex([['NO SMOKING', '700 54px Georgia, serif'], ['VISITORS WELCOME', '600 26px Georgia, serif']], 512, 160, '#5e3f26', '#f0e2c0'), 0.62, 0.2, BW + 0.13, 1.7, 7.35, Math.PI / 2);
   // hay door leaves swung open flat against the gable, hoist beam and pulley above
   for (const [z0, z1] of [[3.82, 4.75], [6.65, 7.58]]) { const zc = (z0 + z1) / 2, w = z1 - z0; gb.box('barnRed', -0.14, BA1 + 1.7, zc, 0.06, 1.5, w); gb.box('trimWhite', -0.18, BA1 + 1.7, zc, 0.03, 1.5, 0.08); for (const sg of [1, -1]) gb.box('trimWhite', -0.18, BA1 + 1.7, zc, 0.025, Math.hypot(1.4, w), 0.08, 0, sg * Math.atan2(w, 1.4)); }
   gb.box('darkWood', -0.7, GAMBREL[2][1] - 0.45, 5.7, 1.6, 0.2, 0.2); gb.add(new THREE.TorusGeometry(0.13, 0.03, 6, 16), mat4(-1.35, GAMBREL[2][1] - 0.7, 5.7), 'railBlack', false);
@@ -340,6 +340,10 @@ function buildBarnInterior(gb, root) {
     f.box('shavings', 0, 0.62, 0.1, 0.52, 0.06, 0.66); f.solid(-0.34, -0.7, 0.34, 0.8, 0.8); }
   rod(gb, 'lightWood', [18.0, Y, 7.38], [18.25, Y + 1.5, 7.4], 0.016); for (let k = 0; k < 4; k++) rod(gb, 'railBlack', [17.92 + k * 0.05, Y + 0.02, 7.33], [17.95 + k * 0.05, Y + 0.32, 7.36], 0.007);
   rod(gb, 'lightWood', [13.9, Y, 7.38], [14.15, Y + 1.45, 7.4], 0.014); gb.box('toyRed', 13.88, Y + 0.08, 7.32, 0.3, 0.12, 0.05);   // broom
+  // the job board: tonight's haunted place and how hard it'll be (E / G to change them before riding out)
+  { const [c, x] = mkCanvas(512, 384), tex = canvasTex(c, true, false); WORLD_EXTRA.jobBoard = { ctx: x, tex }; drawJobBoard();
+    gb.box('darkWood', 18.45, Y + 1.55, AZ0 + 0.09, 1.12, 0.86, 0.04); const m = plane(root, tex, 1.0, 0.75, 18.45, Y + 1.55, AZ0 + 0.115, 0, { rough: 0.9 });
+    INTERACT.push({ mesh: m, kind: 'job', id: 0 }); }
   { const f = F0(23.6, 4.25, 0); f.box('darkWood', 0, 0.26, 0, 0.9, 0.48, 0.42); f.box('darkWood', 0, 0.52, 0, 0.94, 0.06, 0.46); f.box('brass', 0, 0.42, 0.215, 0.12, 0.08, 0.01); f.solid(-0.47, -0.23, 0.47, 0.23, 0.6); }   // tack trunk
   // ---------- stalls
   const stall = (k, side, opts = {}) => {
@@ -360,21 +364,9 @@ function buildBarnInterior(gb, root) {
     addCollider(hx - 0.36, hz - 0.36, hx + 0.36, hz + 0.36, 0.45, false, Y + 1.2);   // hay rack at head height
   };
   for (let k = 0; k < 4; k++) for (const side of [0, 1]) { if (side === 1 && k === 2) continue; stall(k, side, { straw: side === 0 && k === 3 }); }
-  // ---------- Bonnie Blue's stall: the one that was latched from outside
+  // ---------- Bonnie Blue's stall: her ribbons by the door, her blue halter on its hook
   {
-    // hoof gouges and scorched boards on the back wall, a memorial in the corner
-    plane(root, art.gouges, 2.4, 1.3, 1.9, Y + 0.95, 0.111, 0, { alpha: true });
-    plane(root, art.gouges, 2.0, 1.1, 3.54, Y + 0.85, 2.0, -Math.PI / 2, { alpha: true });
-    plane(root, art.gouges, 1.6, 1.0, 0.111, Y + 1.0, 3.0, Math.PI / 2, { alpha: true });
-    wallArt(root, 0.75, Y + 1.5, 0.115, 0, art.sadie, 0.32, 0.4, 'darkWood');   // on the back wall, beside the gouges
     rosette(gb, 0.5, Y + 1.15, AZ0 - 0.065, 'ribbonBlue'); rosette(gb, 0.82, Y + 0.95, AZ0 - 0.065, 'ribbonRed');   // pinned to the solid boards beside the door, not on it
-    { const f = F0(3.15, 3.35, 0.7);   // dried bouquet leaning in the corner, tied with twine
-      for (let i = 0; i < 9; i++) { const a = i * 0.7, r = 0.04 + (i % 3) * 0.02; f.cyl('toyGreen', Math.cos(a) * r * 0.5, 0.32, Math.sin(a) * r * 0.5, 0.005, 0.005, 0.6, 4); f.sphere(i % 2 ? 'ribbonRed' : 'leatherDark', Math.cos(a) * r, 0.64 + (i % 3) * 0.03, Math.sin(a) * r, 0.045, 1, 0.7, 1); }
-      f.cyl('sackCloth', 0, 0.3, 0, 0.035, 0.035, 0.05, 8); }
-    // the latch outside, chained and padlocked
-    for (let i = 0; i < 9; i++) gb.add(new THREE.TorusGeometry(0.018, 0.005, 4, 8), mat4(2.6 + i * 0.03, Y + 1.0 - Math.sin(i / 8 * Math.PI) * 0.12, AZ0 + 0.075, i % 2 ? Math.PI / 2 : 0), 'metal', false);
-    gb.box('brass', 2.9, Y + 0.93, AZ0 + 0.08, 0.06, 0.07, 0.025); gb.add(new THREE.TorusGeometry(0.022, 0.006, 4, 10, Math.PI), mat4(2.9, Y + 0.97, AZ0 + 0.08), 'chrome', false);
-    // Bonnie Blue's halter on its hook: the easter egg
     gb.cyl('brass', 0.85, Y + 1.62, AZ0 + 0.1, 0.008, 0.008, 0.07, 6, 0, Math.PI / 2, 0);
     const h = new THREE.Group(); h.position.set(0.85, Y + 1.47, AZ0 + 0.1); root.add(h);
     const hm = new THREE.MeshStandardMaterial({ color: 0x2d6fd0, roughness: 0.55 });
@@ -383,8 +375,7 @@ function buildBarnInterior(gb, root) {
     const tag = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.03, 0.006), MATS.brass); tag.position.set(0, -0.14, 0.012); h.add(tag);
     const lead = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.8, 5), MATS.ribbonBlue); lead.position.set(0.05, -0.55, 0.01); h.add(lead);
     for (const m of h.children) { m.castShadow = true; }
-    const hit = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.15), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = -0.1; h.add(hit);
-    WORLD_EXTRA.halter = h; INTERACT.push({ mesh: hit, kind: 'egg', id: 1 });
+    WORLD_EXTRA.halter = h;
   }
   // foaling stall: a lantern hung low over the straw
   { rod(gb, 'railBlack', [12.6, Y + 2.72, 1.95], [12.6, Y + 2.1, 1.95], 0.006); hangLantern(gb, 12.6, Y + 2.1, 1.95); }
@@ -568,10 +559,10 @@ function buildBarnYard(gb, root) {
   { for (const x of [-8.2, -5.6]) gb.box('darkWood', x, 0.55, 3.2 - 1.4, 0.12, 1.1, 0.12); gb.cyl('darkWood', -6.9, 1.02, 1.8, 0.05, 0.05, 2.9, 8, 0, 0, Math.PI / 2); addCollider(-8.3, 1.7, -5.5, 1.9, 1.1); }
   { const sx = -21.2, sz = 9.9; gb.box('darkWood', sx - 0.75, 1.1, sz, 0.12, 2.2, 0.12); gb.box('darkWood', sx + 0.75, 1.1, sz, 0.12, 2.2, 0.12); addCollider(sx - 0.85, sz - 0.1, sx + 0.85, sz + 0.1, 2.2);
     const [c, x] = mkCanvas(512, 192), tex = canvasTex(c, true, false); WORLD_EXTRA.departSign = { ctx: x, tex }; drawDepartSign();
-    plane(root, tex, 1.5, 0.56, sx, 1.75, sz - 0.07, Math.PI, { rough: 0.9 }); gb.box('darkWood', sx, 1.75, sz, 1.56, 0.6, 0.05); }  // notice board by the tent: the missing poster and the county's closure order
+    plane(root, tex, 1.5, 0.56, sx, 1.75, sz - 0.07, Math.PI, { rough: 0.9 }); gb.box('darkWood', sx, 1.75, sz, 1.56, 0.6, 0.05); }  // notice board by the wagon: the stable rules and the farrier's day
   { gb.box('darkWood', -7.4, 1.0, -0.6, 0.1, 2.0, 0.1); gb.box('darkWood', -6.1, 1.0, -0.6, 0.1, 2.0, 0.1); gb.box('darkWood', -6.75, 1.55, -0.62, 1.5, 1.0, 0.04); gb.box('roofGreen', -6.75, 2.12, -0.6, 1.7, 0.04, 0.4, 0, 0.2);
-    plane(root, roomArtBarn().notice, 0.62, 0.8, -7.03, 1.55, -0.595, 0, { rough: 0.9 });
-    plane(root, signTex([['CLOSED', '700 46px Georgia, serif'], ['BY ORDER OF', '600 22px Georgia, serif'], ['BEDFORD COUNTY', '600 22px Georgia, serif'], ['Nov. 1994', 'italic 20px Georgia, serif']], 256, 256, '#f2eee2', '#1e1a14'), 0.5, 0.5, -6.4, 1.6, -0.595, 0, { rough: 0.9 });
+    plane(root, signTex([['STABLE RULES', '700 40px Georgia, serif'], ['Shut every gate', '500 26px Georgia, serif'], ['Hay at 6 and 6', '500 26px Georgia, serif'], ['Pick out hooves', '500 26px Georgia, serif'], ['Hang up your tack!', 'italic 26px Georgia, serif']], 256, 320, '#f2eee2', '#1e1a14'), 0.62, 0.8, -7.03, 1.55, -0.595, 0, { rough: 0.9 });
+    plane(root, signTex([['FARRIER', '700 40px Georgia, serif'], ['every', '500 24px Georgia, serif'], ['Tuesday', '600 30px Georgia, serif'], ['- S.W.', 'italic 22px Georgia, serif']], 256, 256, '#e8dcc0', '#1e1a14'), 0.5, 0.5, -6.4, 1.6, -0.595, 0, { rough: 0.9 });
     addCollider(-7.5, -0.7, -6.0, -0.5, 2.0); }
   // paddock behind the barn's south side, with its trough and a round-bale feeder
   boardFence(gb, 1, -2.6, 24, -2.6, -1); boardFence(gb, 1, -12, 24, -12, -1); boardFence(gb, 1, -12, 1, -2.6, -1); boardFence(gb, 24, -12, 24, -8.5, 1); boardFence(gb, 24, -6.5, 24, -2.6, 1);
@@ -598,7 +589,6 @@ function barnProps() {
   // stalls: buckets, brushes and dropped shoes
   const stalls = [[1.8, 2], [5.4, 2], [9.0, 2], [12.6, 2], [1.8, 9.4], [5.4, 9.4], [12.6, 9.4]];
   stalls.forEach(([c, z], i) => { P('bucket', c + 1.1, z + (z < 5 ? -1.3 : 1.3)); P(i % 2 ? 'brush' : 'horseshoe', c - 0.6, z + 0.4); if (i % 3 === 0) P('curry', c + 0.3, z - 0.6); });
-  P('candle', 3.1, 3.55); P('candle', 3.25, 3.6); P('candle', 2.95, 3.65);
   // aisle
   P('bucket', 10.4, 7.15); P('brush', 6.9, 4.15, Y + 0.465); P('horseshoe', 21.0, 5.0); P('scoop', 24.0, 4.25, Y + 0.55);
   // wash bay
