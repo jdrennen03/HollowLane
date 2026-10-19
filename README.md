@@ -14,6 +14,10 @@ start the investigation:
   leaves comes along and waits by the base at the haunted location.
 - G takes tack off an animal, hangs carried tack back up, or unhitches the wagon.
 
+Scout, the team's yellow Labrador, comes along everywhere. Press **V** for his commands, then a number:
+**1** Sit, **2** Stay, **3** Follow, **4** Heel, **5** Fetch (whatever you're looking at, or the last thing you threw).
+E pets him. He growls when the ghost shows itself nearby and barks when it hunts close by.
+
 ## Download
 
 Grab the latest build from the [Releases](../../releases) page:

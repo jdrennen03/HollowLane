@@ -98,6 +98,7 @@ const Net = {
       if (w.P) for (const q of w.P) { const p = PROPO[q[0]]; if (!p) continue; p.sleep = true; if (!(p.pendT && now - p.pendT < 1200)) p.holder = q[8] ?? -1; if (p.holder === G.mySlot && PL.carry === p.i) continue; p.net = q; }
     }
     if (pr.k) pr.k.forEach((q, i) => { if (CATS[i]) CATS[i].net = q; });
+    if (pr.dg) DOG.net = pr.dg;
     if (pr.g) { const g = pr.g, v = G.ghostView; v.tx = g[0]; v.tz = g[1]; v.tyaw = g[2]; v.mode = g[3]; v.vis = g[4]; v.moving = g[5]; v.huntT = g[6]; v.ty = g[7] ?? v.y; }
   },
   request(args) { this.reqs.push([++this.reqSeq, ...args]); if (this.reqs.length > 10) this.reqs.shift(); if (args[0] === 'pick' || args[0] === 'drop') { const it = ITEMS[args[1]]; if (it) it.pendT = performance.now(); } this.flush(true); },
@@ -113,6 +114,7 @@ const Net = {
       const moving = PROPO.filter(p => tnow - p.moved < 1.5).sort((a, b) => (b.holder >= 0) - (a.holder >= 0)).slice(0, 8).map(p => { const m = p.mesh; return [p.i, r2(m.position.x), r2(m.position.y), r2(m.position.z), r2(m.quaternion.x), r2(m.quaternion.y), r2(m.quaternion.z), r2(m.quaternion.w), p.holder]; });
       let L = 0; G.lights.forEach((on, i) => { if (on) L |= (1 << i); });
       out.w = { L, D: DOORS.map(d => Math.round(d.angle * 100)), lk: G.frontLocked ? 1 : 0, t: r2(G.elapsed), I: ITEMS.map(it => [it.holder, r2(it.pos.x), r2(it.pos.y), r2(it.pos.z), r2(it.ry), it.on ? 1 : 0, it.spent ? 1 : 0]), P: moving };
+      if (DOG.on) out.dg = [r2(DOG.x), r2(DOG.y), r2(DOG.z), r2(DOG.yaw), DOG.pose, r2(DOG.speed), DOG.carry, DOG_CMDS.findIndex(c => c[0] === DOG.mode)];
       if (CATS.length) out.k = CATS.map(c => [r2(c.x), r2(c.y), r2(c.z), r2(c.yaw), c.state === 'walk' ? 0 : c.pose, r2(c.state === 'walk' ? c.speed : 0), c.wary ? 1 : 0]);
       const gs = G.gs; out.g = [r2(gs.x), r2(gs.z), r2(gs.yaw), gs.mode, gs.vis, r2(gs.moving), r2(gs.huntT || 0), r2(gs.y)];
       let evs = this.evs.slice();

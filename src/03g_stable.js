@@ -7,7 +7,8 @@ const STB_DEFS = [
   // stall: [x, z, heading] (heading 0 faces +z). seat/head/neck are fractions of the scaled model's height (y) and length (z)
   { name: 'Agrippa', url: 'prop-agrippa.json', kind: 'horse', len: 2.3, rot: 0, stall: [9.0, 1.95, 0], seat: [0.79, 0.04], head: [0.86, 0.44], neck: [0.74, 0.27], hip: 0.8 },
   { name: 'Dakota', url: 'prop-horse2.json', kind: 'horse', len: 2.35, rot: 0, color: 0x7a4a2a, stall: [5.4, 1.95, 0], seat: [0.66, 0.02], head: [0.9, 0.42], neck: [0.7, 0.28], hip: 0.68 },
-  { name: 'Juniper', url: 'prop-donkey.json', kind: 'donkey', len: 1.75, rot: Math.PI / 2, stall: [1.8, 9.45, Math.PI], seat: [0.66, 0.0], head: [0.86, 0.43], neck: [0.7, 0.3], hip: 0.66 },
+  // Juniper: the animated donkey at home, the one with the pack saddle out on a job
+  { name: 'Juniper', url: 'prop-donkey.json', home: { url: 'prop-donkey2.json', len: 1.8 }, kind: 'donkey', len: 1.75, rot: Math.PI / 2, stall: [1.8, 9.45, Math.PI], seat: [0.66, 0.0], head: [0.86, 0.43], neck: [0.7, 0.3], hip: 0.66 },
 ];
 const STB_TACK = [   // where each piece lives in the tack room: [x, y, z, ry]
   { kind: 'saddle', rack: [14.82, BA0 + 1.15, 0.9, Math.PI / 2] }, { kind: 'saddle', rack: [14.82, BA0 + 1.15, 2.0, Math.PI / 2] },
@@ -26,8 +27,8 @@ function stbLoad(url, rot, len, cb) {
   const W = STB.tpl[url] = { wait: [cb] };
   loadModelFile(url, gl => {
     const m = gl.scene; m.rotation.y = rot; m.updateMatrixWorld(true);
-    m.traverse(o => { if (o.isMesh) { o.material = leanMat(Array.isArray(o.material) ? o.material[0] : o.material); o.castShadow = true; o.receiveShadow = true; } });
-    const b = new THREE.Box3().setFromObject(m), sz = b.getSize(new V3()), s = len / sz.z;
+    m.traverse(o => { if (o.isMesh) { o.material = leanMat(Array.isArray(o.material) ? o.material[0] : o.material); o.castShadow = true; o.receiveShadow = true; if (o.isSkinnedMesh) o.frustumCulled = false; } });
+    const b = new THREE.Box3().setFromObject(m, true), sz = b.getSize(new V3()), s = len / sz.z;
     const inner = new THREE.Group(); inner.add(m); inner.scale.setScalar(s); inner.position.set(-(b.min.x + sz.x / 2) * s, -b.min.y * s, -(b.min.z + sz.z / 2) * s);
     W.m = inner; W.H = sz.y * s; W.L = len; W.Wd = sz.x * s; W.anims = gl.animations; for (const f of W.wait) f(W); W.wait = [];
   }, e => { console.warn('stable model', url, e); delete STB.tpl[url]; });
@@ -55,7 +56,13 @@ function stbEnsure() {
   for (const A of STB.animals) if (!A.away && !A.req) { A.req = true; stbLoad(A.def.url, A.def.rot, A.def.len, T => {
     A.H = T.H; A.body.add(T.m);
     if (A.def.color) T.m.traverse(o => { if (o.isMesh) { o.material.color.setHex(A.def.color); o.material.roughness = 0.85; } });
-    for (const t of STB.tack) if (t.at === 'on' && t.who === A.i) { t.shown = null; stbAttach(t); }
+    A.packM = T.m; A.packH = T.H; stbLook(A);
+  }); }
+  for (const A of STB.animals) if (A.def.home && !A.away && !A.reqHome) { A.reqHome = true; stbLoad(A.def.home.url, A.def.rot === Math.PI / 2 ? 0 : A.def.rot, A.def.home.len, T => {
+    A.body.add(T.m); A.homeM = T.m; A.homeH = T.H;
+    const mx = A.mixer = new THREE.AnimationMixer(T.m.children[0]); A.acts = {};
+    for (const c of T.anims) { const n = c.name.split('|').pop(), a = mx.clipAction(c); a.play(); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A.acts[n] = a; }
+    stbLook(A);
   }); }
   const W = STB.wagon; if (!W.away && !W.req) { W.req = true; stbLoad(WAGON_DEF.url, WAGON_DEF.rot, WAGON_DEF.len, T => W.root.add(T.m)); }
   if (!STB.saddleReq && (MAP.id === 'barn' || STB.tack.some(t => t.kind === 'saddle' && t.at !== 'rack'))) { STB.saddleReq = true; stbLoad('prop-saddle.json', 0, 0.62, T => { STB.saddleTpl = T; for (const t of STB.tack) if (t.kind === 'saddle') { t.shown = null; stbAttach(t); } }); }
@@ -205,6 +212,24 @@ function stbArrive() {
   stbVis();
 }
 
+// Juniper wears whichever body fits: the animated one at the stables, the pack donkey on a job
+function stbLook(A) {
+  if (!A.packM) return;
+  const home = !!A.homeM && MAP.id === 'barn' && STB.phase !== 'hunt';
+  if (A.homeM) A.homeM.visible = home; A.packM.visible = !home;
+  const H = home ? A.homeH : A.packH; if (A.H !== H) { A.H = H; for (const t of STB.tack) if (t.at === 'on' && t.who === A.i) stbAttach(t); }
+  A.home = home;
+}
+// the animated donkey's clips: idle and grazing at rest, walk / trot / run by speed
+function stbAnimate(A, dt) {
+  if (!A.home || !A.mixer) return;
+  const g = Math.abs(A.speed); A.restT = g > 0.1 ? 0 : (A.restT || 0) + dt;
+  const want = g > 4.5 ? 'run' : g > 2.0 ? 'trot' : g > 0.1 ? 'walk' : (A.restT % 24) > 12 ? 'grazing' : 'idle';
+  for (const n in A.acts) { const a = A.acts[n], w = a.getEffectiveWeight(); a.setEffectiveWeight(w + ((n === want ? 1 : 0) - w) * clamp(dt * 5, 0, 1)); }
+  if (A.acts.walk) A.acts.walk.timeScale = clamp(g / 1.3, 0.6, 1.6);
+  A.mixer.update(dt);
+}
+
 // ---------- who is on what
 function riding(slot) { return STB.animals.find(A => A.rider === slot) || null; }
 function onWagon(slot) { const W = STB.wagon; return !W ? null : W.driver === slot ? 'drive' : W.pass.includes(slot) ? 'pass' : null; }
@@ -294,6 +319,7 @@ function arriveAtSite() {
   stbArrive();
   const P = me(); P.pos.set(TENT.x - 0.6 + G.mySlot * 0.45, 0, TENT.z + 0.95); P.pos.y = terrainY(P.pos.x, P.pos.z); P.flash = true;
   PL.yaw = Math.PI; PL.pitch = -0.05; PL.slotIdx = 0; hudTeam(); hudBuildInventory();
+  dogPlace(TENT.x + 1.4, TENT.z + 1.8, Math.PI);   // Scout comes too
   sub(MAP.id === 'barn' ? 'The investigation begins. Gear is on the table by the wagon (E).' : 'You\'ve arrived. Pick up gear from the table (E). The house is across the yard.', 'sys');
   setTimeout(() => sub('Up to four lights can be on at once. Darkness costs sanity.', 'sys'), 4000);
 }
@@ -306,7 +332,7 @@ function beginAtStables(o) {
   G.gs.y = -50; G.ghostView.y = -50; G.gs.vis = 0;
   for (let i = 0; i < NROOM; i++) G.lights[i] = ROOMS[i].id === 'aisle' || ROOMS[i].id === 'tack';
 }
-function stbStop() { STB.phase = 'off'; STB.along = null; if (STB.animals.length) stbReset(); }
+function stbStop() { STB.phase = 'off'; STB.along = null; if (STB.animals.length) stbReset(); dogStop(); }
 
 // ---------- local player: interacting, riding, driving
 function stbInteract(h) {
@@ -437,9 +463,10 @@ function updateStable(dt) {
     } else if (W.animal === A.i) { const p = wagonLocal(0, 0, WAGON_DEF.front + A.L / 2); A.x = p.x; A.z = p.z; A.yaw = W.yaw; A.speed = W.speed; A.y = terrainY(A.x, A.z); }
     else if (A.rider < 0) { A.speed = 0; A.y = groundY(A.x, A.z, A.y === undefined ? 0 : A.y + 0.3); A.trail = null; }
     if (A.rider === G.mySlot) A.trail = null;
-    // a walking bob and a slow breath at rest (the imported animals have no walk cycles)
+    // a walking bob and a slow breath at rest (except Juniper at home, whose model walks for itself)
+    stbLook(A); stbAnimate(A, dt);
     A.bob = (A.bob || 0) + dt * (0.6 + Math.abs(A.speed) * 2.6);
-    const g = Math.abs(A.speed), amp = g > 4 ? 0.06 : g > 0.3 ? 0.025 : 0.004;
+    const g = Math.abs(A.speed), amp = A.home ? 0 : g > 4 ? 0.06 : g > 0.3 ? 0.025 : 0.004;
     A.root.position.set(A.x, A.y + Math.abs(Math.sin(A.bob)) * amp, A.z); A.root.rotation.set(g > 0.3 ? Math.sin(A.bob * 2) * amp * 0.6 : 0, A.yaw, 0, 'YXZ');
     const c = A.coll, free = A.rider < 0 && W.animal !== A.i && A.leader < 0;
     if (c) { if (free) { const p = animalLocal(A, 0, 0, 0); c.x0 = p.x - 0.4; c.x1 = p.x + 0.4; c.z0 = p.z - 0.4; c.z1 = p.z + 0.4; c.y0 = A.y; c.y1 = A.y + 1.5; c.h = 1.5; } else { c.y0 = -50; c.y1 = -49; } }

@@ -35,6 +35,11 @@ HOME BASE: THE STABLES
   G takes tack off an animal, hangs carried tack back up, or unhitches the wagon.
   Animals you ride, lead or hitch when the team leaves come along to the haunted place.
 
+SCOUT THE DOG
+  Scout comes with you everywhere. Press V for his commands, then:
+  1 Sit, 2 Stay, 3 Follow, 4 Heel, 5 Fetch (what you're looking at, or the last thing you threw).
+  E to pet him. He growls and barks when the ghost is close.
+
 NEW GEAR
   Camcorder - switch it on (R) to look through night vision. Some ghosts show as floating
               orbs in their room, visible only on the camcorder.

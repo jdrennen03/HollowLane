@@ -40,6 +40,8 @@ function bindInput(canvas) {
     else if (k === 'KeyT') askSpirit();
     else if (k === 'KeyQ') cycleSlot(1);
     else if (k === 'KeyC') { PL.crouch = !PL.crouch; $('crouchTag').hidden = !PL.crouch; }
+    else if (k === 'KeyV') dogMenuToggle();
+    else if (UI.dogMenu && /^Digit[1-5]$/.test(k)) dogCommand(+k.slice(-1) - 1);
     else if (k === 'Digit1' || k === 'Digit2' || k === 'Digit3') selectSlot(+k.slice(-1) - 1);
   });
   addEventListener('keyup', e => { PL.keys[e.code] = false; });
@@ -125,6 +127,7 @@ function askSpirit() {
 function interact() {
   const h = PL.hot; if (!h) { stbGetOff(); return; }
   if (h.kind === 'tack' || h.kind === 'anim' || h.kind === 'wagon') { stbInteract(h); return; }
+  if (h.kind === 'dog') { request('dpet'); return; }
   if (h.kind === 'door') request('door', h.id);
   else if (h.kind === 'switch') { request('light', h.id); sfx('switch', 0.8); }
   else if (h.kind === 'item') {
@@ -295,7 +298,7 @@ const _ray = new THREE.Raycaster();
 function hotspot() {
   const P = me(), up = mounted(G.mySlot), A0 = riding(G.mySlot); _ray.setFromCamera({ x: 0, y: 0 }, PL.cam); _ray.far = up ? 3.4 : 2.1;
   const meshes = INTERACT.filter(o => o.kind === 'item' ? ITEMS[o.id].holder < 0 : o.kind === 'prop' ? PROPO[o.id] && PROPO[o.id].holder < 0 : o.kind === 'horse' ? HORSE.state === 'buck' && HORSE.calmT === null
-    : o.kind === 'tack' ? STB.tack[o.id].at === 'rack' && MAP.id === 'barn' : o.kind === 'anim' ? !STB.animals[o.id].away && STB.animals[o.id] !== A0 : o.kind === 'wagon' ? !STB.wagon.away && !onWagon(G.mySlot) : true).map(o => o.mesh);
+    : o.kind === 'tack' ? STB.tack[o.id].at === 'rack' && MAP.id === 'barn' : o.kind === 'anim' ? !STB.animals[o.id].away && STB.animals[o.id] !== A0 : o.kind === 'wagon' ? !STB.wagon.away && !onWagon(G.mySlot) : o.kind === 'dog' ? DOG.on : true).map(o => o.mesh);
   const hits = _ray.intersectObjects(meshes, false);
   let hot = null;
   for (const hit of hits) {
@@ -315,6 +318,7 @@ function hotspot() {
     else if (hot.kind === 'cat') text = 'Pet ' + CATS[hot.id].def.name;
     else if (hot.kind === 'horse') text = 'Calm the horse';
     else if (hot.kind === 'tack' || hot.kind === 'anim' || hot.kind === 'wagon') text = stbPrompt(hot);
+    else if (hot.kind === 'dog') text = 'Pet ' + DOG.name + ' · {V} Commands';
     else if (hot.kind === 'egg' && MAP.id === 'bayou') text = hot.id === 2 ? (G.gatorBait ? 'An empty bait bucket' : 'Toss the chicken necks into the bayou') : (G.eggOn ? 'The bell is still humming' : 'Ring the old dinner bell');
     else if (hot.kind === 'egg') text = MAP.id === 'barn' ? (G.eggOn ? 'An empty hook' : 'Take down Bonnie Blue\'s halter') : G.eggOn ? 'The tape is jammed in the slot' : 'Play the strange tape';
   }

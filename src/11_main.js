@@ -382,7 +382,7 @@ function updateGhostView(t, dt) {
 }
 function syncNetProps(dt) {
   if (G.isHost) return;
-  for (const p of PROPO) { if (!p.net || PL.carry === p.i) continue; const q = p.net, m = p.mesh; m.position.lerp(_tv.set(q[1], q[2], q[3]), clamp(dt * 14, 0, 1)); m.quaternion.slerp(new THREE.Quaternion(q[4], q[5], q[6], q[7]).normalize(), clamp(dt * 14, 0, 1)); }
+  for (const p of PROPO) { if (!p.net || PL.carry === p.i || DOG.carry === p.i) continue; const q = p.net, m = p.mesh; m.position.lerp(_tv.set(q[1], q[2], q[3]), clamp(dt * 14, 0, 1)); m.quaternion.slerp(new THREE.Quaternion(q[4], q[5], q[6], q[7]).normalize(), clamp(dt * 14, 0, 1)); }
 }
 
 // ---------------------------------------------------------------- maps
@@ -393,7 +393,7 @@ function loadMap(id) {
   for (const m of PRINTS) m.parent && m.parent.remove(m); PRINTS.length = 0; EMF_SRC.length = 0;
   for (const k in WORLD_EXTRA) delete WORLD_EXTRA[k];
   loadMapData(id);
-  buildWorld(scene); setItemHomes(); buildProps(); buildNav(); buildGrass(); buildMist(); stbAfterMap();
+  buildWorld(scene); setItemHomes(); buildProps(); buildNav(); buildGrass(); buildMist(); stbAfterMap(); dogAfterMap();
   LIGHTS.lantern.position.set(TENT.x + 0.85, 1.05 + terrainY(TENT.x, TENT.z), TENT.z - 0.05);
   const st = MAP.street; LIGHTS.street.position.set(st[0], st[1], st[2]); LIGHTS.street.target.position.set(st[0], st[1] - 5, st[2] + 0.5);
   LIGHTS.porch.position.set(...MAP.porch);
@@ -414,6 +414,7 @@ function beginGame(o) {
   G.state = 'play'; UI.results = false;
   PL.yaw = Math.PI; PL.pitch = -0.05; PL.crouch = false; PL.eyeH = 1.62; $('crouchTag').hidden = true; $('readout').hidden = true; PL.deathT = -1; PL.spectate = false; PL.stamina = 1; PL.slotIdx = 0; POST.death = 0;
   const P = me(); P.pos.set(16.6 - G.mySlot * 0.6, BA0, 5.3 + (G.mySlot % 2) * 0.8); P.flash = true; PL.yaw = Math.PI / 2;   // the barn aisle, facing the front doors
+  dogPlace(15.4, 6.4, -Math.PI / 2);
   UI.show('menu', false); UI.show('lobby', false); UI.show('results', false); UI.show('pause', false); UI.show('dead', false);
   $('hud').classList.add('show'); $('fade').style.opacity = 1; setTimeout(() => $('fade').style.opacity = 0, 100);
   requestLock(canvas);
@@ -472,7 +473,7 @@ function frame(now) {
       if (G.isHost) { if (STB.phase !== 'base') ghostThink(dt); stepProps(dt, T); }
       syncNetProps(dt);
     }
-    updateDoors(dt); updateAvatars(dt); syncItemParents(); updateItems(T, dt); updateCarry(); updateGiant(T, dt); updateGhostHorse(dt); updateGator(dt); updateStable(dt); updateAtmos(T); updateCats(T, dt); updateSmoke(dt); updateRoomLights(T, dt); updateGhostView(T, dt); updateBreath(dt);
+    updateDoors(dt); updateAvatars(dt); syncItemParents(); updateItems(T, dt); updateCarry(); updateGiant(T, dt); updateGhostHorse(dt); updateGator(dt); updateStable(dt); updateDog(T, dt); updateAtmos(T); updateCats(T, dt); updateSmoke(dt); updateRoomLights(T, dt); updateGhostView(T, dt); updateBreath(dt);
     hudUpdate(dt);
     if (G.mp) Net.flush(false);
     // flashlight

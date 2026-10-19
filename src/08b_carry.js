@@ -24,7 +24,7 @@ function dropProp(throwIt) {
   const v = throwIt ? _cf.clone().multiplyScalar(6.5).add(new V3(0, 1.4, 0)) : new V3(_cf.x * 0.7, 0.5, _cf.z * 0.7);
   request('pdrop', p.i, r2(_cp.x), r2(_cp.y), r2(_cp.z), r2(v.x), r2(v.y), r2(v.z), throwIt ? 1 : 0);
   p.holder = -1; p.pendT = performance.now();
-  if (throwIt) sfx('click', 0.4, 0.6);
+  if (throwIt) { sfx('click', 0.4, 0.6); PL.lastThrow = p.i; }
 }
 // host: authoritative pick-up, drop and throw
 function hostPropPick(i, slot) {
@@ -41,6 +41,7 @@ function hostCarryTick() {
   const now = performance.now() / 1000;
   for (const p of PROPO) {
     if (p.holder < 0) continue;
+    if (p.holder === DOG_HOLD) { p.moved = now; continue; }   // in Scout's mouth (03h_dog)
     const P = G.players[p.holder];
     if (!P || !P.alive) { p.holder = -1; p.sleep = false; p.settle = 0; p.vel.set(0, 0, 0); continue; }
     if (p.holder !== G.mySlot) {
