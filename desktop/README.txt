@@ -1,4 +1,4 @@
-HOLLOW LANE - desktop build kit
+HOLLOW LANE (CLAIRES VERSION!) - desktop build kit
 
 This folder turns the game into a normal app on your computer (Windows .exe, Mac .app or Linux).
 It is small because the app engine (Electron) gets downloaded during the build.
@@ -9,8 +9,8 @@ It is small because the app engine (Electron) gets downloaded during the build.
      Mac:     right-click BUILD-MAC.command > Open (Mac asks once because it was downloaded)
      Linux:   ./build-linux.sh
    It takes a minute or two. When done, a folder opens with the game:
-     Windows: "Hollow Lane.exe"  (you can copy that whole folder anywhere or to a USB stick)
-     Mac:     "Hollow Lane.app"  (drag to Applications)
+     Windows: "Hollow lane (Claires version!).exe"  (you can copy that whole folder anywhere or to a USB stick)
+     Mac:     "Hollow lane (Claires version!).app"  (drag to Applications)
 3. To give the game to friends, zip the finished folder in dist\ and send it -
    they don't need Node.js, they just run it. (Windows may show "Windows protected your PC":
    More info > Run anyway. On a Mac they may need System Settings > Privacy & Security > Open Anyway.)

@@ -1,4 +1,4 @@
-// Desktop shell for Hollow Lane: serves the game from app/ over an app:// scheme, and hosts LAN team play
+// Desktop shell for Hollow lane (Claires version!): serves the game from app/ over an app:// scheme, and hosts LAN team play
 // (a small WebSocket relay that mirrors the claude.ai room presence API, plus UDP lobby-code discovery).
 const { app, BrowserWindow, protocol, ipcMain, Menu } = require('electron');
 const path = require('path'), fs = require('fs'), os = require('os'), dgram = require('dgram');
@@ -92,7 +92,7 @@ ipcMain.handle('hl-discover', (e, code) => discover(String(code).toUpperCase()))
 // ---------------------------------------------------------------- window
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1440, height: 900, minWidth: 960, minHeight: 600, backgroundColor: '#050506', title: 'Hollow Lane', icon: path.join(__dirname, 'icon.png'), autoHideMenuBar: true, show: false,
+    width: 1440, height: 900, minWidth: 960, minHeight: 600, backgroundColor: '#050506', title: 'Hollow lane (Claires version!)', icon: path.join(__dirname, 'icon.png'), autoHideMenuBar: true, show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
   });
   win.once('ready-to-show', () => win.show());

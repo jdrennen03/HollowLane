@@ -45,7 +45,7 @@ jobs:
       - name: Zip
         run: |
           cd dist
-          D="Hollow Lane-${{ matrix.platform }}-${{ matrix.arch }}"
+          D="Hollow lane (Claires version!)-${{ matrix.platform }}-${{ matrix.arch }}"
           case "${{ matrix.platform }}" in
             darwin) ditto -c -k --sequesterRsrc --keepParent "$D" "../${{ matrix.zip }}" ;;
             win32)  7z a -tzip -mx=7 "../${{ matrix.zip }}" "$D" ;;

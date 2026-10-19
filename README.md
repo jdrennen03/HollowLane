@@ -1,4 +1,4 @@
-# Hollow Lane
+# Hollow lane (Claires version!)
 
 First-person co-op ghost hunting for 1–4 players, built with three.js. Investigate a house, a farm or
 the Whitlock Stables, gather evidence, and name the ghost before it takes you.
@@ -9,13 +9,13 @@ Grab the latest build from the [Releases](../../releases) page:
 
 | System | File |
 | --- | --- |
-| Windows | `HollowLane-Windows-x64.zip` – unzip, run `Hollow Lane.exe` |
+| Windows | `HollowLane-Windows-x64.zip` – unzip, run `Hollow lane (Claires version!).exe` |
 | Mac (M1/M2/M3…) | `HollowLane-Mac-AppleSilicon.zip` |
 | Mac (Intel) | `HollowLane-Mac-Intel.zip` |
 | Linux | `HollowLane-Linux-x64.zip` – run `hollow-lane` |
 
 The apps are unsigned. Windows: "Windows protected your PC" → More info → Run anyway.
-Mac: if it says the app is damaged, run `xattr -cr "/Applications/Hollow Lane.app"` once in Terminal.
+Mac: if it says the app is damaged, run `xattr -cr "/Applications/Hollow lane (Claires version!).app"` once in Terminal.
 
 ## Making a release
 

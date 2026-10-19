@@ -54,6 +54,6 @@
   }
   addEventListener('DOMContentLoaded', () => {
     const jc = document.getElementById('joinCode'); if (jc) { jc.maxLength = 40; jc.placeholder = 'CODE'; }
-    const lb = document.querySelector('#lobby .sheet > p.note'); if (lb) lb.textContent = 'Teammates run Hollow Lane on their own computers, type the code and press Join. Up to 4 investigators. Allow the app through your firewall when asked.';
+    const lb = document.querySelector('#lobby .sheet > p.note'); if (lb) lb.textContent = 'Teammates run Hollow lane (Claires version!) on their own computers, type the code and press Join. Up to 4 investigators. Allow the app through your firewall when asked.';
   });
 })();
