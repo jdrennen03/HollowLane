@@ -55,9 +55,10 @@ function stbInit() {
 // the models are big, so each is fetched the first time it has to be seen
 function stbEnsure() {
   for (const A of STB.animals) if (!A.away && !A.req) { A.req = true; stbLoad(A.def.url, A.def.rot, A.def.len, T => {
-    A.H = T.H; A.body.add(T.m);
-    if (A.def.draft) draftDetails(A, T.m);
-    A.packM = T.m; A.packH = T.H; stbLook(A);
+    A.H = T.H; A.body.add(T.m); A.packM = T.m; A.packH = T.H;
+    if (A.def.draft) { const ex = draftDetails(A, T.m), rg = rigDraft(A, T.m, ex); if (rg) { A.packM = rg.G2; A.rig = rg.R; } }   // Dakota: markings, mane, tail and a fitted skeleton
+    else if (A.def.kind === 'horse') A.rig = rigNamed(A, T.m);
+    stbLook(A);
   }); }
   for (const A of STB.animals) if (A.def.home && !A.away && !A.reqHome) { A.reqHome = true; stbLoad(A.def.home.url, A.def.rot === Math.PI / 2 ? 0 : A.def.rot, A.def.home.len, T => {
     A.body.add(T.m); A.homeM = T.m; A.homeH = T.H;
@@ -134,8 +135,9 @@ function stbAttach(t) {
   par.add(t.obj); t.obj.visible = true; t.obj.rotation.set(0, 0, 0); t.obj.scale.setScalar(1); t.hit.visible = t.at === 'rack';
   if (A) {
     t.obj.position.set(0, 0, 0);
-    // the bridle rides on the head bone so it moves with the head (measured and attached in the standing pose)
-    if (t.kind === 'bridle' && vis.userData.bone) { if (A.mixer && A.home) { for (const n in A.acts) A.acts[n].setEffectiveWeight(n === 'idle' ? 1 : 0); A.mixer.setTime(0); } A.root.updateMatrixWorld(true); vis.userData.bone.attach(t.obj); }
+    // the bridle rides on the head bone so it moves with the head, the saddle and harness on the spine (measured and attached standing)
+    const F = A.fits && A.fits[stbShown(A).uuid], bone = t.kind === 'bridle' ? vis.userData.bone : F && F.spine;
+    if (bone) { if (A.mixer && A.home) { for (const n in A.acts) A.acts[n].setEffectiveWeight(n === 'idle' ? 1 : 0); A.mixer.setTime(0); } horseRest(A); A.root.updateMatrixWorld(true); bone.attach(t.obj); }
   } else if (mine) {
     t.obj.position.set(0.32, -0.42, -0.62); t.obj.rotation.set(0.15, 0.4, 0); if (t.kind === 'saddle') { t.obj.scale.setScalar(0.55); vis.position.y = -0.4; } else { t.obj.scale.setScalar(0.8); vis.position.y = 0.25; }
   } else {
@@ -479,11 +481,11 @@ function updateStable(dt) {
     else if (A.rider < 0) { A.speed = 0; A.y = groundY(A.x, A.z, A.y === undefined ? 0 : A.y + 0.3); A.trail = null; }
     if (A.rider === G.mySlot) A.trail = null;
     // a walking bob and a slow breath at rest (except Juniper at home, whose model walks for itself)
-    stbLook(A); stbAnimate(A, dt);
+    stbLook(A); stbAnimate(A, dt); if (A.rig) horseAnimate(A, performance.now() / 1000, dt);
     stbRope(A, A.leader >= 0 && W.animal !== A.i && A.rider < 0);
     const br = A.bridle >= 0 && STB.tack[A.bridle].vis; if (br && br.userData.bits) stbReins(A, br);
     A.bob = (A.bob || 0) + dt * (0.6 + Math.abs(A.speed) * 2.6);
-    const g = Math.abs(A.speed), amp = A.home ? 0 : g > 4 ? 0.06 : g > 0.3 ? 0.025 : 0.004;
+    const g = Math.abs(A.speed), amp = A.home || A.rig ? 0 : g > 4 ? 0.06 : g > 0.3 ? 0.025 : 0.004;
     A.root.position.set(A.x, A.y + Math.abs(Math.sin(A.bob)) * amp, A.z); A.root.rotation.set(g > 0.3 ? Math.sin(A.bob * 2) * amp * 0.6 : 0, A.yaw, 0, 'YXZ');
     const c = A.coll, free = A.rider < 0 && W.animal !== A.i && A.leader < 0;
     if (c) { if (free) { const p = animalLocal(A, 0, 0, 0); c.x0 = p.x - 0.4; c.x1 = p.x + 0.4; c.z0 = p.z - 0.4; c.z1 = p.z + 0.4; c.y0 = A.y; c.y1 = A.y + 1.5; c.h = 1.5; } else { c.y0 = -50; c.y1 = -49; } }
