@@ -143,7 +143,8 @@ function bindUI() {
   $('btnAgain').onclick = () => Net.lobby ? backToLobby() : (resetToIdle(), startSolo(STB.dest || CURMAP));
   const sens = $('sens'); sens.oninput = () => { PL.sens = +sens.value; $('sensV').textContent = (+sens.value).toFixed(1); };
   const vol = $('vol'); vol.oninput = () => { AU.vol = +vol.value; if (AU.master) AU.master.gain.value = AU.vol; $('volV').textContent = Math.round(vol.value * 100); };
-  const q = $('qual'); q.oninput = () => { setQuality(+q.value); $('qualV').textContent = ['Low', 'Medium', 'High'][+q.value]; };
+  const q = $('qual'); q.oninput = () => { setQuality(+q.value); $('qualV').textContent = ['Low', 'Medium', 'High'][+q.value]; try { localStorage.setItem('hl-qual', q.value); } catch (e) { } AUTOQ.steps = 2; };
+  if (QPREF !== null) { q.value = QPREF; $('qualV').textContent = ['Low', 'Medium', 'High'][QPREF]; }
   addEventListener('keydown', e => {
     if (e.code === 'Escape') { if (UI.journalOpen) { closeJournal(); } }
     if ((e.code === 'KeyJ' || e.code === 'Tab') && UI.journalOpen && G.state === 'play' && e.target.tagName !== 'INPUT') { /* handled in player */ }

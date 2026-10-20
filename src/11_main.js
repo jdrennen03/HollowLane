@@ -225,6 +225,8 @@ function buildPost() {
   composer.addPass(finalPass);
 }
 let QUALITY = 2;
+// Quality: whatever you last picked, else High until the frame rate says otherwise (see autoQuality)
+const QPREF = (() => { try { const q = localStorage.getItem('hl-qual'); return q === null ? null : clamp(+q, 0, 2); } catch (e) { return null; } })();
 function grassForQuality() { if (GRASS) GRASS.count = Math.round(GRASS.userData.full * [0.35, 0.65, 1][QUALITY]); }
 function setQuality(q) {
   QUALITY = q; grassForQuality();
@@ -233,6 +235,21 @@ function setQuality(q) {
   bloom.enabled = q > 0; gtao.enabled = q === 2;
   const sz = q === 2 ? 1024 : q === 1 ? 512 : 256; for (const s of LIGHTS.pool) { s.shadow.mapSize.set(sz, sz); if (s.shadow.map) { s.shadow.map.dispose(); s.shadow.map = null; } }
   onResize();
+}
+// the first time you play on this machine, and you haven't chosen a quality yourself: if the frame rate sags, step down
+// (High → Medium → Low) and say so. A few seconds into play, averaged over three seconds, so loading hitches don't count.
+const AUTOQ = { t: 0, n: 0, sum: 0, steps: 0 };
+function autoQuality() {
+  const now = performance.now(), dt = AUTOQ.last ? (now - AUTOQ.last) / 1000 : 0; AUTOQ.last = now;   // real time: the game's own dt is capped
+  if (QPREF !== null || AUTOQ.steps >= 2 || QUALITY === 0 || CINE.on || dt > 1) return;
+  AUTOQ.t += dt; if (AUTOQ.t < 4) return;
+  AUTOQ.sum += dt; AUTOQ.n++;
+  if (AUTOQ.sum < 3) return;
+  const fps = AUTOQ.n / AUTOQ.sum; AUTOQ.t = 0; AUTOQ.sum = 0; AUTOQ.n = 0;
+  if (fps >= 42) { AUTOQ.steps = 2; return; }   // smooth enough: leave it alone
+  setQuality(QUALITY - 1); AUTOQ.steps++; const q = $('qual'); if (q) { q.value = QUALITY; $('qualV').textContent = ['Low', 'Medium', 'High'][QUALITY]; }
+  try { localStorage.setItem('hl-qual', QUALITY); } catch (e) { }
+  sub('Graphics set to ' + ['Low', 'Medium', 'High'][QUALITY] + ' for smoother play (change it in the pause menu).', 'sys');
 }
 function onResize() { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight, false); composer.setSize(innerWidth, innerHeight); finalPass.uniforms.uRes.value.set(innerWidth, innerHeight); }
 addEventListener('resize', onResize);
@@ -244,12 +261,14 @@ function updateRoomLights(t, dt) {
   const gv = G.ghostView;
   for (let k = 0; k < 4; k++) {
     const s = LIGHTS.pool[k], p = LIGHTS.fills[k], ri = on[k];
-    if (ri === undefined) { s.intensity = 0; p.intensity = 0; s.shadow.autoUpdate = false; continue; }
+    if (ri === undefined) { s.intensity = 0; p.intensity = 0; s.shadow.autoUpdate = false; s.userData.room = -1; continue; }
     const F = FIXTURES[ri];
     s.position.copy(F.pos); s.target.position.set(F.pos.x, ROOMS[ri].y, F.pos.z); p.position.copy(F.pos).setY(F.pos.y - 0.15); s.distance = ROOMS[ri].lampRange || 11;
     let flick = huntFlick;
     if (G.eventFx > 0 && logicalRoom(gv.x, gv.z, gv.y) === ri) flick *= Math.random() < 0.4 ? 0.1 : 1;
-    const pw = ROOMS[ri].lampPow || 1; s.intensity = 32 * pw * flick; p.intensity = 3.2 * (ROOMS[ri].outdoor ? 0 : Math.min(pw, 2)) * flick; s.shadow.autoUpdate = true;
+    const pw = ROOMS[ri].lampPow || 1; s.intensity = 32 * pw * flick; p.intensity = 3.2 * (ROOMS[ri].outdoor ? 0 : Math.min(pw, 2)) * flick;
+    // the lamps don't move: their shadows are redrawn every third frame (staggered), and at once when a lamp moves to another room
+    s.shadow.autoUpdate = false; if (s.userData.room !== ri || (FRAMEN + k) % 3 === 0) s.shadow.needsUpdate = true; s.userData.room = ri;
   }
   for (let i = 0; i < NROOM; i++) { const F = FIXTURES[i]; if (!F) continue; const lit = G.lights[i]; F.bulbMat.emissiveIntensity = lit ? 1.6 * huntFlick : 0; }
   const barn = MAP.id === 'barn', SL = [[1.8, 5.7], [9.0, 5.7], [16.2, 5.7], [23.4, 5.7], [17.1, 2.0]];
@@ -507,6 +526,7 @@ function frame(now) {
   finalPass.uniforms.uTime.value = T;
   DUST_U.uCam.value.copy(camera.position);
   const cineView = updateCine(dt);
+  if (G.state === 'play') autoQuality();
   updateListener(camera);
   if (cineView) renderer.render(CINE.scene, CINE.cam); else composer.render();
 }
@@ -517,7 +537,7 @@ async function boot() {
   loadMap('barn');   // no title screen: the game opens in the stables
   G.gh = G.ghProc = buildGhostModel(scene); G.gh.look = 'hidden';
   loadGhostModels(scene);
-  initPlayer(scene, camera); bindInput(canvas); bindUI(); buildPost();
+  initPlayer(scene, camera); bindInput(canvas); bindUI(); buildPost(); if (QPREF !== null && QPREF !== QUALITY) setQuality(QPREF);
   G.players = [makePlayer(0, 'menu')]; G.ghostView = { x: 10, z: 7, y: -50, yaw: 0, mode: 0, vis: 0 }; G.gs = { x: 10, z: 7, y: -50, l: 0, yaw: 0, mode: 0, vis: 0, path: [] };
   $('loading').remove();
   // pre-compile shaders so the first light switch doesn't hitch
