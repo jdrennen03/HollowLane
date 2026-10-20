@@ -562,6 +562,30 @@ function buildProps() {
   }
   Math.random = keep;
 }
+// Props are placed by hand, often a few cm off the furniture models that load in under them later. Once every model of the
+// map has arrived, each prop is dropped (or lifted a little) onto whatever surface is right below it, so nothing floats or sinks.
+function settlePropsWhenLoaded() {
+  const root = WORLD.root; let calm = 0;
+  const tick = () => {
+    if (!WORLD || WORLD.root !== root) return;
+    const busy = Object.values(MODEL_TPL).some(T => !T.m) || Object.values(PROP_TPL).some(T => !T.m);
+    calm = busy ? 0 : calm + 1; if (calm < 2) return setTimeout(tick, 400);
+    settleProps();
+  };
+  setTimeout(tick, 400);
+}
+function settleProps() {
+  const skip = new Set(); for (const q of PROPO) q.mesh.traverse(o => skip.add(o));
+  const meshes = []; WORLD.root.updateMatrixWorld(true);
+  WORLD.root.traverse(o => { if (o.isMesh && !o.isInstancedMesh && !o.isSkinnedMesh && o.visible && !skip.has(o) && o.material !== PROP_HIT_MAT) meshes.push(o); });
+  const rc = new THREE.Raycaster(), down = new V3(0, -1, 0), from = new V3(); rc.far = 0.7;
+  for (const q of PROPO) {
+    const P = PROPS[q.i]; from.set(P.x, P.y + 0.08, P.z); rc.set(from, down);
+    const h = rc.intersectObjects(meshes, false)[0]; if (!h || Math.abs(h.point.y - P.y) < 0.003) continue;
+    const m = q.mesh, home = q.sleep && q.holder < 0 && Math.abs(m.position.x - P.x) < 0.01 && Math.abs(m.position.z - P.z) < 0.01;
+    P.y = h.point.y; if (home) m.position.y = P.y + q.hh;
+  }
+}
 const _qa = new THREE.Quaternion(), _qb = new THREE.Quaternion(), _eu = new THREE.Euler();
 function stepProps(dt, now) {
   for (const p of PROPO) {

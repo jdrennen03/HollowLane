@@ -365,7 +365,7 @@ function buildFurniture(gb, root) {
   { const f = fur(gb, 17.3, 10.94, 0); furModel(f, PACK.kit, 'Heladera', { height: 1.8, back: true, turn: Math.PI }); f.solid(-0.4, -0.74, 0.4, 0, 1.8); }   // fridge, facing the room
   { const f = fur(gb, 19.94, 6.6, Math.PI / 2); furModel(f, PACK.kit, 'Microondas', { len: 0.5, axis: 'x', back: true, dy: 0.92 }); }
   { const f = fur(gb, 16.6, 10.75, 0); furModel(f, PACK.kit, 'TachoBasura', { height: 0.5, turn: Math.PI }); f.solid(-0.2, -0.15, 0.2, 0.15, 0.5); }
-  { const f = fur(gb, 16.4, 8.4, 0); kitchenTable(f, 1.0); f.solid(-0.5, -0.3, 0.5, 0.3, 0.8); for (const [a, r] of [[-0.75, Math.PI / 2], [0.75, -Math.PI / 2]]) { const [cx, cz] = f.pt(a, 0.05); const c = fur(gb, cx, cz, r); chair(c, 'chrome', 'ceramicRed'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
+  { const f = fur(gb, 16.4, 8.4, 0); kitchenTable(f); f.solid(-0.74, -0.4, 0.74, 0.4, 0.8); for (const [a, r] of [[-0.98, Math.PI / 2], [0.98, -Math.PI / 2]]) { const [cx, cz] = f.pt(a, 0.05); const c = fur(gb, cx, cz, r); chair(c, 'chrome', 'ceramicRed'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
   prop('pot', 19.6, FY + 0.93, 7.45); prop('kettle', 19.55, FY + 0.92, 8.35); prop('cup', 19.45, FY + 0.92, 6.2); prop('bottle', 19.6, FY + 0.92, 10.2); prop('bottle', 19.55, FY + 0.92, 10.45); prop('plate', 16.2, FY + 0.76, 8.3); prop('mug', 16.65, FY + 0.76, 8.55);
   // ===== LAUNDRY
   { const appliance = (x, front) => { const f = fur(gb, x, 13.5, 0); f.box('enamel', 0, 0.45, 0, 0.68, 0.9, 0.68); f.cyl('chrome', 0, 0.45, -0.345, 0.2, 0.2, 0.02, 20, Math.PI / 2); f.cyl('screen', 0, 0.45, -0.35, 0.16, 0.16, 0.02, 20, Math.PI / 2); f.box('enamel', 0, 0.96, 0.28, 0.68, 0.14, 0.1); f.solid(-0.34, -0.34, 0.34, 0.34, 1); }; appliance(18.95);
@@ -489,7 +489,7 @@ function coffeeTable(f, h = 0.45) { furModel(f, PACK.tl, 'TinyLiving_SirCumferen
 function tvStand(f) { furModel(f, PACK.tl, 'TinyLiving_MediaMarathoner_AllontheWall_10', { len: 1.1, axis: 'x', back: true }); }
 function hallTable(f) { furModel(f, PACK.tl, 'TinyLiving_TinyConsole_44', { height: 0.76, back: true }); }
 function singleBed(f) { furModel(f, PACK.tl, 'TinyLiving_Space-SavingSingle_13', { len: 2.0, axis: 'z', turn: 0 }); }   // headboard at local -z, like bed()
-function kitchenTable(f, len = 1.1) { furModel(f, 'prop-dining.json', 'Table', { len, axis: 'x' }); }
+function kitchenTable(f) { furModel(f, 'prop-dining.json', 'Table', { height: 0.76 }); }   // 1.47 x 0.81 m
 function counter(f, sink) { furModel(f, PACK.kit, sink ? 'MesadaConBacha' : 'Mesada', { len: 1.0, axis: 'x', back: true }); }   // 1 m wide, 0.92 m to the worktop
 function nightstand(f) { furModel(f, PACK.tl, 'TinyLiving_NotATableEnd_43', { height: 0.57 }); }
 function dresser(f) { furModel(f, PACK.tl, 'TinyLiving_StubbyCubbyDresser_38', { height: 1.1, turn: Math.PI / 2 }); }   // the model's drawers face +x

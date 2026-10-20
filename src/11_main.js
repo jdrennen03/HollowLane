@@ -401,7 +401,7 @@ function loadMap(id) {
   for (const m of PRINTS) m.parent && m.parent.remove(m); PRINTS.length = 0; EMF_SRC.length = 0;
   for (const k in WORLD_EXTRA) delete WORLD_EXTRA[k];
   loadMapData(id);
-  buildWorld(scene); setItemHomes(); buildProps(); buildNav(); buildGrass(); buildMist();
+  buildWorld(scene); setItemHomes(); buildProps(); settlePropsWhenLoaded(); buildNav(); buildGrass(); buildMist();
   LIGHTS.lantern.position.set(TENT.x + 0.85, 1.05 + terrainY(TENT.x, TENT.z), TENT.z - 0.05);
   const st = MAP.street; LIGHTS.street.position.set(st[0], st[1], st[2]); LIGHTS.street.target.position.set(st[0], st[1] - 5, st[2] + 0.5);
   LIGHTS.porch.position.set(...MAP.porch);

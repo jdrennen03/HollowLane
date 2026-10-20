@@ -270,8 +270,8 @@ function buildFarm(gb, root) {
   { const f = F0(6.06, 4.55, -Math.PI / 2); furModel(f, PACK.kit, 'Heladera', { height: 1.8, back: true }); f.solid(-0.38, -0.74, 0.38, 0, 1.8); }
   { const f = F0(8.45, 0.1, Math.PI); furModel(f, PACK.kit, 'Microondas', { len: 0.5, axis: 'x', back: true, dy: 0.92 }); }
   { const f = F0(9.1, 4.7, 0); furModel(f, PACK.kit, 'TachoBasura', { height: 0.5 }); f.solid(-0.2, -0.15, 0.2, 0.15, 0.5); }
-  { const f = F0(7.9, 2.6); kitchenTable(f, 1.1); f.solid(-0.55, -0.32, 0.55, 0.32, 0.8);
-    for (const [a, r] of [[-0.8, Math.PI / 2], [0.8, -Math.PI / 2]]) { const [cx, cz] = f.pt(a, 0); const c = F0(cx, cz, r); chair(c, 'lightWood', 'fabricBlue'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
+  { const f = F0(7.9, 2.6); kitchenTable(f); f.solid(-0.74, -0.4, 0.74, 0.4, 0.8);
+    for (const [a, r] of [[-1.0, Math.PI / 2], [1.0, -Math.PI / 2]]) { const [cx, cz] = f.pt(a, 0); const c = F0(cx, cz, r); chair(c, 'lightWood', 'fabricBlue'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
   prop('pot', 6.3, Y0 + 0.88, 0.45); prop('kettle', 6.65, Y0 + 0.88, 0.62); prop('cup', 9.1, Y0 + 0.92, 0.4); prop('bottle', 8.0, Y0 + 0.92, 0.75); prop('plate', 7.75, Y0 + 0.76, 2.5); prop('mug', 8.1, Y0 + 0.76, 2.75);
   // entry hall
   placeModel(root, { url: 'prop-sidetable2.json', x: 9.62, z: 2.2, y: Y0, ry: Math.PI / 2, len: 1.05, axis: 'x', cols: 'box' });   // the lamp, books and keepsake box come with it
@@ -316,7 +316,7 @@ function buildFarm(gb, root) {
   { const f = F1(14.6, 8.6, -Math.PI / 2); singleBed(f); f.solid(-0.5, -1.0, 0.5, 1.0, 0.6); }
   { const f = F1(6.3, 8.5, Math.PI / 2); bookshelf(f); f.solid(-0.5, -0.18, 0.5, 0.18, 2); }
   { const f = F1(8.6, 9.6, 0.1); f.box('darkWood', 0, 0.28, 0, 1.0, 0.56, 0.55); f.box('brass', 0, 0.5, -0.28, 0.12, 0.08, 0.02); f.solid(-0.52, -0.3, 0.52, 0.3, 0.6); }
-  prop('teddy', 14.6, Y1 + 0.56, 9.4); prop('book', 6.35, Y1 + 0.5, 8.2, 1.3); prop('candle', 8.7, Y1 + 0.57, 9.6);
+  prop('teddy', 14.3, Y1 + 0.5, 8.75); prop('book', 6.35, Y1 + 0.5, 8.2, 1.3); prop('candle', 8.7, Y1 + 0.57, 9.6);
   // ---------- yard: gravel drive & turnaround, trees, yard light, bounds
   gb.mm('gravel', 7.4, 0.0, -8.6, 14.8, 0.025, -3.75); gb.mm('gravel', 8.7, 0.0, -40, 12.7, 0.024, -9.3);
   for (let i = 0; i < 14; i++) { const z = -3.7 - i * 0.55; gb.cyl('chrome', 4.45 + (i % 2) * 0.02, 0.15, z * 1.0 - 0.0, 0.035, 0.035, 0.3, 6); }
