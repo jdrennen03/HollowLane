@@ -302,7 +302,7 @@ function useGhostModel(idx) {
   loadGhostModel(idx);
   const next = GHOST_MODELS[idx] || G.ghProc; if (!next || next === G.gh) return;
   if (G.gh) { setGhostLook(G.gh, 'hidden'); G.gh.look = 'hidden'; }
-  G.gh = next; G.gh.look = null;
+  G.gh = next; G.gh.look = null; WARM = true;
 }
 function animateGhost(gh, t, dt, v) {
   if (!gh.glb) { gh.phase += dt * (v.moving || 0) * 4.5; poseGhost(gh, t, Math.min(1.5, (v.moving || 0) / 1.2), v.mode); return; }

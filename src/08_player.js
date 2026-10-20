@@ -190,7 +190,7 @@ function buildAvatars() {
     for (const s of [-1, 1]) { const sh = new THREE.Group(); sh.position.set(s * 0.24, 1.42, 0); g.add(sh); mk(new THREE.CapsuleGeometry(0.06, 0.5, 4, 8), jacket, 0, -0.28, 0, sh); arms.push(sh); }
     const hand = new THREE.Group(); hand.position.set(0, -0.6, -0.05); arms[1].add(hand);
     // flashlight beam for this teammate (no shadow to stay within GPU limits)
-    const sp = new THREE.SpotLight(0xfff0dc, 0, 18, 0.5, 0.6, 1.8); sp.position.set(0, 0.07, -0.13); sp.target.position.set(0, 0, -3); head.add(sp, sp.target);
+    const sp = new THREE.SpotLight(0xfff0dc, 0, 18, 0.5, 0.6, 1.8); sp.position.set(0, 0.07, -0.13); sp.target.position.set(0, 0, -3); head.add(sp, sp.target); proxyLight(sp, head, scene, true);
     // floating name tag
     const [c, x] = mkCanvas(256, 64); x.font = '600 34px "Barlow Semi Condensed", sans-serif'; x.textAlign = 'center'; x.fillStyle = SLOT_COLORS[P.slot]; x.shadowColor = '#000'; x.shadowBlur = 6; x.fillText(P.nick, 128, 44);
     const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(c, true, false), transparent: true, depthTest: true, opacity: 0.85 })); tag.scale.set(0.8, 0.2, 1); tag.position.y = 2.0; g.add(tag);

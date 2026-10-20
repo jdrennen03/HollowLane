@@ -304,6 +304,14 @@ function updateItems(t, dt) {
       if (on && uvK < 2) { it.light.getWorldPosition(PRINT_U.uvPos.value[uvK]); it.light.target.getWorldPosition(_td); PRINT_U.uvDir.value[uvK].copy(_td).sub(PRINT_U.uvPos.value[uvK]).normalize(); uvi[uvK] = 1; uvK++; }
     } else if (it.type === 'journal') {
       const want = it.spent ? it.parts.written : it.parts.blank; if (it.parts.page.map !== want) { it.parts.page.map = want; it.parts.page.needsUpdate = true; }
+      // while the ghost writes, the book rises off the floor and shudders, then drops back where it was
+      if (it.writeT > 0) {
+        it.writeT -= dt; const k = JOURNAL_LIFT - it.writeT, e = it.writeT <= 0 || it.where !== 'world' ? 0 : Math.min(1, k / 0.5, it.writeT / 0.35);
+        if (it.where === 'world') {
+          if (e > 0) { const s = e * e * (3 - 2 * e), q = t * 1.0 + it.id; it.obj.position.set(it.pos.x, it.pos.y + s * (0.32 + Math.sin(q * 3.1) * 0.03), it.pos.z); it.obj.rotation.set(Math.sin(q * 13) * 0.14 * s, it.ry + Math.sin(q * 5.3) * 0.25 * s, Math.sin(q * 9.7 + 1) * 0.17 * s); }
+          else { it.writeT = 0; placeItemInWorld(it); sfxAt('thud', it.pos, 0.35); }
+        } else it.writeT = 0;
+      }
     } else if (it.type === 'meds') {
       const k = it.spent ? 1 : 0; it.parts.can.scale.set(1 + k * 0.08, 1 - k * 0.38, 1 - k * 0.1); it.parts.can.position.y = 0.062 - k * 0.019; it.parts.can.rotation.z = k * 0.12; it.parts.tab.rotation.x = k * -1.2;
     } else if (it.type === 'camera') {
@@ -410,7 +418,7 @@ function loadMap(id) {
 function beginGame(o) {
   G.mp = o.mp; G.isHost = o.host; G.mySlot = o.mySlot;
   if (o.map && o.map !== CURMAP) loadMap(o.map);
-  G.ghostModel = o.gm ?? 0; useGhostModel(G.ghostModel); o.mode = o.mode || 'pro';
+  G.ghostModel = o.gm ?? 0; useGhostModel(G.ghostModel); WARM = true; o.mode = o.mode || 'pro';
   startRound(o);
   G.state = 'play'; UI.results = false;
   PL.yaw = Math.PI; PL.pitch = -0.05; PL.crouch = false; PL.eyeH = 1.62; $('crouchTag').hidden = true; $('readout').hidden = true; PL.deathT = -1; PL.spectate = false; PL.stamina = 1; PL.slotIdx = 0; POST.death = 0;
@@ -453,6 +461,19 @@ async function quitToMenu() {
   for (const it of ITEMS) { it.holder = -1; it.on = false; it.pos.copy(it.home); it.ry = Math.PI; placeItemInWorld(it); }
 }
 
+// Shaders that first appear mid-round (the ghost's looks with their shadow and AO variants, camcorder orbs) are built
+// with a few throwaway renders as soon as the round's ghost is known, instead of stalling the frame of the first hunt.
+let WARM = false;
+function warmShaders() {
+  const gh = G.gh, P = me(); if (!gh || !P) return;
+  const at = gh.root.position.clone(), look = gh.look, f = new V3(); camera.getWorldDirection(f); f.y = 0; f.normalize();
+  gh.root.position.set(camera.position.x + f.x * 2.5, P.pos.y, camera.position.z + f.z * 2.5); gh.root.updateMatrixWorld(true);
+  for (const o of ORBS) { o.m.visible = true; o.m.position.copy(gh.root.position).setY(camera.position.y); }
+  for (const mode of ['visible', 'laser', 'shadow']) { setGhostLook(gh, mode); LIGHTS.moon.shadow.needsUpdate = true; composer.render(); }
+  for (const o of ORBS) o.m.visible = false;
+  gh.root.position.copy(at); setGhostLook(gh, look || 'hidden'); gh.look = look;
+}
+
 // ---------------------------------------------------------------- boot
 let last = performance.now(), T = 0;
 let FRAMEN = 0;
@@ -470,7 +491,8 @@ function frame(now) {
       if (G.isHost) { ghostThink(dt); stepProps(dt, T); }
       syncNetProps(dt);
     }
-    updateDoors(dt); updateAvatars(dt); syncItemParents(); updateItems(T, dt); updateCarry(); updateGiant(T, dt); updateGhostHorse(dt); updateGator(dt); updateAtmos(T); updateCats(T, dt); updateSmoke(dt); updateRoomLights(T, dt); updateGhostView(T, dt); updateBreath(dt);
+    if (WARM && live && ORBS.length) { WARM = false; warmShaders(); }
+    updateDoors(dt); updateAvatars(dt); syncItemParents(); syncLightProxies(); updateItems(T, dt); updateCarry(); updateGiant(T, dt); updateGhostHorse(dt); updateGator(dt); updateAtmos(T); updateCats(T, dt); updateSmoke(dt); updateRoomLights(T, dt); updateGhostView(T, dt); updateBreath(dt);
     hudUpdate(dt);
     if (G.mp) Net.flush(false);
     // flashlight
@@ -493,6 +515,9 @@ function frame(now) {
     MAP.menuCam(T, camera);
     updateRoomLights(T, dt);
     PL.flash.intensity = 0; PL.flashCone.visible = false; DUST_U.uFlOn.value = 0;
+    // item updates stop outside a round, so put out anything left switched on (a laser grid would stay on the house)
+    for (const it of ITEMS) { if (it.light) it.light.intensity = 0; if (it.parts.lens && it.parts.lens.emissiveIntensity !== undefined) it.parts.lens.emissiveIntensity = 0; }
+    LASER_U.uOn.value = 0; PRINT_U.uvOn.value[0] = PRINT_U.uvOn.value[1] = 0; CAM.on = false;
     finalPass.uniforms.uNV.value = 0; camHud(0, true);
     finalPass.uniforms.uSan.value = 1; finalPass.uniforms.uHunt.value = 0; finalPass.uniforms.uDeath.value = 0; finalPass.uniforms.uScare.value = 0;
     if (AU.ready) { loopGain('wind', 0.3, 1); loopGain('crickets', 0.15, 1); loopGain('drone', 0.0, 1); }

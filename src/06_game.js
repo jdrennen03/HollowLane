@@ -25,7 +25,7 @@ function startRound({ seed, ghostIdx, ghostRoom, roster, mode }) {
   for (const p of G.players) { p.peer = roster[p.slot].peer; p.ch = roster[p.slot].ch || 'f'; loadPlayerModel(p.ch); }
   initTemps(seed);
   // reset world
-  for (const it of ITEMS) { it.on = false; it.spent = false; it.burnEnd = 0; it.calmed = false; it.holder = -1; it.pos.copy(it.home); it.ry = Math.PI; placeItemInWorld(it); }
+  for (const it of ITEMS) { it.on = false; it.spent = false; it.burnEnd = 0; it.calmed = false; it.writeT = 0; it.holder = -1; it.pos.copy(it.home); it.ry = Math.PI; placeItemInWorld(it); }
   for (const p of PROPO) { const P = PROPS[p.i]; p.mesh.position.set(P.x, P.y + p.hh, P.z); p.mesh.rotation.set(0, P.ry, 0); p.sleep = true; p.yaw = P.ry; p.holder = -1; p.net = null; p.mesh.castShadow = true; }
   PL.carry = -1; stopEggs(); resetCats();
   for (const m of PRINTS) m.parent && m.parent.remove(m); PRINTS.length = 0; EMF_SRC.length = 0;
@@ -154,6 +154,7 @@ function applyEvent(ev) {
   else if (t === 'egg') startGiant(ev[1]);
   else if (t === 'horse') { G.eggOn = true; startGhostHorse(ev[1]); }
   else if (t === 'gbait') G.gatorBait = true;
+  else if (t === 'jw') { const J = ITEMS[ev[1]]; if (J) { J.spent = true; J.writeT = JOURNAL_LIFT; } }
   else if (t === 'gator') startGator();
   else if (t === 'hcalm') calmGhostHorse(ev[1], ev[2]);
   else if (t === 'throw') { const p = PROPO[ev[1]]; if (p && !G.isHost) { p.sleep = false; p.settle = 0; } }
@@ -246,7 +247,7 @@ function ghostInteract() {
   for (const o of opts) { r -= o[1]; if (r <= 0) { choice = o[0]; break; } }
   if (choice === 'write') {   // ghost writing: the journal's pages fill with scrawl
     const J = pick(journals); J.spent = true;
-    hostEvent(['snd', 'scribble', r2(J.pos.x), r2(J.pos.y + 0.1), r2(J.pos.z), 0.7]);
+    hostEvent(['snd', 'scribble', r2(J.pos.x), r2(J.pos.y + 0.1), r2(J.pos.z), 0.7]); hostEvent(['jw', J.id]);
   } else if (choice === 'door') {
     const D = pick(nearDoors); const slam = gh.slams && Math.random() < 0.6;
     D.target = slam ? (D.angle > 0.5 ? 0 : 1.45) : clamp(D.angle + (D.angle > 0.7 ? -1 : 1) * rr(0.4, 1.0), 0, 1.5); D.speed = slam ? 7 : 0.7;

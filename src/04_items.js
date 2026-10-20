@@ -29,6 +29,7 @@ const SB_ANSWERS = [
 // ---------------------------------------------------------------- gear
 const ITEM_TYPES = ['emf', 'spirit', 'uv', 'laser', 'thermo', 'incense', 'doll', 'camera', 'journal', 'meds'];
 const MEDS_SANITY = 40;
+const JOURNAL_LIFT = 2.6;   // seconds the spirit journal floats while the ghost writes
 const INCENSE_BURN = 10, INCENSE_RANGE = 4.5, INCENSE_REPEL = 6;
 const ITEM_NAME = { emf: 'EMF Reader', spirit: 'Spirit Box', uv: 'UV Light', laser: 'Laser Projector', thermo: 'Thermometer', incense: 'Incense Bundle', doll: 'Voodoo Doll', camera: 'Camcorder', journal: 'Spirit Journal', meds: 'Sanity Medication' };
 const ITEM_ICON = {
@@ -118,7 +119,7 @@ function buildItem(id, type) {
     const cover = new THREE.MeshStandardMaterial({ color: 0x3a2014, roughness: 0.75 });
     for (const sx of [-1, 1]) { const c = body(new THREE.BoxGeometry(0.165, 0.007, 0.235), cover, sx * 0.083, 0.0035, 0); c.rotation.z = sx * -0.05; }
     const paperM = new THREE.MeshStandardMaterial({ color: 0xb8b0a0, roughness: 0.95 });
-    for (const sx of [-1, 1]) { const pg = body(new THREE.BoxGeometry(0.155, 0.014, 0.222), paperM, sx * 0.079, 0.013, 0); pg.rotation.z = sx * -0.05; }
+    const pages = []; for (const sx of [-1, 1]) { const pg = body(new THREE.BoxGeometry(0.155, 0.014, 0.222), paperM, sx * 0.079, 0.013, 0); pg.rotation.z = sx * -0.05; pages.push(pg); }
     const blank = artTex(256, 180, (x, w, h) => { x.fillStyle = '#ece6d4'; x.fillRect(0, 0, w, h); x.strokeStyle = 'rgba(80,100,140,0.35)'; x.lineWidth = 1; for (let y = 22; y < h; y += 13) { x.beginPath(); x.moveTo(8, y); x.lineTo(w / 2 - 8, y); x.moveTo(w / 2 + 8, y); x.lineTo(w - 8, y); x.stroke(); } x.fillStyle = 'rgba(60,40,30,0.25)'; x.fillRect(w / 2 - 1, 0, 2, h); });
     const written = artTex(256, 180, (x, w, h) => {
       x.drawImage(blank.image, 0, 0);
@@ -129,7 +130,11 @@ function buildItem(id, type) {
       x.strokeStyle = 'rgba(90,10,10,0.85)'; x.lineWidth = 2; x.beginPath(); for (let k = 0; k <= 5; k++) { const a = -Math.PI / 2 + k * 4 * Math.PI / 5; x.lineTo(190 + Math.cos(a) * 26, 138 + Math.sin(a) * 26); } x.stroke(); x.beginPath(); x.arc(190, 138, 28, 0, Math.PI * 2); x.stroke();
     });
     const pageM = new THREE.MeshStandardMaterial({ map: blank, color: 0xc8c0b0, roughness: 0.95 });   // toned down so a flashlight doesn't wash the ink out
-    const top = new THREE.Mesh(new THREE.PlaneGeometry(0.31, 0.22), pageM); top.rotation.x = -Math.PI / 2; top.position.y = 0.0205; g.add(top);
+    // each half of the spread rides on its own tilted page block, so the blocks can't poke through the ink at the spine
+    pages.forEach((pg, k) => {
+      const geo = new THREE.PlaneGeometry(0.153, 0.22), uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, (k + uv.getX(i)) / 2);
+      const top = new THREE.Mesh(geo, pageM); top.rotation.x = -Math.PI / 2; top.position.y = 0.0074; pg.add(top);
+    });
     it.parts.page = pageM; it.parts.blank = blank; it.parts.written = written;
   } else if (type === 'meds') {
     // sanity medication, sold in a beer can
@@ -215,6 +220,22 @@ function buildItems(scene) {
     const it = buildItem(id++, type);
     it.off = [ox, oz, oy || 0]; it.home = new V3(); it.ry = Math.PI + (WR() - 0.5) * 0.3;
     scene.add(it.obj);
+    if (it.light) proxyLight(it.light, it.obj, scene);
+  }
+}
+// Lights must never sit under something that gets hidden (a pocketed torch, a dead teammate): three.js only counts visible
+// lights, and any change in that count recompiles every shader in the scene, a freeze of up to seconds. Such lights live
+// in the scene itself and follow an empty anchor in their old place; temp ones go away with their owner.
+const LIGHT_PROXIES = [];
+function proxyLight(L, parent, scene, temp) {
+  const a = new THREE.Object3D(), b = new THREE.Object3D(); a.position.copy(L.position); b.position.copy(L.target.position);
+  parent.remove(L, L.target); parent.add(a, b); scene.add(L, L.target); LIGHT_PROXIES.push({ L, a, b, temp });
+}
+function syncLightProxies() {
+  for (let i = LIGHT_PROXIES.length - 1; i >= 0; i--) {
+    const P = LIGHT_PROXIES[i]; let r = P.a; while (r.parent) r = r.parent;
+    if (P.temp && !r.isScene) { P.L.parent && P.L.parent.remove(P.L, P.L.target); LIGHT_PROXIES.splice(i, 1); continue; }
+    P.a.getWorldPosition(P.L.position); P.b.getWorldPosition(P.L.target.position);
   }
 }
 function setItemHomes() {
