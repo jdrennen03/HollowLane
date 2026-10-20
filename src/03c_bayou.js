@@ -306,7 +306,7 @@ function furnishShack(gb, root, h, n) {
   // table with two chairs, set for a meal nobody finished
   const tu = (U0 + cl + U1 - 1.0) / 2 + 0.2, tv = V1 - 0.95;
   { const f = F(tu, tv); f.box('darkWood', 0, 0.74, 0, 1.15, 0.05, 0.75); for (const [a, b] of [[-0.52, -0.32], [0.52, -0.32], [-0.52, 0.32], [0.52, 0.32]]) f.box('darkWood', a, 0.36, b, 0.05, 0.72, 0.05); f.solid(-0.58, -0.38, 0.58, 0.38, 0.8);
-    for (const [a, r] of [[-0.8, Math.PI / 2], [0.8, -Math.PI / 2]]) { const [cx, cz] = h.W(tu + a, tv); const c = fur(gb, cx, cz, h.phi + r, Y); chair(c, 'darkWood', 'darkWood'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
+    for (const [a, r] of [[-0.8, Math.PI / 2], [0.8, -Math.PI / 2]]) { const [cx, cz] = h.W(tu + a, tv); const c = fur(gb, cx, cz, h.phi + r, Y); woodChair(c, 'darkWood', 'darkWood'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
   for (const [t, a, b] of [['plate', -0.3, -0.15], ['plate', 0.3, 0.15], ['mug', 0.4, -0.2], ['cup', -0.4, 0.2], ['candle', 0.0, 0.0], ['bottle', 0.15, -0.25], ['bowl', -0.15, 0.25]]) P(t, tu + a, tv + b, 0.765);
   // shelves by the door side wall, full of jars and odds and ends
   { const su = U1 - 0.75, sv = V0 + 0.2; const f = F(su, sv, Math.PI); f.box('darkWood', 0, 1.0, -0.17, 1.2, 2.0, 0.03); for (const y of [0.3, 0.8, 1.3, 1.8]) f.box('darkWood', 0, y, 0, 1.2, 0.03, 0.34); f.solid(-0.6, -0.18, 0.6, 0.18, 2);

@@ -297,7 +297,7 @@ function buildFurniture(gb, root) {
     const f = fur(gb, 2.2, 5.45, 0); sofa(f, 2.2, 'fabricGreen', 'prop-couch.json', root); f.solid(-1.1, -0.45, 1.1, 0.45, 1);
   }
   { const f = fur(gb, 2.2, 2.9, 0); f.box('darkWood', 0, 0.42, 0, 1.1, 0.05, 0.6); for (const [a, b] of [[-0.5, -0.25], [0.5, -0.25], [-0.5, 0.25], [0.5, 0.25]]) f.box('darkWood', a, 0.2, b, 0.05, 0.4, 0.05); f.box('darkWood', 0, 0.12, 0, 1.0, 0.03, 0.5); f.solid(-0.55, -0.3, 0.55, 0.3, 0.45); }
-  rug(gb, 2.4, 2.9, 3.2, 2.3, 0);
+  placeModel(root, { url: PACK.tl, part: 'TinyLiving_ContemporaryCarpet_40', x: 2.4, z: 2.9, y: FY + 0.004, len: 3.2, axis: 'x', cols: false });
   { const f = fur(gb, 4.7, 2.9, Math.PI / 2); armchair(f, 'fabricBrown'); f.solid(-0.45, -0.45, 0.45, 0.45, 1); }
   { const f = fur(gb, 0.3, 4.4, -Math.PI / 2); bookshelf(f); f.solid(-0.5, -0.18, 0.5, 0.18, 2); }
   { const f = fur(gb, 0.55, 5.55, 0); f.box('darkWood', 0, 0.3, 0, 0.45, 0.6, 0.45); f.solid(-0.23, -0.23, 0.23, 0.23, 0.6); tableLamp(f, 0, 0.6, 0); }
@@ -317,6 +317,7 @@ function buildFurniture(gb, root) {
   { const f = fur(gb, 8.45, 0.5, 0); f.cyl('darkWood', 0, 0.9, 0, 0.025, 0.03, 1.8, 8); f.cyl('darkWood', 0, 0.02, 0, 0.22, 0.22, 0.04, 12); for (let i = 0; i < 4; i++) f.cyl('brass', Math.cos(i * 1.57) * 0.12, 1.72, Math.sin(i * 1.57) * 0.12, 0.012, 0.012, 0.2, 5, 0.7 * Math.sin(i * 1.57), -0.7 * Math.cos(i * 1.57)); f.box('fabricBrown', 0.08, 1.35, 0.05, 0.36, 0.7, 0.16, 0.3); f.solid(-0.2, -0.2, 0.2, 0.2, 1.8); }
   rug(gb, 9.5, 2.2, 1.6, 2.4, 0);
   prop('bowl', 10.75, FY + 0.69, 4.4);
+  shoesAt(10.35, 0.32, FY, [['shoe1', 0, 0.1], ['shoe1', 0.13, -0.05], ['shoe3', 0.34, 0.2], ['shoe3', 0.46, 0.05], ['slipper2', 0.05, 0.9, 1.6]]);
   // ===== DINING
   placeModel(root, { url: 'prop-dining.json', x: 15.5, z: 3.0, y: FY, cols: 'parts' });   // the table and its six chairs
   { const f = fur(gb, 18.3, 5.68, Math.PI); f.box('darkWood', 0, 0.45, 0, 1.4, 0.9, 0.48); f.box('darkWood', 0, 1.45, 0.06, 1.36, 1.1, 0.36); f.box('glass', 0, 1.45, -0.125, 1.2, 0.96, 0.01); for (const y of [1.15, 1.5]) f.box('darkWood', 0, y, 0.06, 1.3, 0.02, 0.32); for (let i = 0; i < 5; i++) f.cyl('porcelain', -0.5 + i * 0.25, 1.32, 0.12, 0.1, 0.1, 0.012, 16, Math.PI / 2 - 0.25); f.box('darkWood', 0, 2.03, 0.06, 1.44, 0.06, 0.4); f.solid(-0.7, -0.25, 0.7, 0.25, 2); }
@@ -341,16 +342,12 @@ function buildFurniture(gb, root) {
   gb.mm('darkWood', 0.06, FY + 1.75, 12.7, 1.95, FY + 1.77, 13.9); gb.cyl('chrome', 1.0, FY + 1.7, 13.35, 0.012, 0.012, 1.8, 6, 0, 0, Math.PI / 2);
   for (let i = 0; i < 5; i++) gb.box('fabricBlue', 0.4 + i * 0.32, FY + 1.25, 13.35, 0.05, 0.85, 0.42, 0.1 * (i - 2));
   // ===== BATHROOM
-  { const f = fur(gb, 6.47, 13.05, 0); // clawfoot tub
-    f.box('enamel', 0, 0.38, 0, 0.74, 0.52, 1.66); f.box('porcelain', 0, 0.62, 0, 0.78, 0.05, 1.7); f.box('screen', 0, 0.6, 0, 0.6, 0.02, 1.48);
-    for (const [a, b] of [[-0.3, -0.7], [0.3, -0.7], [-0.3, 0.7], [0.3, 0.7]]) f.sphere('brass', a, 0.08, b, 0.06);
-    f.cyl('chrome', 0, 0.8, 0.8, 0.015, 0.015, 0.3, 6); f.solid(-0.4, -0.85, 0.4, 0.85, 0.65);
-  }
+  { const f = fur(gb, 6.47, 13.05, 0); furModel(f, 'prop-bathtub.json', null, { len: 1.7, axis: 'x', turn: -Math.PI / 2 }); f.solid(-0.4, -0.85, 0.4, 0.85, 0.65); }   // the old stained tub, taps at the wall end
   { const f = fur(gb, 8.55, 13.45, -Math.PI / 2); toilet(f); f.solid(-0.25, -0.35, 0.25, 0.35, 0.8); }
-  { const f = fur(gb, 8.68, 10.5, -Math.PI / 2); f.box('paintedWood', 0, 0.42, 0, 0.9, 0.84, 0.48); f.box('porcelain', 0, 0.86, 0, 0.94, 0.05, 0.52); f.box('screen', 0, 0.875, 0.02, 0.4, 0.01, 0.3); f.cyl('chrome', 0, 0.98, -0.18, 0.012, 0.012, 0.2, 6); f.solid(-0.47, -0.26, 0.47, 0.26, 0.9); }
+  { const f = fur(gb, 8.68, 10.5, -Math.PI / 2); vanity(f); f.solid(-0.38, -0.26, 0.38, 0.45, 0.9); }
   { const g = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.8), MATS.mirror); g.position.set(8.93, FY + 1.6, 10.5); g.rotation.y = -Math.PI / 2; root.add(g); }
   gb.cyl('chrome', 6.08, FY + 1.1, 9.4, 0.01, 0.01, 0.6, 6, 0, Math.PI / 2, 0); gb.box('fabricBlue', 6.1, FY + 0.85, 9.4, 0.04, 0.5, 0.45);
-  prop('soap', 8.66, FY + 0.885, 10.2); prop('cup', 8.66, FY + 0.885, 10.85);
+  prop('soap', 8.45, FY + VANITY_SHELF, 10.29); prop('cup', 8.45, FY + VANITY_SHELF, 10.72);
   // ===== CHILD'S BEDROOM
   { const f = fur(gb, 9.55, 12.9, Math.PI); bed(f, 0.95, 1.95, 'beddingKid', 'lightWood'); f.solid(-0.5, -1.0, 0.5, 1.0, 0.6); }
   { const f = fur(gb, 11.3, 13.6, 0); f.box('toyBlue', 0, 0.22, 0, 0.8, 0.44, 0.45); f.box('toyYellow', 0, 0.46, -0.05, 0.82, 0.04, 0.46, 0, -0.5); f.solid(-0.42, -0.24, 0.42, 0.24, 0.5); }
@@ -362,26 +359,27 @@ function buildFurniture(gb, root) {
   picFrame(root, 'z', 11.2, 13.89, FY + 1.6, -1, 'p7', 0, 0.46);
   // ===== KITCHEN
   { const run = (z0, z1) => { gb.mm('paintedWood', 19.3, FY, z0, 19.94, FY + 0.88, z1); gb.mm('porcelain', 19.26, FY + 0.88, z0, 19.94, FY + 0.92, z1); addCollider(19.25, z0, 19.94, z1, 0.95, true); for (let z = z0 + 0.3; z < z1; z += 0.6) gb.mm('chrome', 19.28, FY + 0.75, z - 0.08, 19.3, FY + 0.77, z + 0.08); };
-    run(6.06, 7.9); run(8.6, 10.94);
+    run(6.06, 7.72); run(8.6, 10.94);
     // stove
-    gb.mm('enamel', 19.3, FY, 7.9, 19.94, FY + 0.9, 8.6); gb.mm('blackPlastic', 19.3, FY + 0.9, 7.9, 19.94, FY + 0.92, 8.6); addCollider(19.25, 7.9, 19.94, 8.6, 0.95, true);
-    for (const [a, b] of [[19.48, 8.08], [19.48, 8.42], [19.76, 8.08], [19.76, 8.42]]) gb.cyl('metal', a, FY + 0.93, b, 0.08, 0.08, 0.012, 14);
-    gb.mm('enamel', 19.86, FY + 0.92, 7.9, 19.94, FY + 1.35, 8.6); gb.mm('screen', 19.29, FY + 0.2, 7.98, 19.3, FY + 0.7, 8.52);
+    { const f = fur(gb, 19.94, 8.16, Math.PI / 2); furModel(f, PACK.kit, 'Horno', { len: 0.86, axis: 'x', back: true }); addCollider(19.25, 7.72, 19.94, 8.6, 0.95, true); }
     // sink under window
     gb.mm('chrome', 19.35, FY + 0.82, 8.65, 19.85, FY + 0.93, 9.35); gb.mm('screen', 19.4, FY + 0.93, 8.7, 19.8, FY + 0.931, 9.3); gb.cyl('chrome', 19.85, FY + 1.05, 9.0, 0.015, 0.015, 0.25, 6); gb.cyl('chrome', 19.75, FY + 1.17, 9.0, 0.012, 0.012, 0.22, 6, 0, 0, Math.PI / 2);
     // upper cabinets
     for (const [z0, z1] of [[6.06, 7.8], [9.6, 10.94]]) { gb.mm('paintedWood', 19.6, FY + 1.45, z0, 19.94, FY + 2.2, z1); for (let z = z0; z < z1 - 0.1; z += 0.55) gb.mm('paintedWood', 19.58, FY + 1.48, z + 0.03, 19.6, FY + 2.17, z + 0.52); }
   }
-  { const f = fur(gb, 17.3, 10.55, Math.PI); f.box('enamelMint', 0, 0.9, 0, 0.78, 1.8, 0.72); f.box('chrome', -0.3, 1.2, -0.37, 0.03, 0.4, 0.03); f.box('chrome', -0.3, 0.55, -0.37, 0.03, 0.25, 0.03); f.box('grayPlastic', 0, 1.42, -0.365, 0.76, 0.01, 0.01); f.solid(-0.4, -0.37, 0.4, 0.37, 1.8); }
+  { const f = fur(gb, 17.3, 10.94, 0); furModel(f, PACK.kit, 'Heladera', { height: 1.8, back: true, turn: Math.PI }); f.solid(-0.4, -0.74, 0.4, 0, 1.8); }   // fridge, facing the room
+  { const f = fur(gb, 19.94, 7.3, Math.PI / 2); furModel(f, PACK.kit, 'Microondas', { len: 0.5, axis: 'x', back: true, dy: 0.92 }); }
+  { const f = fur(gb, 16.6, 10.75, 0); furModel(f, PACK.kit, 'TachoBasura', { height: 0.5, turn: Math.PI }); f.solid(-0.2, -0.15, 0.2, 0.15, 0.5); }
   { const f = fur(gb, 16.4, 8.4, 0); f.box('lightWood', 0, 0.74, 0, 1.0, 0.04, 0.8); f.cyl('chrome', 0, 0.36, 0, 0.04, 0.04, 0.72, 8); f.cyl('chrome', 0, 0.01, 0, 0.3, 0.3, 0.02, 14); f.solid(-0.5, -0.4, 0.5, 0.4, 0.8); for (const [a, r] of [[-0.75, Math.PI / 2], [0.75, -Math.PI / 2]]) { const [cx, cz] = f.pt(a, 0.05); const c = fur(gb, cx, cz, r); chair(c, 'chrome', 'ceramicRed'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
-  prop('pot', 19.6, FY + 0.93, 8.25); prop('kettle', 19.62, FY + 0.92, 6.6); prop('cup', 19.6, FY + 0.92, 7.1); prop('bottle', 19.6, FY + 0.92, 10.2); prop('bottle', 19.55, FY + 0.92, 10.45); prop('plate', 16.2, FY + 0.76, 8.3); prop('mug', 16.65, FY + 0.76, 8.55);
+  prop('pot', 19.6, FY + 0.93, 8.25); prop('kettle', 19.62, FY + 0.92, 6.6); prop('cup', 19.6, FY + 0.92, 6.25); prop('bottle', 19.6, FY + 0.92, 10.2); prop('bottle', 19.55, FY + 0.92, 10.45); prop('plate', 16.2, FY + 0.76, 8.3); prop('mug', 16.65, FY + 0.76, 8.55);
   // ===== LAUNDRY
-  { const appliance = (x, front) => { const f = fur(gb, x, 13.5, Math.PI); f.box('enamel', 0, 0.45, 0, 0.68, 0.9, 0.68); f.cyl('chrome', 0, 0.45, -0.345, 0.2, 0.2, 0.02, 20, Math.PI / 2); f.cyl('screen', 0, 0.45, -0.35, 0.16, 0.16, 0.02, 20, Math.PI / 2); f.box('enamel', 0, 0.96, 0.28, 0.68, 0.14, 0.1); f.solid(-0.34, -0.34, 0.34, 0.34, 1); }; appliance(18.2); appliance(18.95); }
+  { const appliance = (x, front) => { const f = fur(gb, x, 13.5, Math.PI); f.box('enamel', 0, 0.45, 0, 0.68, 0.9, 0.68); f.cyl('chrome', 0, 0.45, -0.345, 0.2, 0.2, 0.02, 20, Math.PI / 2); f.cyl('screen', 0, 0.45, -0.35, 0.16, 0.16, 0.02, 20, Math.PI / 2); f.box('enamel', 0, 0.96, 0.28, 0.68, 0.14, 0.1); f.solid(-0.34, -0.34, 0.34, 0.34, 1); }; appliance(18.95);
+    const f = fur(gb, 18.2, 14.0 - 0.06, 0); furModel(f, PACK.bath, 'bs0', { len: 0.74, axis: 'x', back: true, turn: Math.PI }); f.solid(-0.34, -0.62, 0.34, 0, 1); }
   { const f = fur(gb, 14.45, 13.45, 0); f.cyl('enamel', 0, 0.75, 0, 0.27, 0.27, 1.5, 20); f.cyl('metal', 0, 1.6, 0, 0.05, 0.05, 0.25, 8); f.cyl('metal', 0, 1.9, 0, 0.04, 0.04, 0.4, 8); f.solid(-0.3, -0.3, 0.3, 0.3, 1.8); }
   { const f = fur(gb, 14.28, 12.2, -Math.PI / 2); for (const y of [0.4, 0.9, 1.4, 1.9]) f.box('darkWood', 0, y, 0, 1.2, 0.03, 0.36); for (const a of [-0.58, 0.58]) f.box('darkWood', a, 1.0, 0, 0.03, 2.0, 0.36); f.box('cardboard', -0.3, 0.6, 0, 0.4, 0.35, 0.3); f.box('cardboard', 0.25, 1.1, 0, 0.5, 0.36, 0.3); f.box('toyYellow', 0.3, 0.5, 0, 0.12, 0.18, 0.1); f.solid(-0.6, -0.19, 0.6, 0.19, 2); }
   { const f = fur(gb, 19.6, 12.0, -Math.PI / 2); f.box('enamel', 0, 0.8, 0, 0.6, 0.3, 0.5); for (const a of [-0.25, 0.25]) for (const b of [-0.2, 0.2]) f.cyl('metal', a, 0.33, b, 0.02, 0.02, 0.66, 6); f.solid(-0.3, -0.25, 0.3, 0.25, 1); }
   { const f = fur(gb, 15.6, 13.45, 0.2); f.box('cardboard', 0, 0.25, 0, 0.6, 0.5, 0.5); f.box('cardboard', 0.05, 0.7, 0, 0.5, 0.4, 0.45, 0.3); f.solid(-0.32, -0.3, 0.32, 0.3, 1); }
-  prop('bottle', 18.3, FY + 1.03, 13.5); prop('basket', 17.3, FY + 0.15, 12.4);
+  prop('bottle', 18.95, FY + 1.03, 13.5); prop('basket', 17.3, FY + 0.15, 12.4);
   // ===== cobwebs in upper corners
   const corners = [[0.1, 0.1, 0], [7.94, 5.94, Math.PI], [11.06, 0.1, -Math.PI / 2], [19.9, 5.94, Math.PI], [0.1, 13.9, Math.PI / 2], [8.94, 13.9, Math.PI], [9.06, 8.06, 0], [19.9, 13.9, Math.PI], [13.94, 8.06, -Math.PI / 2], [0.1, 6.06, 0], [5.94, 13.9, Math.PI]];
   for (const [x, z, ry] of corners) {
@@ -453,31 +451,25 @@ function sofa(f, len, key, model, root) {
   for (const a of [-1, 1]) for (const b of [-1, 1]) f.box('darkWood', a * (len / 2 - 0.08), 0.05, b * 0.35, 0.05, 0.1, 0.05);
   f.box('fabricRose', -len / 2 + 0.45, 0.6, 0.15, 0.4, 0.35, 0.12, 0.2, -0.2);
 }
-function armchair(f, key) {
-  logFurn(f, 'armchair', -1);
-  f.box(key, 0, 0.22, 0, 0.8, 0.25, 0.8); f.box(key, 0, 0.66, 0.32, 0.8, 0.7, 0.18, 0, -0.1);
-  for (const s of [-1, 1]) f.box(key, s * 0.33, 0.45, 0, 0.16, 0.34, 0.8);
-  f.box(key, 0, 0.4, -0.04, 0.5, 0.12, 0.62);
-  for (const a of [-1, 1]) for (const b of [-1, 1]) f.box('darkWood', a * 0.33, 0.05, b * 0.33, 0.05, 0.1, 0.05);
+// a piece from one of the model packs, in a fur() frame. The packs' models face +z and the box furniture faces -z, so by default
+// the model is turned round (turn: 0 keeps it as it is). at: a local offset, dy: lift; the rest goes to placeModel (len/height/back...)
+const PACK = { tl: 'prop-tinyliving.json', kit: 'prop-kitchen.json', bath: 'prop-bathset.json' };
+function furModel(f, url, part, P = {}) {
+  const [ox, oz, ry, oy] = f.o, [x, z] = P.at ? f.pt(P.at[0], P.at[1]) : [ox, oz];
+  placeModel(WORLD.root, Object.assign({ cols: false }, P, { url, part, x, z, y: oy + (P.dy || 0), ry: ry + (P.turn !== undefined ? P.turn : Math.PI) }));
 }
+function armchair(f, key) { logFurn(f, 'armchair', -1); furModel(f, PACK.tl, 'TinyLiving_LovelyArmchair_33', { len: 0.8, axis: 'x' }); }
 // a dining chair; the sitter faces local +z (the back is at -z), so a chair placed beside a table is turned toward it
-function chair(f, wood, seat, s = 1) {
+function chair(f, wood, seat, s = 1) { logFurn(f, 'chair', 1); furModel(f, PACK.tl, 'TinyLiving_LovelyDiningChair_42', { height: 0.92 * s, turn: 0 }); }
+// the plain wooden chair, for the swamp shacks
+function woodChair(f, wood, seat, s = 1) {
   logFurn(f, 'chair', 1);
   f.box(seat, 0, 0.45 * s, 0, 0.44 * s, 0.05, 0.44 * s);
   for (const [a, b] of [[-0.19, -0.19], [0.19, -0.19], [-0.19, 0.19], [0.19, 0.19]]) f.box(wood, a * s, 0.225 * s, b * s, 0.035, 0.45 * s, 0.035);
   for (const a of [-0.19, 0.19]) f.box(wood, a * s, 0.75 * s, -0.19 * s, 0.035, 0.6 * s, 0.035);
   f.box(wood, 0, 0.98 * s, -0.19 * s, 0.42 * s, 0.08, 0.03); f.box(wood, 0, 0.75 * s, -0.19 * s, 0.38 * s, 0.05, 0.02);
 }
-function bookshelf(f) {
-  f.box('darkWood', 0, 1.0, 0.16, 1.0, 2.0, 0.03); for (const a of [-0.49, 0.49]) f.box('darkWood', a, 1.0, 0, 0.03, 2.0, 0.34);
-  const books = ['bookA', 'bookB', 'bookC', 'bookD'];
-  for (let i = 0; i < 5; i++) {
-    const y = 0.05 + i * 0.45; f.box('darkWood', 0, y, 0, 0.98, 0.03, 0.34);
-    if (i === 4) continue;
-    let x = -0.45; while (x < 0.42) { const w = 0.03 + WR() * 0.04, h = 0.22 + WR() * 0.12; if (WR() < 0.12) { x += 0.08; continue; } const lean = WR() < 0.1 ? 0.25 : 0; f.box(books[(WR() * 4) | 0], x + w / 2, y + 0.015 + h / 2, -0.02, w, h, 0.22, 0, 0, lean); x += w + 0.004; }
-  }
-  f.box('darkWood', 0, 2.02, 0, 1.04, 0.04, 0.38);
-}
+function bookshelf(f) { furModel(f, PACK.tl, 'TinyLiving_PowerTowerBookcase_47', { height: 2.05, at: [0, 0.18], back: true }); }
 function bed(f, w, l, sheet, wood) {
   // frame, mattress, a duvet that hangs over the sides and foot, a turned-down sheet and pillows
   f.box(wood, 0, 0.18, 0, w + 0.06, 0.16, l); f.box('mattress', 0, 0.36, 0.02, w, 0.22, l - 0.06);
@@ -492,16 +484,15 @@ function bed(f, w, l, sheet, wood) {
   for (const a of [-1, 1]) for (const b of [-1, 1]) f.box(wood, a * (w / 2 + 0.03), 0.4, b * (l / 2 + 0.02), 0.07, 0.8 + (b < 0 ? 0.4 : 0), 0.07);
 }
 // close-coupled toilet: the bowl faces local +z, the cistern sits at -z
-function toilet(f) {
-  f.cyl('porcelain', 0, 0.19, 0.05, 0.13, 0.11, 0.38, 18); f.cyl('porcelain', 0, 0.33, 0.1, 0.19, 0.15, 0.1, 18);
-  f.cyl('porcelain', 0, 0.395, 0.1, 0.2, 0.2, 0.025, 20); f.cyl('screen', 0, 0.4, 0.11, 0.13, 0.13, 0.012, 16);
-  f.box('porcelain', 0, 0.62, -0.2, 0.44, 0.4, 0.17); f.box('porcelain', 0, 0.835, -0.2, 0.47, 0.03, 0.2);
-  f.box('chrome', 0.16, 0.76, -0.107, 0.06, 0.012, 0.012);
-}
-function nightstand(f) { f.box('darkWood', 0, 0.28, 0, 0.5, 0.56, 0.42); f.box('darkWood', 0, 0.57, 0, 0.54, 0.03, 0.46); f.box('brass', 0, 0.42, -0.215, 0.06, 0.015, 0.01); }
+function toilet(f) { furModel(f, 'prop-toilet.json', null, { height: 0.8, at: [0, -0.33], back: true, turn: 0 }); }
+const VANITY_SHELF = 0.665;   // the vanity model's open shelf (its basin covers the whole top), for things put on it
+function vanity(f) { furModel(f, PACK.tl, 'TinyLiving_TheSinkzBathroomVanity_32', { len: 0.7, axis: 'x', at: [0, -0.26], back: true, turn: 0 }); }   // back on local -z, like the toilet
+// a few shoes or slippers by a door: [type, dx, dz, ry?] from (x, z); each one can be picked up and thrown
+function shoesAt(x, z, y, list) { for (const [t, dx, dz, r] of list) prop(t, x + dx, y, z + dz, r !== undefined ? r : (WR() - 0.5) * 0.6); }
+function nightstand(f) { furModel(f, PACK.tl, 'TinyLiving_NotATableEnd_43', { height: 0.57 }); }
 function dresser(f) { f.box('darkWood', 0, 0.45, 0, 1.4, 0.9, 0.48); f.box('darkWood', 0, 0.91, 0, 1.44, 0.03, 0.52); for (let i = 0; i < 3; i++) { f.box('darkWood', 0, 0.18 + i * 0.27, -0.245, 1.32, 0.24, 0.01); f.box('brass', -0.35, 0.18 + i * 0.27, -0.255, 0.08, 0.02, 0.015); f.box('brass', 0.35, 0.18 + i * 0.27, -0.255, 0.08, 0.02, 0.015); } }
-function tableLamp(f, x, y, z) { f.cyl('brass', x, y + 0.01, z, 0.07, 0.08, 0.02, 12); f.cyl('brass', x, y + 0.2, z, 0.012, 0.012, 0.38, 6); f.cyl('fabricRose', x, y + 0.44, z, 0.1, 0.17, 0.2, 16); }
-function floorLamp(f) { f.cyl('brass', 0, 0.015, 0, 0.16, 0.16, 0.03, 14); f.cyl('brass', 0, 0.8, 0, 0.012, 0.012, 1.6, 6); f.cyl('fabricRose', 0, 1.6, 0, 0.14, 0.24, 0.26, 16); }
+function tableLamp(f, x, y, z) { furModel(f, PACK.tl, 'TinyLiving_TheModernDeskLamp_23', { height: 0.5, at: [x, z], dy: y }); }
+function floorLamp(f) { furModel(f, PACK.tl, 'TinyLiving_LampWithoutStorage_20', { height: 1.75 }); }
 // the wooden rocking horse model (its head is at +x; the furniture frame wants it at -z)
 function rockingHorse(f, root) { const [ox, oz, ry, oy] = f.o; placeModel(root, { url: 'prop-rockhorse.json', x: ox, z: oz, y: oy, ry: ry + Math.PI / 2, len: 1.0, axis: 'x', cols: false }); }
 function rug(gb, x, z, w, d, ry, y = FY) { const g = new THREE.PlaneGeometry(w, d); g.rotateX(-Math.PI / 2); gb.add(g, mat4(x, y + 0.006, z, ry), 'rugMat', false); }

@@ -4,6 +4,7 @@ const PROP_NAME = {
   mug: 'Mug', cup: 'Cup', book: 'Book', remote: 'Remote', plate: 'Plate', vase: 'Vase', bowl: 'Bowl', candle: 'Candle', bottle: 'Bottle', pot: 'Pot', kettle: 'Kettle',
   ball: 'Ball', block: 'Toy block', teddy: 'Teddy bear', truck: 'Toy truck', phone: 'Telephone', clock: 'Clock', jbox: 'Jewelry box', soap: 'Soap dispenser', basket: 'Basket',
   horseBig: 'Horse statue', horsePlush: 'Plush horse', trophy: 'Trophy', brush: 'Grooming brush', horseshoe: 'Horseshoe', controller: 'Controller', gamecase: 'Video game',
+  shoe1: 'Sneaker', shoe2: 'Sneaker', shoe3: 'Sneaker', shoe4: 'Sneaker', shoe5: 'Sneaker', slipper1: 'Slipper', slipper2: 'Slipper',
   cart: 'Game cartridge', handheld: 'Handheld console', pencilcup: 'Pencil cup', triangle: 'Drafting triangle', ruler: 'Ruler', sketchbook: 'Sketchbook',
 };
 function propName(p) { const t = PROPS[p.i].type; return PROP_NAME[t] || (/^horse/.test(t) ? 'Horse figurine' : t.charAt(0).toUpperCase() + t.slice(1)); }
