@@ -63,6 +63,6 @@ MAPS.lane = {
   menuCam(T, cam) { const a = T * 0.04; cam.position.set(9.5 + Math.sin(a) * 19, 3.0 + Math.sin(T * 0.1) * 0.4, -9 + Math.cos(a) * 8 - 8); cam.lookAt(10, 2.2, 6); },
   build(gb, root) {
     gb.mm('brick', -0.1, 0, -0.1, 20.1, FY - 0.06, 14.1);
-    buildRoof(gb); buildPorch(gb); buildFurniture(gb, root); buildExterior(gb, root);
+    buildRoof(gb); buildPorch(gb); buildFurniture(gb, root); buildExterior(gb, root); buildMusicBox(gb, root);
   },
 };

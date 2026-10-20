@@ -471,7 +471,7 @@ function frame(now) {
   GHOST_U.uTime.value = T; GRASS_U.uTime.value = T; SKY_U.uTime.value = T; DUST_U.uTime.value = T;
   if (G.state === 'play' || G.state === 'over') {
     const live = G.state === 'play';
-    if (live && !(UI.paused && !G.mp)) {
+    if (live && !(UI.paused && !G.mp) && !(CINE.on && !G.mp)) {   // solo: the house waits while you watch the music box
       G.elapsed += G.isHost ? dt : 0;
       updatePlayer(dt);
       if (G.isHost) { if (STB.phase !== 'base') ghostThink(dt); stepProps(dt, T); }
@@ -506,8 +506,9 @@ function frame(now) {
   }
   finalPass.uniforms.uTime.value = T;
   DUST_U.uCam.value.copy(camera.position);
+  const cineView = updateCine(dt);
   updateListener(camera);
-  composer.render();
+  if (cineView) renderer.render(CINE.scene, CINE.cam); else composer.render();
 }
 async function boot() {
   buildTextures(); buildMaterials(); makePrintMat();

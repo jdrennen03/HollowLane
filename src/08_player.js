@@ -31,6 +31,7 @@ function bindInput(canvas) {
     if (G.state !== 'play') return;
     if (k === 'Escape') { /* pointer lock release handled below */ }
     if (k === 'KeyJ' || k === 'Tab') { e.preventDefault(); toggleJournal(); return; }
+    if (CINE.on) { if (k === 'KeyE') cineWind(); else if (k === 'Escape' || k === 'KeyQ') cineBack(); return; }
     if (UI.rideOpen) { if (k === 'Escape') closeRideMenu(); return; }
     if (UI.journalOpen || UI.paused) return;
     if (!me() || !me().alive) { if (k === 'Space' || k === 'KeyE') { PL.specIdx++; } return; }
@@ -49,7 +50,7 @@ function bindInput(canvas) {
   addEventListener('keyup', e => { PL.keys[e.code] = false; });
   addEventListener('blur', () => { PL.keys = {}; });
   canvas.addEventListener('mousedown', e => {
-    if (G.state !== 'play' || UI.journalOpen || UI.paused || UI.rideOpen) return;
+    if (G.state !== 'play' || UI.journalOpen || UI.paused || UI.rideOpen || CINE.on) return;
     if (!PL.locked) { requestLock(canvas); PL.look.dragging = true; PL.look.x = e.clientX; PL.look.y = e.clientY; }
     if (!me() || !me().alive) return;
     if (e.button === 0 && PL.locked) { if (PL.carry >= 0) { dropProp(true); return; } const h = heldItem(); if (h && h.type === 'spirit') askSpirit(); }
@@ -58,7 +59,7 @@ function bindInput(canvas) {
   addEventListener('mouseup', () => { PL.look.dragging = false; });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
   addEventListener('mousemove', e => {
-    if (G.state !== 'play' || UI.journalOpen || UI.rideOpen) return;
+    if (G.state !== 'play' || UI.journalOpen || UI.rideOpen || CINE.on) return;
     let dx = 0, dy = 0;
     if (PL.locked) { dx = e.movementX; dy = e.movementY; }
     else if (PL.look.dragging) { dx = e.clientX - PL.look.x; dy = e.clientY - PL.look.y; PL.look.x = e.clientX; PL.look.y = e.clientY; }
@@ -68,6 +69,7 @@ function bindInput(canvas) {
   addEventListener('wheel', e => { if (G.state === 'play' && !UI.journalOpen && me()?.alive) cycleSlot(e.deltaY > 0 ? 1 : -1); }, { passive: true });
   document.addEventListener('pointerlockchange', () => {
     PL.locked = document.pointerLockElement === canvas;
+    if (!PL.locked && CINE.on) { cineBack(); return; }   // Esc in the music box steps back out of it
     if (!PL.locked && G.state === 'play' && !UI.journalOpen && !UI.rideOpen && !UI.results) openPause();
   });
   // touch fallback: drag to look, two-finger hold to walk
@@ -131,6 +133,7 @@ function interact() {
   if (h.kind === 'tack' || h.kind === 'anim' || h.kind === 'wagon') { stbInteract(h); return; }
   if (h.kind === 'dog') { request('dpet'); return; }
   if (h.kind === 'job') { request('job', 'map'); return; }
+  if (h.kind === 'mbox') { cineOpen(); return; }
   if (h.kind === 'door') request('door', h.id);
   else if (h.kind === 'switch') { request('light', h.id); sfx('switch', 0.8); }
   else if (h.kind === 'item') {
@@ -254,7 +257,7 @@ function updatePlayer(dt) {
   const cam = PL.cam;
   if (PL.deathT >= 0) { updateDeath(dt); return; }
   if (!P.alive) { updateSpectator(dt); return; }
-  const k = PL.keys, blocked = UI.journalOpen || UI.paused || UI.rideOpen;
+  const k = PL.keys, blocked = UI.journalOpen || UI.paused || UI.rideOpen || CINE.on;
   if (stbMove(P, dt, blocked)) { playerState(P, dt, P.moving); return; }
   let mx = 0, mz = 0;
   if (!blocked) { if (k.KeyW || k.ArrowUp) mz -= 1; if (k.KeyS || k.ArrowDown) mz += 1; if (k.KeyA || k.ArrowLeft) mx -= 1; if (k.KeyD || k.ArrowRight) mx += 1; }
@@ -322,6 +325,7 @@ function hotspot() {
     else if (hot.kind === 'horse') text = 'Calm the horse';
     else if (hot.kind === 'tack' || hot.kind === 'anim' || hot.kind === 'wagon') text = stbPrompt(hot);
     else if (hot.kind === 'dog') text = 'Pet ' + DOG.name + ' · {V} Commands';
+    else if (hot.kind === 'mbox') text = 'Look into the music box';
     else if (hot.kind === 'job') text = STB.phase === 'base' ? 'Change the place · {G} Difficulty' : 'Tonight\'s job';
     else if (hot.kind === 'egg' && MAP.id === 'bayou') text = hot.id === 2 ? (G.gatorBait ? 'An empty bait bucket' : 'Toss the chicken necks into the bayou') : (G.eggOn ? 'The bell is still humming' : 'Ring the old dinner bell');
     else if (hot.kind === 'egg') text = MAP.id === 'barn' ? (G.eggOn ? 'An empty hook' : 'Take down Bonnie Blue\'s halter') : G.eggOn ? 'The tape is jammed in the slot' : 'Play the strange tape';
