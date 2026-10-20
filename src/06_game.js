@@ -81,14 +81,14 @@ function hostIncense() {
     else if (gs.mode === 0 && !it.calmed) { it.calmed = true; gs.cooldown = Math.max(gs.cooldown, 60); }
   }
 }
-function repelGhost(p) {
+function repelGhost(p, quiet = false) {   // quiet: no incense message (Scout drove it off)
   const gs = G.gs; gs.repelT = INCENSE_REPEL; gs.target = -1; gs.lastSeen = null; gs.path = [];
   // flee toward whichever room point lies farthest from the smoke
   let best = null, bd = -1;
   for (let k = 0; k < 14; k++) { const ri = (Math.random() * NROOM) | 0; if (ROOMS[ri].closet || ROOMS[ri].noGhost) continue; const q = randomPointInRoom(ri), d = Math.hypot(q[0] - p.x, q[1] - p.z) + (q[2] === gs.l ? 0 : 3); if (d > bd) { bd = d; best = q; } }
   if (best) gs.path = findPath(gs.x, gs.z, gs.l, best[0], best[1], best[2]);
   hostEvent(['snd', 'recoil', r2(gs.x), r2(gs.y + 1.5), r2(gs.z), 1]);
-  hostEvent(['repel']);
+  if (!quiet) hostEvent(['repel']);
 }
 function hostAsk(slot, q, x, y, z) {
   const gs = G.gs, d = Math.abs(y - gs.y) > 1.6 ? 99 : Math.hypot(x - gs.x, z - gs.z), ri = logicalRoom(x, z, y);
@@ -113,7 +113,7 @@ function hostRequest(slot, r) {
   else if (t === 'stb') hostStable(slot, r.slice(1));
   else if (t === 'dog') hostDogCmd(slot, r[2], r[3]);
   else if (t === 'dpet') hostEvent(['dpet', slot]);
-  else if (t === 'job') hostJob(slot, r[2]);
+  else if (t === 'job') hostJob(slot, r[2], r[3], r[4]);
   else if (t === 'pet') hostPet(r[2], slot);
   else if (t === 'pdrop') hostPropDrop(r[2], slot, r[3], r[4], r[5], r[6], r[7], r[8], r[9]);
   else if (t === 'egg' && MAP.id === 'farm' && !G.eggOn) { G.eggOn = true; hostEvent(['egg', (Math.random() * 1e9) | 0]); }
@@ -152,6 +152,8 @@ function applyEvent(ev) {
   else if (t === 'ge') onGhostEventStart(ev[1], ev[2]);
   else if (t === 'hunt') onHunt(ev[1]);
   else if (t === 'kill') onKill(ev[1]);
+  else if (t === 'dogsave') onDogSave(ev[1]);
+  else if (t === 'spook') onSpook(ev[1], ev[2], ev[3]);
   else if (t === 'caught') onCaught(ev[1]);
   else if (t === 'end') onRoundEnd(ev[1], ev[2]);
   else if (t === 'repel') onRepel();
@@ -330,10 +332,11 @@ function dollHunt(it) {
 function startHunt() {
   const gs = G.gs;
   if (G.ghost.preHunt) { for (let i = 0; i < NROOM; i++) G.lights[i] = false; hostEvent(['snd', 'breaker', r2(gs.x), r2(gs.y + 2), r2(gs.z), 1]); }
-  gs.mode = 2; gs.vis = 1; gs.huntT = 0; gs.repelT = 0; gs.huntDur = rr(28, 33); gs.path = []; gs.lastSeen = null; gs.target = -1;
+  gs.mode = 2; gs.vis = 1; gs.huntT = 0; gs.repelT = 0; gs.huntDur = rr(28, 33); gs.path = []; gs.lastSeen = null; gs.target = -1; gs.dogUsed = false;
   if (G.ghost.fixate) { const c = alivePlayers().filter(p => p.inside); gs.fixate = c.length ? pick(c).slot : -1; }
   for (const fd of DOORS) if (fd.ext) { fd.target = 0; fd.speed = 6; fd.locked = true; } G.frontLocked = true;
   hostEvent(['hunt', 1]);
+  hostSpookCheck();
 }
 function endHunt() {
   const gs = G.gs; gs.mode = 0; gs.vis = 0; gs.path = []; gs.wait = 3; gs.cooldown = 28 * (G.ghost.huntCd || 1); gs.eventT = Math.max(gs.eventT, 20);
@@ -366,6 +369,7 @@ function huntThink(dt) {
       else { const here = logicalRoom(gs.x, gs.z, gs.y); const ri = Math.random() < 0.5 ? (here >= 0 ? here : G.ghostRoom) : pick([...Array(NROOM).keys()]); const [x, z, l] = randomPointInRoom(ri); gs.path = findPath(gs.x, gs.z, gs.l, x, z, l, dyn); }
     }
   }
+  if (dogGuard()) return;   // Scout, at someone's side indoors, puts himself between them and the ghost
   // touch = death
   for (const P of alivePlayers()) {
     if (P.hidden || !P.inside) continue;

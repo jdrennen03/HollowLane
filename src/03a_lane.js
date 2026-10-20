@@ -3,6 +3,7 @@ MAPS.lane = {
   id: 'lane', title: '13 Hollow Lane', eyebrow: 'The house at', lede: 'The Hartley family left in 1987 and never came back for their things. Something stayed. Set up at the tent, gather evidence, name the ghost, and get out before it hunts you.',
   levels: [FY], extBase: [0], extTop: [CEIL], siding: 'siding', skirt: 'brick', shutter: 'darkHouse', crooked: true,
   tent: { x: 3.5, z: -8.6 }, lure: 0, moonTarget: [9, 0, 4], grassBox: [-5.8, -14.4, 26, 19.8],
+  road: { park: [2, -21.2, Math.PI / 2], exit: [[-40, -26.3, -30, -15.7], [50, -26.3, 60, -15.7]] },   // the wagon waits on the street; ride off down it either way
   yardName: p => p.z > 14 ? 'Back yard' : 'Front yard',
   street: [19.6, 5.0, -16.0], porch: [10.35, FY + 1.82, -0.35],
   slabs: [{ x0: -0.1, z0: -0.1, x1: 20.1, z1: 14.1, y: FY }, { x0: 7, z0: -2.2, x1: 12, z1: 0, y: FY }, { x0: 8.5, z0: -2.55, x1: 10.5, z1: -2.2, y: 0.27 }, { x0: 8.5, z0: -2.9, x1: 10.5, z1: -2.55, y: 0.13 }],

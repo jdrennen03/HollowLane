@@ -113,10 +113,11 @@ function onRoundEnd(guess, bySlot) {
   if (G.state !== 'play') return;
   G.state = 'over'; UI.results = true;
   if (document.pointerLockElement) document.exitPointerLock();
+  UI.rideOpen = false; UI.show('ride', false);
   const correct = guess === G.ghostIdx;
   $('btnAgain').textContent = Net.lobby ? 'Back to the lobby' : 'Back to the stables';
-  $('resEyebrow').textContent = guess < 0 ? 'Investigation failed' : 'Case closed';
-  $('resTitle').textContent = guess < 0 ? 'No one made it out' : correct ? 'Correct' : 'Wrong ghost';
+  $('resEyebrow').textContent = guess === -2 ? 'Called it a night' : guess < 0 ? 'Investigation failed' : 'Case closed';
+  $('resTitle').textContent = guess === -2 ? 'Headed home' : guess < 0 ? 'No one made it out' : correct ? 'Correct' : 'Wrong ghost';
   $('resGhost').textContent = 'It was a ' + G.ghost.name + '. ' + G.ghost.allEv.map(e => EV_NAME[e] + (e === G.hiddenEv ? ' (hidden)' : '')).join(', ') + '.';
   const by = bySlot >= 0 && G.players[bySlot] ? G.players[bySlot].nick : '—';
   const rows = [['Difficulty', MODES[G.mode] || 'Pro'], ['Your guess', guess >= 0 ? GHOSTS[guess].name : '—'], ['Filed by', guess >= 0 ? by : '—'], ['Ghost room', ROOMS[G.ghostRoom].name], ['Time in the house', $('clockVal').textContent], ['Investigators lost', G.stats.deaths + ' of ' + G.players.length], ['Your sanity', Math.round(me().sanity) + '%']];
@@ -126,6 +127,7 @@ function onRoundEnd(guess, bySlot) {
   if (correct) sfx('huntEnd', 0.6); else sfx('scare', 0.6);
 }
 function bindUI() {
+  bindRideMenu();
   const nick = $('nick'); let stored = ''; try { stored = localStorage.getItem('hl-nick') || ''; } catch (e) { }
   nick.value = stored || ('Investigator ' + (100 + (Math.random() * 900 | 0)));
   const nm = () => { const v = nick.value.trim().slice(0, 14) || 'Investigator'; try { localStorage.setItem('hl-nick', v); } catch (e) { } return v; };

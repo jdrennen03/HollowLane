@@ -135,7 +135,12 @@ function hostDog(dt) {
     const k = Math.max(0, tr.length - 12), q = tr[k]; if (q) { D.x = q[0]; D.z = q[1]; D.y = groundY(q[0], q[1], q[2]); D.ti = k; }
   }
   let still = true;
-  if (D.mode === 'follow' || D.mode === 'heel') {
+  const guard = dogGuardSpot(O);
+  if (guard && D.carry < 0) {   // a hunt, and the ghost is coming: stand between it and the owner, facing it
+    still = false; const gd = Math.hypot(guard[0] - D.x, guard[1] - D.z);
+    if (gd > 0.25) dogSteer(guard[0], guard[1], op.y, clamp(gd * 3, 1.5, 6.5), dt, tr); else D.speed = 0;
+    if (gd < 0.6) D.yaw += angDiff(D.yaw, Math.atan2(G.gs.x - D.x, G.gs.z - D.z)) * clamp(dt * 8, 0, 1);
+  } else if (D.mode === 'follow' || D.mode === 'heel') {
     const yaw = ride ? (riding(O.slot) ? riding(O.slot).yaw + Math.PI : STB.wagon.yaw + Math.PI) : O.yaw, left = ride ? 1.3 : 0.7;
     const heelX = op.x - Math.cos(yaw) * left, heelZ = op.z + Math.sin(yaw) * left;
     const heel = D.mode === 'heel' && dO < 4, gx = heel ? heelX : op.x, gz = heel ? heelZ : op.z, stop = heel ? 0.25 : (ride ? 3.2 : 1.9);
@@ -168,6 +173,7 @@ function hostDog(dt) {
   // resting: sit after a few seconds, lie down after a while (Stay lies down sooner)
   D.idleT = D.speed > 0.1 ? 0 : D.idleT + dt;
   D.pose = D.speed > 0.1 ? 0 : D.mode === 'sit' ? 1 : D.mode === 'stay' ? (D.idleT > 10 ? 2 : 1) : D.mode === 'heel' ? (D.idleT > 1.2 ? 1 : 0) : D.idleT > 22 ? 2 : D.idleT > 6 ? 1 : 0;
+  if (guard) D.pose = 0;   // on guard he stays up on his feet
   // the ghost: a growl when it shows itself nearby, barking all through a hunt when it's close
   const gs = G.gs; D.barkT -= dt;
   if (gs && gs.y > -10 && D.barkT <= 0) {
@@ -212,4 +218,34 @@ function animateDog(T, dt) {
   // tail: a lazy sway, a proper wag when he's moving, happy or just back with the ball
   D.wagT = Math.max(0, (D.wagT || 0) - dt); const happy = D.wagT > 0 || mv > 0.3;
   R.tail.forEach((t, i) => { t.ax = i === 0 ? -0.35 + lie * 0.3 : -0.04; t.ay = Math.sin(T * (happy ? 13 : 2.2) + i * 0.5) * (happy ? 0.35 : 0.12) * (0.5 + i / R.tail.length); applyPose(t); });
+}
+
+// ---------- protecting the team
+// Indoors, with Scout by your side (following or at heel, within a couple of steps), a hunting ghost has to get past him:
+// he plants himself between you and it, hackles up, and the first time it closes in he lunges and drives it back, once per hunt.
+const DOG_SIDE = 2.6;
+function dogWith(P) { const D = DOG; return D.on && D.carry < 0 && P && P.alive && P.inside && (D.mode === 'follow' || D.mode === 'heel') && Math.hypot(P.pos.x - D.x, P.pos.z - D.z) < DOG_SIDE + 1 && Math.abs(P.pos.y - D.y) < 1; }
+function dogGuardSpot(O) {
+  const gs = G.gs; if (!gs || gs.mode !== 2 || gs.huntT < 2.5 || gs.repelT > 0 || !dogWith(O)) return null;
+  const dx = gs.x - O.pos.x, dz = gs.z - O.pos.z, d = Math.hypot(dx, dz);
+  if (d > 9 || Math.abs(gs.y - O.pos.y) > 1.2) return null;
+  const k = Math.min(0.9, d * 0.5); return [O.pos.x + dx / d * k, O.pos.z + dz / d * k];
+}
+function dogGuard() {
+  const gs = G.gs; if (!DOG.on || gs.dogUsed || gs.repelT > 0) return false;
+  for (const P of alivePlayers()) {
+    if (P.hidden || !dogWith(P) || Math.abs(P.pos.y - gs.y) > 1) continue;
+    const dP = Math.hypot(P.pos.x - gs.x, P.pos.z - gs.z), dD = Math.hypot(DOG.x - gs.x, DOG.z - gs.z);
+    if (dP > 2.2 && dD > 1.3) continue;
+    gs.dogUsed = true;
+    DOG.yaw = Math.atan2(gs.x - DOG.x, gs.z - DOG.z); const step = Math.min(0.6, Math.max(0, dD - 0.5)); DOG.x += Math.sin(DOG.yaw) * step; DOG.z += Math.cos(DOG.yaw) * step;
+    repelGhost(new V3(DOG.x, DOG.y, DOG.z), true);
+    hostEvent(['dogsave', P.slot]); return true;
+  }
+  return false;
+}
+function onDogSave(slot) {
+  const P = G.players[slot], mine = slot === G.mySlot;
+  sfxAt('bark', new V3(DOG.x, DOG.y + 0.5, DOG.z), 1); setTimeout(() => sfxAt('growl', new V3(DOG.x, DOG.y + 0.4, DOG.z), 1), 350); setTimeout(() => sfxAt('bark', new V3(DOG.x, DOG.y + 0.5, DOG.z), 1), 700);
+  const me0 = me(); if (mine || (me0 && Math.hypot(me0.pos.x - DOG.x, me0.pos.z - DOG.z) < 12)) sub(mine ? DOG.name + ' throws himself between you and the ghost, snarling. It recoils!' : DOG.name + ' lunges at the ghost to protect ' + (P ? P.nick : 'them') + '. It recoils!', 'sys');
 }

@@ -79,6 +79,7 @@ MAPS.bayou = {
   levels: [BY0, BY1], extBase: [0, BY1 - 0.12], extTop: [3, BY1 + WALL_H + 0.05], siding: 'shackSiding', skirt: null, shutter: 'darkHouse', crooked: true,
   trimColor: 0x7d7262, tempBase: 21, outsideTemp: 24, fog: [0x101a14, 0.04], moonI: 3.4, hemiI: 0.6, moonSpan: 32, moonRes: 2048,
   tent: { x: 0, z: -21 }, lure: 1, moonTarget: [0, 0, 0], grassBox: [-30, -30, 30, 30], navBox: [-27, -27, 27, 27], navCs: 0.3,
+  road: { park: [-3.4, -16.2, Math.PI], exit: [[-5.4, -24.6, -1.8, -20.6], [-3.5, -27.6, 3.5, -25.4]] },   // the wagon waits beside the boardwalk; drive or ride down to the landing
   street: [3.2, 4.0, -18.5], porch: [0, 2.6, 0],
   rooms: BAYOU.rooms, walls: BAYOU.walls, doors: BAYOU.doors, stairs: BAYOU.stairs, slabs: BAYOU.slabs,
   terrain: (x, z) => bayouTerrain(x, z, true),

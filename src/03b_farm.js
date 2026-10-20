@@ -9,6 +9,7 @@ MAPS.farm = {
   trimColor: 0xe6e4de, noShutters: wd => !wd.o.shut,
   mirrorAt: 15,   // authored with the wing on +x; reflected so it matches the photo (wing on the left as you face the porch)
   tent: { x: 2.2, z: -9.6 }, lure: 8, moonTarget: [7.5, 0, 5], grassBox: [-13, -26, 29, 27],
+  road: { park: [10.7, -14.5, Math.PI], exit: [[8, -26.4, 13.5, -21.5]] },   // on the gravel drive, facing out; the drive runs off to the county road
   street: [21.5, 5.6, -7.0], porch: [11.75, FA0 + 1.85, -0.4],
   navBox: [-1.2, -2.4, 16.2, 10.2],
   terrain(x, z) { return -2.6 * smooth(4.5, 10.4, z); },

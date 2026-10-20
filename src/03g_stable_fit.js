@@ -10,7 +10,7 @@ function stbPoints(A, M) {
   const inv = A.body.matrixWorld.clone().invert(), pts = [];
   M.traverse(o => {
     // every vertex (sparse samples leave holes along the spine), skipping hair cards: a mane isn't something a saddle sits on
-    if (!o.isMesh || o.material.transparent || o.material.alphaTest > 0 || /hair/i.test(o.name + (o.material.name || ''))) return; const pos = o.geometry.attributes.position, step = Math.max(1, Math.floor(pos.count / 40000));
+    if (!o.isMesh || !o.visible || o.material.transparent || o.material.alphaTest > 0 || /hair/i.test(o.name + (o.material.name || ''))) return; const pos = o.geometry.attributes.position, step = Math.max(1, Math.floor(pos.count / 40000));
     if (o.isSkinnedMesh) o.skeleton.update();
     for (let i = 0; i < pos.count; i += step) { o.getVertexPosition(i, _fv); pts.push(_fv.applyMatrix4(o.matrixWorld).applyMatrix4(inv).clone()); }
   });
@@ -65,10 +65,12 @@ function stbFit(A, M) {
   return { pts, H, L, backY, topAt, dipZ, dipY, tip, hl, Mz, Qz, axis, inHead, at: t => Mz.clone().addScaledVector(axis, -t) };
 }
 // the model currently standing in for this animal (Juniper swaps bodies), and its fit, measured once per body
-function stbShown(A) { return A.home && A.homeM ? A.homeM : A.packM; }
+function stbShown(A) { return A.packSk || (A.home && A.homeM) ? A.homeM : A.packM; }
+// fits are measured per body: with the skinned pack, the animated donkey wears either her own coat or the pack
+function stbFitKey(A) { const M = stbShown(A); return M ? M.uuid + (A.packSk && !A.home ? ':pack' : '') : ''; }
 function stbFitFor(A) {
   const M = stbShown(A); if (!M) return null;
-  const key = M.uuid; if (A.fits && A.fits[key]) return A.fits[key];
+  const key = stbFitKey(A); if (A.fits && A.fits[key]) return A.fits[key];
   // measure the animated donkey in her standing pose, whatever clip happens to be playing
   if (A.mixer && M === A.homeM) { for (const n in A.acts) A.acts[n].setEffectiveWeight(n === 'idle' ? 1 : 0); A.mixer.setTime(0); }
   horseRest(A);
@@ -76,7 +78,7 @@ function stbFitFor(A) {
   (A.fits || (A.fits = {}))[key] = F; return F;
 }
 // where the rider sits (body space) and the withers the reins run back to
-function stbSeat(A) { const F = A.fits && stbShown(A) && A.fits[stbShown(A).uuid]; return F ? { y: F.dipY + (A.saddle >= 0 ? 0.13 : 0.06), z: F.dipZ + 0.05 } : { y: A.H * A.def.seat[0], z: A.L * A.def.seat[1] }; }
+function stbSeat(A) { const F = A.fits && stbShown(A) && A.fits[stbFitKey(A)]; return F ? { y: F.dipY + (A.saddle >= 0 ? 0.13 : 0.06), z: F.dipZ + 0.05 } : { y: A.H * A.def.seat[0], z: A.L * A.def.seat[1] }; }
 
 // ---------- the saddle: model turned horn-forward, on a pad, with a girth
 const SADDLE_LEN = 0.78, SADDLE_SEAT = 0.797;   // template length front to back; the height of its underside above the stirrups
@@ -397,4 +399,66 @@ function stbRope(A, show) {
   const fw = new V3(-Math.sin(P.yaw), 0, -Math.cos(P.yaw)), hand = A.leader === G.mySlot ? PL.cam.position.clone().add(new V3(-fw.z * 0.25, -0.55, fw.x * 0.25)).addScaledVector(fw, 0.3) : P.pos.clone().add(new V3(0, (riding(P.slot) ? 1.9 : 1.0), 0));
   const nose = F.tip.clone().addScaledVector(F.axis, -F.hl * 0.18); nose.y -= 0.06; const b = A.body.localToWorld(nose), d = b.clone().sub(hand), L = d.length();
   m.position.copy(hand).add(b).multiplyScalar(0.5); m.scale.set(1, L, 1); m.quaternion.setFromUnitVectors(new V3(0, 1, 0), d.normalize());
+}
+
+// ---------- Juniper's pack donkey on the animated donkey's skeleton
+// The pack donkey is one static mesh with no bones. It's laid over the animated donkey (same length, feet and middle lined
+// up), and every vertex takes its bone weights from the nearest points of her body, then is un-posed into her bind pose.
+// The result is a skinned mesh driven by her own clips (idle, grazing, walk, trot, run), swapped in for her coat on a job.
+function packSkin(A) {
+  if (A.packSk || !A.homeM || !A.packM || !A.mixer) return;
+  let sk = null; const homeBody = [];
+  A.homeM.traverse(o => { if (o.isSkinnedMesh) { homeBody.push(o); if (!sk && !/hair/i.test(o.name)) sk = o; } });
+  if (!sk) return;
+  for (const n in A.acts) A.acts[n].setEffectiveWeight(n === 'idle' ? 1 : 0); A.mixer.setTime(0);
+  const hv = A.homeM.visible, pv = A.packM.visible; A.homeM.visible = A.packM.visible = true;
+  A.root.updateMatrixWorld(true); sk.skeleton.update();
+  const toBody = A.body.matrixWorld.clone().invert(), v = new V3();
+  // her body, posed, in body space, with its weights
+  const hp = sk.geometry.attributes.position, hi = sk.geometry.attributes.skinIndex, hw = sk.geometry.attributes.skinWeight, HN = hp.count;
+  const HP = new Float32Array(HN * 3), hb = new THREE.Box3();
+  for (let i = 0; i < HN; i++) { sk.getVertexPosition(i, v); v.applyMatrix4(sk.matrixWorld).applyMatrix4(toBody); HP.set([v.x, v.y, v.z], i * 3); hb.expandByPoint(v); }
+  // the pack donkey in body space, and how to line it up with her
+  const parts = []; const pb = new THREE.Box3();
+  A.packM.traverse(o => { if (!o.isMesh) return; const m = o.matrixWorld.clone().premultiply(toBody), p = o.geometry.attributes.position; parts.push({ o, m }); for (let i = 0; i < p.count; i++) pb.expandByPoint(v.fromBufferAttribute(p, i).applyMatrix4(m)); });
+  const s = (hb.max.z - hb.min.z) / (pb.max.z - pb.min.z), hc = hb.getCenter(new V3()), pc = pb.getCenter(new V3());
+  const align = new THREE.Matrix4().makeTranslation(hc.x, hb.min.y, hc.z).multiply(new THREE.Matrix4().makeScale(s, s, s)).multiply(new THREE.Matrix4().makeTranslation(-pc.x, -pb.min.y, -pc.z));
+  // a grid over her vertices for the nearest-point search
+  const CS = 0.06, grid = new Map(), key = (x, y, z) => x + ',' + y + ',' + z, cell = q => Math.floor(q / CS);
+  for (let i = 0; i < HN; i++) { const k = key(cell(HP[i * 3]), cell(HP[i * 3 + 1]), cell(HP[i * 3 + 2])); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push(i); }
+  const near = (x, y, z, K) => {
+    const cx = cell(x), cy = cell(y), cz = cell(z), out = [];
+    for (let r = 1; r < 12 && out.length < K; r++) {
+      out.length = 0;
+      for (let a = -r; a <= r; a++) for (let b = -r; b <= r; b++) for (let c = -r; c <= r; c++) { const L = grid.get(key(cx + a, cy + b, cz + c)); if (L) for (const i of L) out.push([i, (HP[i * 3] - x) ** 2 + (HP[i * 3 + 1] - y) ** 2 + (HP[i * 3 + 2] - z) ** 2]); }
+    }
+    return out.sort((p, q) => p[1] - q[1]).slice(0, K);
+  };
+  // skinning matrices in her mesh space, to undo the idle pose
+  const bones = sk.skeleton.bones, BM = bones.map((b, j) => sk.bindMatrixInverse.clone().multiply(b.matrixWorld).multiply(sk.skeleton.boneInverses[j]).multiply(sk.bindMatrix));
+  const toSk = sk.matrixWorld.clone().invert().multiply(A.body.matrixWorld), nrm = new THREE.Matrix3(), acc = new THREE.Matrix4(), tmp = new THREE.Matrix4();
+  const out = [];
+  for (const { o, m } of parts) {
+    const g = o.geometry.clone(), p = g.attributes.position, n = g.attributes.normal, N = p.count, SI = new Uint16Array(N * 4), SW = new Float32Array(N * 4);
+    const full = toSk.clone().multiply(align).multiply(m);
+    for (let i = 0; i < N; i++) {
+      v.fromBufferAttribute(p, i).applyMatrix4(m).applyMatrix4(align);
+      const w = {}; for (const [j, d2] of near(v.x, v.y, v.z, 6)) { const f = 1 / (Math.sqrt(d2) + 0.01); for (let c = 0; c < 4; c++) { const bw = hw.getComponent(j, c); if (bw > 0) { const bi = hi.getComponent(j, c); w[bi] = (w[bi] || 0) + bw * f; } } }
+      const top = Object.entries(w).sort((a, b) => b[1] - a[1]).slice(0, 4), tot = top.reduce((t, e) => t + e[1], 0) || 1;
+      acc.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      top.forEach(([bi, x], c) => { SI[i * 4 + c] = +bi; SW[i * 4 + c] = x / tot; const e = BM[+bi].elements, ae = acc.elements; for (let q = 0; q < 16; q++) ae[q] += e[q] * x / tot; });
+      if (!top.length) { SW[i * 4] = 1; acc.identity(); }
+      tmp.copy(acc).invert();   // posed = acc · bind, so bind = acc⁻¹ · posed
+      v.fromBufferAttribute(p, i).applyMatrix4(full).applyMatrix4(tmp); p.setXYZ(i, v.x, v.y, v.z);
+      if (n) { nrm.getNormalMatrix(tmp.clone().multiply(full)); v.fromBufferAttribute(n, i).applyMatrix3(nrm).normalize(); n.setXYZ(i, v.x, v.y, v.z); }
+    }
+    g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(SI, 4)); g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(SW, 4));
+    g.computeBoundingBox(); g.computeBoundingSphere();
+    const sm = new THREE.SkinnedMesh(g, o.material); sm.name = 'pack'; sm.castShadow = true; sm.receiveShadow = true; sm.frustumCulled = false;
+    sm.position.copy(sk.position); sm.quaternion.copy(sk.quaternion); sm.scale.copy(sk.scale);
+    sk.parent.add(sm); sm.updateMatrixWorld(true); sm.bind(sk.skeleton, sk.bindMatrix); out.push(sm);
+  }
+  A.homeM.visible = hv; A.packM.visible = pv;
+  A.packSk = out; A.homeBody = homeBody; A.packH = (pb.max.y - pb.min.y) * s;
+  A.home = null; stbLook(A);
 }

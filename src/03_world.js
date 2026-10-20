@@ -46,6 +46,7 @@ function mirrorMap(src, M) {
   out.stairs = src.stairs.map(box); out.slabs = src.slabs.map(box);
   out.tent = { x: mx(src.tent.x), z: src.tent.z }; out.street = [mx(src.street[0]), src.street[1], src.street[2]]; out.porch = [mx(src.porch[0]), src.porch[1], src.porch[2]];
   out.moonTarget = [mx(src.moonTarget[0]), src.moonTarget[1], src.moonTarget[2]];
+  if (src.road) out.road = { park: src.road.park && [mx(src.road.park[0]), src.road.park[1], -src.road.park[2]], exit: src.road.exit.map(b => [mx(b[2]), b[1], mx(b[0]), b[3]]) };
   out.navBox = [mx(src.navBox[2]), src.navBox[1], mx(src.navBox[0]), src.navBox[3]]; out.grassBox = [mx(src.grassBox[2]), src.grassBox[1], mx(src.grassBox[0]), src.grassBox[3]];
   const P = p => ({ x: mx(p.x), y: p.y, z: p.z });
   out.grassOK = (x, z) => src.grassOK(mx(x), z); out.yardName = p => src.yardName(P(p)); out.outsideStep = p => src.outsideStep(P(p));
@@ -658,8 +659,10 @@ function buildExterior(gb, root) {
   };
   fence(-6, -14.6, 8.8, -14.6); fence(10.2, -14.6, 13.8, -14.6); fence(17.2, -14.6, 26, -14.6);
   fence(-6, -14.6, -6, 20); fence(26, -14.6, 26, 20); fence(-6, 20, 26, 20);
-  addCollider(8.7, -15.6, 17.4, -15.4, 3); // the street side is off-limits (soft blocker behind gate)
-  addCollider(-6, -15.6, 26, -15.4, 3);
+  // the street side is off-limits on foot except through the driveway, which is the way out for horses and the wagon;
+  // the street itself is fenced off at both ends past where riding on takes you home
+  addCollider(-40, -15.6, 13.9, -15.4, 3); addCollider(17.1, -15.6, 60, -15.4, 3);
+  addCollider(-40, -26.6, 60, -26.3, 3); addCollider(-40.3, -26.6, -40, -15.4, 3); addCollider(60, -26.6, 60.3, -15.4, 3);
   // dead trees
   for (const [x, z, s] of [[-2.8, -5.5, 1.1], [22.5, -9, 1.3], [-3.5, 12, 1.0], [23.5, 9.5, 1.2], [6.5, -12.4, 0.8], [12.5, 18, 1.0], [-14, -30, 1.4], [32, -32, 1.3]]) deadTree(gb, x, z, s);
   // fir woods behind the lots on three sides; the street side stays open

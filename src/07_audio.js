@@ -47,6 +47,10 @@ function initAudio() {
   B.hoof = mk(0.2, d => { for (let i = 0; i < d.length; i++) { const t = i / sr; d[i] = (Math.sin(t * 6.283 * (95 - t * 120)) * 0.9 + N() * 0.35) * env(t, 0.002, 0.045); } svf(d, 900, 0.7, 'lp'); norm(d, 0.9); });
   // a horse's whinny: a rising squeal that breaks into a falling, shuddering neigh
   B.whinny = mk(1.6, d => { let ph = 0; for (let i = 0; i < d.length; i++) { const t = i / sr; const f = (t < 0.25 ? 700 + t * 1800 : 1150 - (t - 0.25) * 520) * (1 + (0.04 + t * 0.05) * Math.sin(t * 6.283 * (16 + t * 6))); ph += f / sr; d[i] = (Math.sin(ph * 6.283) * 0.6 + Math.sin(ph * 12.566) * 0.3 + Math.sin(ph * 18.85) * 0.15 + N() * 0.08) * env(t, 0.06, 0.55) * (t < 1.45 ? 1 : (1.6 - t) / 0.15); } svf(d, 1300, 0.35, 'bp'); norm(d, 0.85); });
+  // a horse breaking wind: a low, fluttering, wet blat that sags in pitch
+  B.fart = mk(1.1, d => { let ph = 0; for (let i = 0; i < d.length; i++) { const t = i / sr, f = 105 - t * 45 + 14 * Math.sin(t * 31) + 6 * N(); ph += f / sr; const flut = 0.55 + 0.45 * Math.sin(t * 6.283 * (24 + t * 10)); d[i] = ((ph % 1) * 2 - 1 + N() * 0.35) * flut * env(t, 0.015, 0.45) * (t > 0.95 ? (1.1 - t) / 0.15 : 1); } svf(d, 700, 0.8, 'lp'); norm(d, 0.9); });
+  // a horse's snort: a hard puff of breath through the nostrils, with a flutter
+  B.snort = mk(0.45, d => { for (let i = 0; i < d.length; i++) { const t = i / sr; d[i] = N() * env(t, 0.01, 0.12) * (0.6 + 0.4 * Math.sin(t * 6.283 * 38)); } svf(d, 900, 0.6, 'bp'); norm(d, 0.7); });
   // the giant alligator: a bellow so low you feel it, rattling with a growl, and a hiss of breath on top
   B.gatorRoar = mk(3.4, d => { let ph = 0; for (let i = 0; i < d.length; i++) { const t = i / sr, f = 46 - t * 6 + 3 * Math.sin(t * 9); ph += f / sr; const growl = 0.55 + 0.45 * Math.sin(t * 6.283 * 23) * Math.sin(t * 6.283 * 3.1); d[i] = (Math.tanh(Math.sin(ph * 6.283) * 2.5) * growl + Math.sin(ph * 12.566) * 0.3 + N() * 0.25 * (0.4 + 0.6 * Math.sin(Math.PI * Math.min(1, t / 3.4)))) * env(t, 0.25, 1.4); } svf(d, 700, 0.8, 'lp'); norm(d, 1); });
   // its jaws slamming shut: a deep wet clack

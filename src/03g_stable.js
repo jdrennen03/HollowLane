@@ -56,6 +56,7 @@ function stbInit() {
 function stbEnsure() {
   for (const A of STB.animals) if (!A.away && !A.req) { A.req = true; stbLoad(A.def.url, A.def.rot, A.def.len, T => {
     A.H = T.H; A.body.add(T.m); A.packM = T.m; A.packH = T.H;
+    if (A.homeM) packSkin(A);
     if (A.def.draft) { const ex = draftDetails(A, T.m), rg = rigDraft(A, T.m, ex); if (rg) { A.packM = rg.G2; A.rig = rg.R; } }   // Dakota: markings, mane, tail and a fitted skeleton
     else if (A.def.kind === 'horse') A.rig = rigNamed(A, T.m);
     stbLook(A);
@@ -64,6 +65,7 @@ function stbEnsure() {
     A.body.add(T.m); A.homeM = T.m; A.homeH = T.H;
     const mx = A.mixer = new THREE.AnimationMixer(T.m.children[0]); A.acts = {};
     for (const c of T.anims) { const n = c.name.split('|').pop(), a = mx.clipAction(c); a.play(); a.setEffectiveWeight(n === 'idle' ? 1 : 0); A.acts[n] = a; }
+    if (A.packM) packSkin(A);
     stbLook(A);
   }); }
   const W = STB.wagon; if (!W.away && !W.req) { W.req = true; stbLoad(WAGON_DEF.url, WAGON_DEF.rot, WAGON_DEF.len, T => W.root.add(T.m)); }
@@ -121,7 +123,7 @@ function harnessMesh() {
 function stbAttach(t) {
   const A = t.at === 'on' ? STB.animals[t.who] : null, mine = t.at === 'hand' && t.who === G.mySlot;
   if (A && !stbShown(A)) { t.obj.visible = false; t.shown = null; return; }   // wait for the animal's model
-  const key = t.at + ':' + t.who + ':' + (A ? stbShown(A).uuid : '');
+  const key = t.at + ':' + t.who + ':' + (A ? stbFitKey(A) : '');
   if (t.shown === key) return; t.shown = key;
   for (const c of [...t.obj.children]) if (c !== t.hit) t.obj.remove(c);
   let vis;
@@ -136,8 +138,8 @@ function stbAttach(t) {
   if (A) {
     t.obj.position.set(0, 0, 0);
     // the bridle rides on the head bone so it moves with the head, the saddle and harness on the spine (measured and attached standing)
-    const F = A.fits && A.fits[stbShown(A).uuid], bone = t.kind === 'bridle' ? vis.userData.bone : F && F.spine;
-    if (bone) { if (A.mixer && A.home) { for (const n in A.acts) A.acts[n].setEffectiveWeight(n === 'idle' ? 1 : 0); A.mixer.setTime(0); } horseRest(A); A.root.updateMatrixWorld(true); bone.attach(t.obj); }
+    const F = A.fits && A.fits[stbFitKey(A)], bone = t.kind === 'bridle' ? vis.userData.bone : F && F.spine;
+    if (bone) { if (A.mixer && (A.home || A.packSk)) { for (const n in A.acts) A.acts[n].setEffectiveWeight(n === 'idle' ? 1 : 0); A.mixer.setTime(0); } horseRest(A); A.root.updateMatrixWorld(true); bone.attach(t.obj); }
   } else if (mine) {
     t.obj.position.set(0.32, -0.42, -0.62); t.obj.rotation.set(0.15, 0.4, 0); if (t.kind === 'saddle') { t.obj.scale.setScalar(0.55); vis.position.y = -0.4; } else { t.obj.scale.setScalar(0.8); vis.position.y = 0.25; }
   } else {
@@ -150,11 +152,11 @@ function stbAttach(t) {
 // ---------- state, snapshots and placement
 function stbSnap() {
   const W = STB.wagon;
-  return [STB.animals.map(A => [r2(A.x), r2(A.z), r2(A.yaw), A.saddle, A.bridle, A.harness, A.rider, A.leader, A.buddy]), STB.tack.map(t => [t.at === 'rack' ? 0 : t.at === 'hand' ? 1 : 2, t.who]), [r2(W.x), r2(W.z), r2(W.yaw), W.animal, W.driver, ...W.pass]];
+  return [STB.animals.map(A => [r2(A.x), r2(A.z), r2(A.yaw), A.saddle, A.bridle, A.harness, A.rider, A.leader, A.buddy, A.spk ? 1 : 0, r2(A.calm || 0)]), STB.tack.map(t => [t.at === 'rack' ? 0 : t.at === 'hand' ? 1 : 2, t.who]), [r2(W.x), r2(W.z), r2(W.yaw), W.animal, W.driver, ...W.pass]];
 }
 function stbApply(s) {
   s[0].forEach((q, i) => { const A = STB.animals[i]; if (!A) return; const moving = A.rider >= 0 || A.leader >= 0 || A.buddy >= 0;
-    [A.saddle, A.bridle, A.harness, A.rider, A.leader, A.buddy] = q.slice(3); if (!(A.rider >= 0 || A.leader >= 0 || A.buddy >= 0) || !moving) { A.x = q[0]; A.z = q[1]; A.yaw = q[2]; } });
+    [A.saddle, A.bridle, A.harness, A.rider, A.leader, A.buddy] = q.slice(3); A.spk = q[9] || 0; A.calm = q[10] || 0; if (!(A.rider >= 0 || A.leader >= 0 || A.buddy >= 0) || !moving) { A.x = q[0]; A.z = q[1]; A.yaw = q[2]; } });
   s[1].forEach((q, i) => { const t = STB.tack[i]; if (!t) return; t.at = q[0] === 0 ? 'rack' : q[0] === 1 ? 'hand' : 'on'; t.who = q[1]; stbAttach(t); });
   const W = STB.wagon, w = s[2]; if (W.driver < 0 || w[4] < 0) { W.x = w[0]; W.z = w[1]; W.yaw = w[2]; } W.animal = w[3]; W.driver = w[4]; W.pass = w.slice(5);
   for (const t of STB.tack) stbAttach(t);
@@ -164,7 +166,7 @@ function hostStb() { hostEvent(['stb', stbSnap()]); }
 // everything back home: tack on the racks, animals in their stalls, the wagon where the tent used to stand
 function stbReset() {
   stbInit();
-  for (const A of STB.animals) { [A.x, A.z, A.yaw] = A.def.stall; A.saddle = A.bridle = A.harness = A.rider = A.leader = A.buddy = -1; A.speed = 0; A.trail = null; }
+  for (const A of STB.animals) { [A.x, A.z, A.yaw] = A.def.stall; A.saddle = A.bridle = A.harness = A.rider = A.leader = A.buddy = -1; A.speed = 0; A.trail = null; A.spk = 0; A.calm = 0; A.spookA = null; }
   for (const t of STB.tack) { t.at = 'rack'; t.who = -1; stbAttach(t); }
   const W = STB.wagon; [W.x, W.z, W.yaw] = WAGON_DEF.home; W.animal = W.driver = -1; W.pass = [-1, -1, -1]; W.speed = 0;
   STB.along = null; stbVis();
@@ -209,12 +211,14 @@ function stbArrive() {
     return [TENT.x + 3, TENT.z + 3, 0];
   };
   const W = STB.wagon, al = STB.along || { animals: [], wagon: false };
-  if (al.wagon) {   // the wagon with its team runs from the wagon's tail (-3.2) to the animal's nose
+  if (al.wagon && MAP.road && MAP.road.park) [W.x, W.z, W.yaw] = MAP.road.park;   // on the road out, facing the way home
+  else if (al.wagon) {   // the wagon with its team runs from the wagon's tail (-3.2) to the animal's nose
     const z0 = -3.2, z1 = W.animal >= 0 ? WAGON_DEF.front + STB.animals[W.animal].L : 3.2, [x, z, yaw] = spot(1.3, z1 - z0), c = (z0 + z1) / 2;
     W.x = x - Math.sin(yaw) * c; W.z = z - Math.cos(yaw) * c; W.yaw = yaw;
   }
   for (const A of STB.animals) { A.rider = A.leader = -1; A.speed = 0; A.trail = null; if (A.buddy >= 0 && !G.players[A.buddy]) A.buddy = -1; if (!al.animals.includes(A.i) || W.animal === A.i) continue; const [x, z, yaw] = spot(0.75, A.L); A.x = x; A.z = z; A.yaw = yaw; }
-  W.driver = -1; W.pass = [-1, -1, -1]; W.speed = 0;
+  W.driver = -1; W.pass = [-1, -1, -1]; W.speed = 0; STB.spooked = false;
+  for (const A of STB.animals) { A.spk = 0; A.calm = 0; A.spookA = null; }
   for (const t of STB.tack) if (t.at === 'hand') { t.at = 'rack'; t.who = -1; }
   stbVis();
 }
@@ -223,13 +227,14 @@ function stbArrive() {
 function stbLook(A) {
   if (!A.packM) return;
   const home = !!A.homeM && ((MAP.id === 'barn' && STB.phase !== 'hunt') || A.saddle >= 0);
-  if (A.homeM) A.homeM.visible = home; A.packM.visible = !home;
+  if (A.packSk) { A.homeM.visible = true; A.packM.visible = false; for (const m of A.homeBody) m.visible = home; for (const m of A.packSk) m.visible = !home; }
+  else { if (A.homeM) A.homeM.visible = home; A.packM.visible = !home; }
   const H = home ? A.homeH : A.packH; if (A.home !== home || A.H !== H) { A.H = H; A.home = home; for (const t of STB.tack) if (t.at === 'on' && t.who === A.i) stbAttach(t); }
   A.home = home;
 }
 // the animated donkey's clips: idle and grazing at rest, walk / trot / run by speed
 function stbAnimate(A, dt) {
-  if (!A.home || !A.mixer) return;
+  if (!A.mixer || (!A.home && !A.packSk)) return;
   const g = Math.abs(A.speed); A.restT = g > 0.1 ? 0 : (A.restT || 0) + dt;
   const want = g > 4.5 ? 'run' : g > 2.0 ? 'trot' : g > 0.1 ? 'walk' : (A.restT % 24) > 12 ? 'grazing' : 'idle';
   for (const n in A.acts) { const a = A.acts[n], w = a.getEffectiveWeight(); a.setEffectiveWeight(w + ((n === want ? 1 : 0) - w) * clamp(dt * 5, 0, 1)); }
@@ -250,6 +255,8 @@ const PASS_SEATS = [[-0.45, -0.6], [0.45, -0.6], [0, -1.6]];
 function hostStable(slot, r) {
   const t = r[1], P = G.players[slot]; if (!P) return false;
   const A = STB.animals[r[2]], W = STB.wagon, tk = STB.tack[r[2]], hand = carryingTack(slot), say = m => hostEvent(['msg', slot, m]);
+  if (A && A.spk && ['tput', 'toff', 'mount', 'lead', 'buddy'].includes(t)) { say(A.def.name + ' is too spooked to let you near. Calm ' + A.def.name + ' down first (E, slow and quiet).'); return true; }
+  if (t === 'hitch' && STB.animals.some(B => B.spk && B.harness >= 0)) { say('The horse in the harness is too spooked. Calm it down first (E).'); return true; }
   if (t === 'tk') { if (!tk || tk.at !== 'rack' || hand) return true; tk.at = 'hand'; tk.who = slot; }
   else if (t === 'tback') { if (!hand) return true; hand.at = 'rack'; hand.who = -1; }
   else if (t === 'tput') {
@@ -293,7 +300,9 @@ function hostStable(slot, r) {
     if (W.driver === slot) { W.driver = -1; W.x = r[2]; W.z = r[3]; W.yaw = r[4]; W.speed = 0; }
     const k = W.pass.indexOf(slot); if (k >= 0) W.pass[k] = -1;
   }
-  else if (t === 'depart') { hostDepart(slot); return true; }
+  else if (t === 'depart') { if (mounted(slot)) hostDepart(slot); return true; }
+  else if (t === 'calm') { hostCalm(slot, A); return true; }
+  else if (t === 'home') { if (STB.phase === 'hunt' && G.state === 'play' && mounted(slot)) hostEvent(['end', -2, slot]); return true; }
   else return false;
   hostStb(); return true;
 }
@@ -302,7 +311,7 @@ function hostDepart(slot) {
   const W = STB.wagon, al = { animals: STB.animals.filter(A => A.rider >= 0 || A.leader >= 0 || A.buddy >= 0 || W.animal === A.i).map(A => A.i), wagon: W.driver >= 0 || W.animal >= 0 };
   G.departing = true; hostEvent(['stb', stbSnap()]); hostEvent(['depart', slot, al.animals, al.wagon ? 1 : 0]);
 }
-// host tick: riders who died or left fall off; anyone mounted who reaches the end of the drive takes the team out
+// host tick: riders who died or left fall off
 function hostStableTick() {
   if (!STB.animals.length) return;
   let ch = false;
@@ -310,7 +319,6 @@ function hostStableTick() {
   const W = STB.wagon; if (W.driver >= 0 && (!G.players[W.driver] || !G.players[W.driver].alive)) { W.driver = -1; W.speed = 0; ch = true; }
   W.pass = W.pass.map(s => s >= 0 && G.players[s] && G.players[s].alive ? s : -1);
   if (ch) hostStb();
-  if (STB.phase === 'base' && !G.departing && MAP.id === 'barn') for (const P of G.players) if (P.alive && mounted(P.slot) && P.pos.x < DEPART_X && P.pos.z > 1.5 && P.pos.z < 10.5) { hostDepart(P.slot); break; }
 }
 
 // ---------- departure: fade out, go to the haunted location, start the investigation there
@@ -318,7 +326,7 @@ function onDepart(slot, animals, wagon) {
   STB.along = { animals, wagon: !!wagon };
   const who = G.players[slot], dest = MAPS[STB.dest] || MAP;
   sub((who && slot !== G.mySlot ? who.nick + ' leads' : 'You lead') + ' the team out down the lane, toward ' + dest.title + '…', 'sys');
-  sfx('hoof', 0.7); $('fade').style.opacity = 1;
+  sfx('hoof', 0.7); $('fade').style.opacity = 1; if (UI.rideOpen) closeRideMenu();
   setTimeout(() => { arriveAtSite(); $('fade').style.opacity = 0; }, 1400);
 }
 function arriveAtSite() {
@@ -336,7 +344,7 @@ function arriveAtSite() {
 }
 // the round opens at the stables, whatever location was picked
 function beginAtStables(o) {
-  STB.trip = { ...o }; STB.dest = o.map || CURMAP; STB.phase = 'base'; G.departing = false;
+  STB.trip = { ...o }; STB.dest = o.map || CURMAP; STB.phase = 'base'; G.departing = false; UI.rideOpen = false; UI.show('ride', false); STB.rideLatch = false;
   if (CURMAP !== 'barn') loadMap('barn');
   stbReset();
   startRound({ ...o, ghostRoom: 0 });
@@ -351,6 +359,7 @@ function stbInteract(h) {
   if (h.kind === 'tack') { if (hand) { sub('Your arms are full. Put the ' + hand.kind + ' on an animal, or hang it back up (G).', 'sys'); return; } request('stb', 'tk', h.id); sfx('pickup', 0.6); return; }
   if (h.kind === 'anim') {
     const A = STB.animals[h.id];
+    if (A.spk) { request('stb', 'calm', A.i); return; }
     if (hand) { request('stb', 'tput', A.i); return; }
     if (A.bridle >= 0 && A.harness < 0 && W.animal !== A.i && A.rider < 0) { if (mounted(G.mySlot)) return; request('stb', 'mount', A.i, r2(A.x), r2(A.z)); sfx('hoof', 0.4); return; }
     if (W.animal === A.i) { sub(A.def.name + ' is hitched to the wagon.', 'sys'); return; }
@@ -380,6 +389,7 @@ function stbPrompt(h) {
   if (h.kind === 'tack') { const t = STB.tack[h.id]; return 'Take the ' + (t.kind === 'harness' ? 'wagon harness' : t.kind); }
   if (h.kind === 'anim') {
     const A = STB.animals[h.id], on = ['bridle', 'saddle', 'harness'].filter(k => A[k] >= 0), off = on.length && A.rider < 0 && W.animal !== A.i && !hand ? G2 + 'Take off the ' + on[0] : '';
+    if (A.spk) return 'Calm ' + A.def.name + ' down (spooked' + (A.calm > 0 ? ', settling' : '') + ')';
     if (hand) return 'Put the ' + hand.kind + ' on ' + A.def.name;
     if (W.animal === A.i) return A.def.name + ' (hitched to the wagon)';
     if (A.rider >= 0) return A.def.name;
@@ -412,7 +422,9 @@ function stbMove(P, dt, blocked) {
     const s = PASS_SEATS[Math.max(0, W.pass.indexOf(G.mySlot))], p = wagonLocal(s[0], 0, s[1]);
     P.pos.set(p.x, W.y, p.z); P.moving = 0; cam.position.set(p.x, W.y + WAGON_DEF.bedY + 0.95, p.z); cam.rotation.set(PL.pitch, PL.yaw, 0, 'YXZ'); return true;
   }
-  const E = A || W, fast = !blocked && (k.ShiftLeft || k.ShiftRight), fw = !blocked && (k.KeyW || k.ArrowUp), bk = !blocked && (k.KeyS || k.ArrowDown);
+  const team = !A && W.animal >= 0 ? STB.animals[W.animal] : null, balk = team && (team.spk || team.spookA);
+  if (balk && (k.KeyW || k.ArrowUp || k.KeyS || k.ArrowDown)) stbSay(team.def.name + ' won\'t pull, too spooked. Get down and calm ' + team.def.name + ' (E).');
+  const E = A || W, fast = !blocked && !balk && (k.ShiftLeft || k.ShiftRight), fw = !blocked && !balk && (k.KeyW || k.ArrowUp), bk = !blocked && !balk && (k.KeyS || k.ArrowDown);
   const donkey = A && A.def.kind === 'donkey', top = A ? (fast ? (donkey ? 4.2 : 5.6) : (donkey ? 1.4 : 1.7)) : (fast ? 4.4 : 2.2), want = fw ? top : bk ? -1.1 : 0;
   E.speed = lerp(E.speed, want, clamp(dt * (want === 0 ? 2.2 : 0.9), 0, 1));   // horses gather and settle gradually
   if (Math.abs(E.speed) < 0.02 && !fw && !bk) E.speed = 0;
@@ -469,7 +481,7 @@ function updateStable(dt) {
     if (A.away) continue;
     const R = A.rider >= 0 ? G.players[A.rider] : null, L = A.leader >= 0 ? G.players[A.leader] : A.buddy >= 0 ? G.players[A.buddy] : null, loose = A.leader < 0;
     if (R && A.rider !== G.mySlot) { A.x = R.pos.x; A.z = R.pos.z; A.y = R.pos.y; A.yaw += angDiff(A.yaw, R.mountYaw ?? A.yaw) * clamp(dt * 8, 0, 1); A.speed = R.moving || 0; stbHooves(A, dt, 0.8); }
-    else if (L && W.animal !== A.i) {   // follow the leader's footsteps, a body length behind
+    else if (L && W.animal !== A.i && !A.spk) {   // follow the leader's footsteps, a body length behind
       const lp = new V3(L.pos.x, 0, L.pos.z), tr = A.trail || (A.trail = [lp.clone()]);
       if (lp.distanceTo(tr[tr.length - 1]) > 0.25) { tr.push(lp.clone()); if (tr.length > 80) tr.shift(); }
       const who = A.leader >= 0 ? A.leader : A.buddy, lagD = (loose ? 2.6 : 1.2) + A.L * 0.5 + (riding(who) ? 1.2 : 0);
@@ -480,13 +492,14 @@ function updateStable(dt) {
       A.y = groundY(A.x, A.z, A.y); stbHooves(A, dt, 0.6);
     } else if (W.animal === A.i) { const p = wagonLocal(0, 0, WAGON_DEF.front + A.L / 2); A.x = p.x; A.z = p.z; A.yaw = W.yaw; A.speed = W.speed; A.y = terrainY(A.x, A.z); }
     else if (A.rider < 0) { A.speed = 0; A.y = groundY(A.x, A.z, A.y === undefined ? 0 : A.y + 0.3); A.trail = null; }
+    stbSpookStep(A, dt);
     if (A.rider === G.mySlot) A.trail = null;
     // a walking bob and a slow breath at rest (except Juniper at home, whose model walks for itself)
     stbLook(A); stbAnimate(A, dt); if (A.rig) horseAnimate(A, performance.now() / 1000, dt);
     stbRope(A, A.leader >= 0 && W.animal !== A.i && A.rider < 0);
     const br = A.bridle >= 0 && STB.tack[A.bridle].vis; if (br && br.userData.bits) stbReins(A, br);
     A.bob = (A.bob || 0) + dt * (0.6 + Math.abs(A.speed) * 2.6);
-    const g = Math.abs(A.speed), amp = A.home || A.rig ? 0 : g > 4 ? 0.06 : g > 0.3 ? 0.025 : 0.004;
+    const g = Math.abs(A.speed), amp = A.home || A.rig || A.packSk ? 0 : g > 4 ? 0.06 : g > 0.3 ? 0.025 : 0.004;
     A.root.position.set(A.x, A.y + Math.abs(Math.sin(A.bob)) * amp, A.z); A.root.rotation.set(g > 0.3 ? Math.sin(A.bob * 2) * amp * 0.6 : 0, A.yaw, 0, 'YXZ');
     const c = A.coll, free = A.rider < 0 && W.animal !== A.i && A.leader < 0;
     if (c) { if (free) { const p = animalLocal(A, 0, 0, 0); c.x0 = p.x - 0.4; c.x1 = p.x + 0.4; c.z0 = p.z - 0.4; c.z1 = p.z + 0.4; c.y0 = A.y; c.y1 = A.y + 1.5; c.h = 1.5; } else { c.y0 = -50; c.y1 = -49; } }
@@ -501,6 +514,7 @@ function updateStable(dt) {
   }
   for (const t of STB.tack) stbAttach(t);
   if (G.isHost && G.state === 'play') hostStableTick();
+  stbRideCheck();
 }
 // raise teammates who are riding or driving onto the horse / the wagon seat
 function stbAvatarOffset(P, out) {
@@ -530,16 +544,18 @@ function drawJobBoard() {
   x.font = '500 22px "Comic Sans MS", "Segoe Print", cursive'; x.fillStyle = 'rgba(236,236,226,0.7)'; x.fillText('E  change the place    G  change difficulty', w / 2, 300); x.fillText('then tack up and ride out!', w / 2, 334);
   S.tex.needsUpdate = true;
 }
-function hostJob(slot, what) {
+function hostJob(slot, what, m2, md2) {
   if (STB.phase !== 'base' || !STB.trip) return;
   if (G.mp && slot !== 0) { hostEvent(['msg', slot, 'The host picks tonight\'s job.']); return; }
-  const ms = Object.keys(MODES), map = what === 'map' ? JOB_MAPS[(JOB_MAPS.indexOf(STB.dest) + 1) % JOB_MAPS.length] : STB.dest, mode = what === 'mode' ? ms[(ms.indexOf(STB.trip.mode) + 1) % ms.length] : STB.trip.mode;
+  const ms = Object.keys(MODES);
+  let map = what === 'map' ? JOB_MAPS[(JOB_MAPS.indexOf(STB.dest) + 1) % JOB_MAPS.length] : STB.dest, mode = what === 'mode' ? ms[(ms.indexOf(STB.trip.mode) + 1) % ms.length] : STB.trip.mode;
+  if (what === 'set') { if (JOB_MAPS.includes(m2)) map = m2; if (ms.includes(md2)) mode = md2; }
   hostEvent(['job', map, mode]);
 }
 function onJob(map, mode) {
   if (!STB.trip || !MAPS[map]) return; STB.dest = map; STB.trip.map = map; STB.trip.mode = mode;
   if (!G.mp || G.isHost) { CURMODE = mode; try { localStorage.setItem('hl-map', map); localStorage.setItem('hl-mode', mode); } catch (e) { } }
-  drawJobBoard(); drawDepartSign(); sfx('scribble', 0.4);
+  drawJobBoard(); drawDepartSign(); sfx('scribble', 0.4); if (UI.rideOpen === 'out') renderRideMenu();
   sub('Tonight\'s job: ' + MAPS[map].title + ' · ' + MODES[mode] + '.', 'sys');
 }
 // the board at the end of the drive names the place the team is headed
@@ -549,4 +565,137 @@ function drawDepartSign() {
   x.fillStyle = '#efe2c4'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = '700 40px Georgia, serif'; x.fillText('RIDE OUT  →', w / 2, 60);
   x.font = 'italic 600 30px Georgia, serif'; x.fillText(dest && dest.id !== 'barn' ? 'to ' + dest.title : 'the Whitlock place', w / 2, 128);
   S.tex.needsUpdate = true;
+}
+
+// ---------- the ride-out menu: it opens whenever you reach the end of the drive mounted (or the road out of a job)
+// At the stables: pick the place and the difficulty, then ride out (the host picks in team play). At a job: head home.
+function stbRideZone() {
+  const p = me().pos;
+  if (STB.phase === 'base' && MAP.id === 'barn') return p.x < DEPART_X && p.z > 1.5 && p.z < 10.5 ? 'out' : null;
+  if (STB.phase === 'hunt' && MAP.road) return MAP.road.exit.some(b => p.x > b[0] && p.x < b[2] && p.z > b[1] && p.z < b[3]) ? 'home' : null;
+  return null;
+}
+function stbRideCheck() {
+  const P = me(); if (!P || !P.alive || G.state !== 'play' || G.departing || UI.rideOpen) return;
+  const zone = stbRideZone();
+  if (!zone || !mounted(G.mySlot)) { if (!zone) STB.rideLatch = false; return; }
+  if (STB.rideLatch) return; STB.rideLatch = true;   // once per visit to the end of the road: back off a little to bring it up again
+  const E = riding(G.mySlot) || (onWagon(G.mySlot) === 'drive' ? STB.wagon : null); if (E) E.speed = 0;
+  openRideMenu(zone);
+}
+function openRideMenu(kind) {
+  UI.rideOpen = kind; if (document.pointerLockElement) document.exitPointerLock();
+  PL.keys = {}; renderRideMenu(); UI.show('ride', true);
+}
+function closeRideMenu() { UI.rideOpen = false; UI.show('ride', false); if (G.state === 'play') requestLock($('gl')); }
+function renderRideMenu() {
+  const el = $('rideBody'); if (!el) return;
+  const lead = !G.mp || G.isHost, mode = (STB.trip && STB.trip.mode) || CURMODE, esc = t => String(t).replace(/</g, '&lt;');
+  if (UI.rideOpen === 'out') {
+    const dest = MAPS[STB.dest] || MAPS.lane;
+    el.innerHTML = '<div class="eyebrow">Riding out</div><h1 class="title">Where to tonight?</h1>'
+      + '<div class="field"><label>The place</label><div class="maps">' + JOB_MAPS.map(id => '<button type="button" class="mapc' + (STB.dest === id ? ' sel' : '') + '" data-map="' + id + '"' + (lead ? '' : ' disabled') + '>' + esc(MAPS[id].title) + '<small>' + esc(MAPS[id].eyebrow) + '</small></button>').join('') + '</div></div>'
+      + '<div class="field"><label>Difficulty</label><div class="maps modes">' + Object.keys(MODES).map(k => '<button type="button" class="mapc' + (mode === k ? ' sel' : '') + '" data-mode="' + k + '"' + (lead ? '' : ' disabled') + '>' + esc(MODES[k]) + '</button>').join('') + '</div></div>'
+      + (lead ? '' : '<p class="note">The host picks tonight\'s job.</p>')
+      + '<div class="btns"><button type="button" class="b primary" data-go="1">Ride out <small>to ' + esc(dest.title) + '</small></button><button type="button" class="b" data-go="0">Not yet <small>Esc</small></button></div>';
+  } else {
+    el.innerHTML = '<div class="eyebrow">Leaving ' + esc(MAP.title) + '</div><h1 class="title">Head home?</h1>'
+      + '<p class="note">Riding back to Whitlock Stables ends tonight\'s investigation <b>without a verdict</b>. If you have a guess, file it on the clipboard at the gear table first.</p>'
+      + '<div class="btns"><button type="button" class="b primary" data-go="1">Head home <small>to the stables</small></button><button type="button" class="b" data-go="0">Stay and keep looking <small>Esc</small></button></div>';
+  }
+}
+function bindRideMenu() {
+  const el = $('ride'); if (!el || el.bound) return; el.bound = true;
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b || b.disabled) return;
+    const mode = (STB.trip && STB.trip.mode) || CURMODE;
+    if (b.dataset.map) request('job', 'set', b.dataset.map, mode);
+    else if (b.dataset.mode) request('job', 'set', STB.dest, b.dataset.mode);
+    else if (b.dataset.go === '1') { const k = UI.rideOpen; closeRideMenu(); request('stb', k === 'out' ? 'depart' : 'home'); }
+    else if (b.dataset.go === '0') closeRideMenu();
+  });
+}
+
+// ---------- spooked: a hunt that starts out in the bayou's graveyard frightens the animals that came along
+// The first time in a night they blow (a fart you can hear across the yard), buck, throw anyone riding and bolt away from
+// the graves; after that they rear. Either way they stay spooked: they back off from anyone coming close and won't be
+// ridden, led or hitched until someone calms them, E a few times, standing close and moving slowly.
+const GRAVEYARD = { x: 0, z: 0.3, r: 9.5 };
+function hostSpookCheck() {
+  const gs = G.gs; if (MAP.id !== 'bayou' || !STB.animals.length || levelOf(gs.y) !== 0 || Math.hypot(gs.x - GRAVEYARD.x, gs.z - GRAVEYARD.z) > GRAVEYARD.r) return;
+  const here = STB.animals.filter(A => !A.away); if (!here.length) return;
+  const first = !STB.spooked; STB.spooked = true;
+  hostEvent(['spook', first ? 1 : 0, r2(gs.x), r2(gs.z)]);   // before the riders come off, so each rider's game sees itself thrown
+  for (const A of here) { A.spk = 1; A.calm = 0; A.leader = -1; A.rider = -1; }
+  hostStb();
+}
+function onSpook(first, gx, gz) {
+  const P = me(), mine = riding(G.mySlot), names = [];
+  for (const A of STB.animals) {
+    if (A.away) continue; names.push(A.def.name);
+    const hitched = STB.wagon.animal === A.i;
+    A.spookA = { t: 0, kind: first && !hitched ? 'buck' : 'rear', dir: Math.atan2(A.x - gx, A.z - gz), hitched, snd: 0 };
+    sfxAt(first ? 'fart' : 'snort', new V3(A.x, A.y + 1, A.z), 1);
+  }
+  if (mine && P) {   // thrown clear, on the side away from the graves
+    const p = animalLocal(mine, -1.1, 0, -0.3); if (!sightClear(mine.x, mine.z, p.x, p.z, P.pos.y, P.pos.y)) p.set(mine.x, 0, mine.z);
+    P.pos.x = p.x; P.pos.z = p.z; mine.rider = -1;
+    sub(first ? mine.def.name + ' lets rip, bucks hard and throws you!' : mine.def.name + ' rears straight up and you slide off!', 'sys');
+  }
+  const loose = STB.animals.filter(A => !A.away && STB.wagon.animal !== A.i).map(A => A.def.name), team = STB.wagon.animal >= 0 && !STB.animals[STB.wagon.animal].away ? STB.animals[STB.wagon.animal].def.name : '', and = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0];
+  if (P && names.length) sub(first ? 'Out by the graves the animals spook!' + (loose.length ? ' ' + and(loose) + ' let rip, buck and bolt.' : '') + (team ? ' ' + team + ' rears in the harness.' : '') : and(names) + (names.length > 1 ? ' rear' : ' rears') + ' and shy away from the graveyard.', 'sys');
+}
+function hostCalm(slot, A) {
+  const P = G.players[slot]; if (!A || !A.spk || !P) return;
+  if (Math.hypot(P.pos.x - A.x, P.pos.z - A.z) > 3.6) { hostEvent(['msg', slot, 'Get closer to ' + A.def.name + ', slowly.']); return; }
+  if ((P.moving || 0) > 2.2) { hostEvent(['msg', slot, A.def.name + ' shies away. Come in slower.']); return; }
+  if (G.elapsed - (A.calmT || -9) < 0.9) return; A.calmT = G.elapsed;
+  A.calm = Math.min(1, (A.calm || 0) + 0.34);
+  if (A.calm >= 1) { A.spk = 0; A.calm = 0; hostEvent(['msg', slot, A.def.name + ' blows out a long breath, lowers that head and lets you rub the neck. Calm again.']); hostEvent(['snd', 'breath', r2(A.x), r2(A.y + 1.4), r2(A.z), 0.7]); }
+  else hostEvent(['msg', slot, A.calm < 0.5 ? 'You talk low and hold out a hand. ' + A.def.name + ' snorts, eyes rolling, but stays put.' : A.def.name + ' takes a step toward you and sniffs your hand.']);
+  hostStb();
+}
+// the motion: buck / rear on the spot, a bolt away from the graves, and backing off while still spooked
+function stbSpookStep(A, dt) {
+  const S = A.spookA, free = A.rider < 0 && STB.wagon.animal !== A.i;
+  let rear = 0, buck = 0;
+  if (S) {
+    S.t += dt; const t = S.t;
+    if (!S.snd && t > 0.45) { S.snd = 1; sfxAt('whinny', new V3(A.x, A.y + 1.5, A.z), 0.9); }
+    if (S.kind === 'buck') {
+      if (t < 1.6) buck = Math.max(0, Math.sin(t * Math.PI * 2 * 1.25)) * 0.42 * Math.min(1, t * 3);
+      else if (t < 4.3 && free) stbBolt(A, S, 6.5, dt);
+      else return stbSpookDone(A);
+    } else {
+      const D = S.kind === 'toss' ? 0.8 : 1.9;
+      if (t < D) rear = Math.pow(Math.sin(Math.PI * t / D), 0.7) * (S.kind === 'toss' ? 0.28 : 0.72);
+      else if (t < D + 0.8 && free && S.kind === 'rear') { A.x -= Math.sin(A.yaw) * 1.2 * dt; A.z -= Math.cos(A.yaw) * 1.2 * dt; A.speed = 1.2; A.y = groundY(A.x, A.z, A.y); }
+      else return stbSpookDone(A);
+    }
+  } else if (A.spk && free && (A.calm || 0) < 1) {   // wary: keep a body length from whoever comes near, facing them
+    let N = null, nd = 2.6; for (const P of G.players) { if (!P.alive) continue; const d = Math.hypot(P.pos.x - A.x, P.pos.z - A.z); if (d < nd) { nd = d; N = P; } }
+    if (N) {
+      const ax = A.x - N.pos.x, az = A.z - N.pos.z, sp = (1.2 - (A.calm || 0)) * (nd < 1.6 ? 1.3 : 0.8);
+      A.yaw += angDiff(A.yaw, Math.atan2(-ax, -az)) * clamp(dt * 3, 0, 1);
+      const ox = A.x, oz = A.z; A.x += ax / nd * sp * dt; A.z += az / nd * sp * dt;
+      if (!stbFreeAt(A, A.x, A.z)) { A.x = ox; A.z = oz; } else A.speed = -sp;
+      A.y = groundY(A.x, A.z, A.y);
+      if (nd < 1.5 && (N.moving || 0) > 2 && (A.calm || 0) < 0.5) { A.spookA = { t: 0, kind: 'toss', snd: 1 }; sfxAt('snort', new V3(A.x, A.y + 1.3, A.z), 0.8); }   // rushed: a toss of the head
+    }
+  }
+  // pivot the body: rearing about the hind feet, bucking about the front feet
+  const L = A.L * 0.36;
+  if (rear > 0) { A.body.rotation.x = -rear; A.body.position.set(0, L * Math.sin(rear), -L + L * Math.cos(rear)); }
+  else if (buck > 0) { A.body.rotation.x = buck; A.body.position.set(0, L * Math.sin(buck), L - L * Math.cos(buck)); }
+  else if (A.body.rotation.x) { A.body.rotation.x = 0; A.body.position.set(0, 0, 0); }
+}
+function stbSpookDone(A) { A.spookA = null; A.speed = 0; A.body.rotation.x = 0; A.body.position.set(0, 0, 0); if (G.isHost) hostStb(); }
+function stbFreeAt(A, x, z) { const y = groundY(x, z, A.y); return y > -0.1 && !COLL.some(c => c !== A.coll && !c.dyn && collAt(c, y) && Math.max(c.x0 - x, 0, x - c.x1) ** 2 + Math.max(c.z0 - z, 0, z - c.z1) ** 2 < 0.45 * 0.45) && !(roomIdxAt(x, z, y + 0.1) >= 0 && !ROOMS[roomIdxAt(x, z, y + 0.1)].outdoor); }
+// gallop away from where the ghost came out, swerving round whatever is in the way
+function stbBolt(A, S, sp, dt) {
+  for (const off of [0, 0.5, -0.5, 1.0, -1.0, 1.6, -1.6, 2.4, -2.4]) {
+    const yaw = S.dir + off, x = A.x + Math.sin(yaw) * sp * dt, z = A.z + Math.cos(yaw) * sp * dt;
+    if (stbFreeAt(A, x, z) && stbFreeAt(A, A.x + Math.sin(yaw) * 1.2, A.z + Math.cos(yaw) * 1.2)) { if (off) S.dir += off * 0.5; A.x = x; A.z = z; A.yaw += angDiff(A.yaw, yaw) * clamp(dt * 6, 0, 1); A.speed = sp; A.y = groundY(x, z, A.y); stbHooves(A, dt, 0.9); return; }
+  }
+  A.speed = 0; S.t = Math.max(S.t, 4.3);   // boxed in: stop where it is
 }

@@ -110,6 +110,9 @@ button.b small{font-weight:500;letter-spacing:.06em;text-transform:none;opacity:
 .code{font:400 34px/1 var(--f-display);letter-spacing:.2em;color:var(--paper);}
 /* Journal */
 #journal{background:rgba(3,4,6,.78);justify-content:center;align-items:center;}
+#ride{background:rgba(3,4,6,.6);justify-content:center;align-items:center;}
+#ride .sheet{display:grid;gap:16px;background:rgba(8,10,12,.92);border:1px solid var(--rule);width:min(520px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;padding:28px;}
+#ride h1.title{font-size:clamp(34px,6vw,46px);}
 .book{width:min(1080px,96vw);max-height:92vh;overflow:auto;background:#d8d0ba;color:#1d1a14;box-shadow:0 30px 80px rgba(0,0,0,.7);display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);background-image:linear-gradient(90deg,rgba(0,0,0,.08) 0,rgba(0,0,0,0) 3%,rgba(0,0,0,0) 97%,rgba(0,0,0,.08) 100%);}
 .book h2{margin:0 0 12px;font:400 26px/1 var(--f-display);}
 .book .pg{padding:28px 26px;min-width:0;}
@@ -256,6 +259,7 @@ button.b small{font-weight:500;letter-spacing:.06em;text-transform:none;opacity:
   </div>
 
   <!-- Journal -->
+  <div id="ride" class="panel layer ui-on" hidden role="dialog" aria-modal="true" aria-label="Ride out"><div class="sheet" id="rideBody"></div></div>
   <div id="journal" class="panel layer ui-on" hidden>
     <div class="book">
       <div class="pg">
