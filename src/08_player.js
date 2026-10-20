@@ -348,7 +348,7 @@ const BREATH = [];
 let breathMat = null;
 function emitBreath() {
   if (!breathMat) { const [c, x] = mkCanvas(64, 64); const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,0.5)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); breathMat = new THREE.SpriteMaterial({ map: canvasTex(c, true, false), transparent: true, depthWrite: false, opacity: 0.0 }); }
-  sfx('breath', 0.5);
+  sfx('breath', 0.32, 0.95 + Math.random() * 0.1);
   for (let i = 0; i < 3; i++) {
     const s = new THREE.Sprite(breathMat.clone()); const cam = PL.cam;
     const f = new V3(0, -0.06, -0.35).applyQuaternion(cam.quaternion);

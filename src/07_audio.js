@@ -89,13 +89,15 @@ function fadeLoop(d, sr) { const n = (0.3 * sr) | 0; for (let i = 0; i < n; i++)
 function makeIR(sec, decay) { const ctx = AU.ctx, sr = ctx.sampleRate, b = ctx.createBuffer(2, sec * sr, sr); for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, decay) * (i < sr * 0.01 ? i / (sr * 0.01) : 1); } return b; }
 function loopGain(k, v, tc = 0.3) { const L = AU.loops[k]; if (!L) return; L.g.gain.setTargetAtTime(v, AU.ctx.currentTime, tc); }
 function sfx(name, vol = 1, rate = 1) {
-  name = AU.ready && sfxKey(name); if (!name || !AU.bufs[name]) return;
+  const pool = name; name = AU.ready && sfxKey(name); if (!name || !AU.bufs[name]) return;
   const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = AU.bufs[name]; s.playbackRate.value = rate;
-  const g = ctx.createGain(); g.gain.value = vol; s.connect(g); g.connect(AU.master); g.connect(AU.revIn); s.start();
+  const g = ctx.createGain(); g.gain.value = vol; s.connect(g); g.connect(AU.master);
+  const wet = SFX_WET[pool]; if (wet === undefined) g.connect(AU.revIn); else { const w = ctx.createGain(); w.gain.value = wet; g.connect(w); w.connect(AU.revIn); }
+  s.start();
 }
 // recorded scares (the Jump Scare & Horror Hits pack), decoded once audio starts. A pool name plays one of its sounds at random,
 // never the same one twice running; until they have loaded (or if they can't) the pool falls back to a synthesized sound.
-const SFX_FILES = ['js-horror', 'js-freak', 'js-feral', 'js-scream', 'js-destroy', 'hit-attack', 'hit-dungeon', 'hit-frighten', 'hit-slice', 'hit-trapped', 'cat-meow'];
+const SFX_FILES = ['js-horror', 'js-freak', 'js-feral', 'js-scream', 'js-destroy', 'hit-attack', 'hit-dungeon', 'hit-frighten', 'hit-slice', 'hit-trapped', 'cat-meow', 'wraith-breath-1', 'wraith-breath-2', 'wraith-breath-3', 'cold-breath-1', 'cold-breath-2'];
 const SFX_POOL = {
   seen: { files: ['js-horror', 'js-freak', 'js-feral'], fb: 'scare' },               // you look straight at it while it manifests
   manifest: { files: ['hit-dungeon', 'hit-frighten', 'hit-trapped'], fb: 'manifest' },   // a ghost event begins, where the ghost stands
@@ -107,6 +109,8 @@ const SFX_POOL = {
   wrong: { files: ['hit-trapped'], fb: 'scare' },                                 // the wrong ghost named on the clipboard
   meow: { files: ['cat-meow'], fb: 'meow', vary: 0.14 },                          // the cats (a little higher or lower each time)
   meowLoud: { files: ['cat-meow'], fb: 'meowLoud', vary: 0.1 },                   // Izzabelle's call through the house
+  gbreath: { files: ['wraith-breath-1', 'wraith-breath-2', 'wraith-breath-3'], fb: 'gbreath', vary: 0.04 },   // the Wraith, low and close
+  breath: { files: ['cold-breath-1', 'cold-breath-2'], fb: 'breath', vary: 0.05 },   // your own breath fogging in the cold
 };
 function loadSfxFiles() {
   loadStepFiles();
@@ -158,10 +162,12 @@ function sfxKey(name) {   // a pool name -> the buffer to play this time
   _sfxLast[name] = choice; _sfxVary['f:' + choice] = P.vary || 0; return 'f:' + choice;
 }
 const SFX_ROLLOFF = { meowLoud: 0.45, manifest: 0.9 };   // sounds meant to carry through the house
+const SFX_WET = { meow: 0.12, meowLoud: 0.15, gbreath: 0.3, breath: 0.2 };   // how much of a sound goes to the room reverb (1 = all of it)
+const SFX_ROLLOFF_CLOSE = { gbreath: 2.6 };   // heard only up close
 function sfxAt(name, pos, vol = 1, rate) {
   const pool = name; name = AU.ready && sfxKey(name); if (!name || !AU.bufs[name]) return;
   const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = AU.bufs[name]; s.playbackRate.value = rate || (name.startsWith('f:') ? 1 + ((_sfxVary[name] || 0) * (Math.random() * 2 - 1)) : 0.92 + Math.random() * 0.16);
-  const p = ctx.createPanner(); p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = 1.2; p.rolloffFactor = SFX_ROLLOFF[pool] ?? SFX_ROLLOFF[name] ?? 1.4; p.maxDistance = 60;
+  const p = ctx.createPanner(); p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = 1.2; p.rolloffFactor = SFX_ROLLOFF_CLOSE[pool] ?? SFX_ROLLOFF[pool] ?? SFX_ROLLOFF[name] ?? 1.4; p.maxDistance = 60;
   p.positionX.value = pos.x; p.positionY.value = pos.y; p.positionZ.value = pos.z;
   // walls muffle sounds that come from another room
   const P = typeof me === 'function' && me();
@@ -169,7 +175,9 @@ function sfxAt(name, pos, vol = 1, rate) {
   const g = ctx.createGain(); g.gain.value = vol * (occl ? 0.55 : 1);
   let node = s;
   if (occl) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; s.connect(f); node = f; }
-  node.connect(g); g.connect(p); p.connect(AU.master); g.connect(AU.revIn); s.start();
+  node.connect(g); g.connect(p); p.connect(AU.master);
+  const wet = SFX_WET[pool]; if (wet === undefined) g.connect(AU.revIn); else { const w = ctx.createGain(); w.gain.value = wet; g.connect(w); w.connect(AU.revIn); }
+  s.start();
 }
 function updateListener(cam) {
   if (!AU.ready) return; const L = AU.ctx.listener, t = AU.ctx.currentTime;
