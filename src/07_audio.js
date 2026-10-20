@@ -95,7 +95,7 @@ function sfx(name, vol = 1, rate = 1) {
 }
 // recorded scares (the Jump Scare & Horror Hits pack), decoded once audio starts. A pool name plays one of its sounds at random,
 // never the same one twice running; until they have loaded (or if they can't) the pool falls back to a synthesized sound.
-const SFX_FILES = ['js-horror', 'js-freak', 'js-feral', 'js-scream', 'js-destroy', 'hit-attack', 'hit-dungeon', 'hit-frighten', 'hit-slice', 'hit-trapped'];
+const SFX_FILES = ['js-horror', 'js-freak', 'js-feral', 'js-scream', 'js-destroy', 'hit-attack', 'hit-dungeon', 'hit-frighten', 'hit-slice', 'hit-trapped', 'cat-meow'];
 const SFX_POOL = {
   seen: { files: ['js-horror', 'js-freak', 'js-feral'], fb: 'scare' },               // you look straight at it while it manifests
   manifest: { files: ['hit-dungeon', 'hit-frighten', 'hit-trapped'], fb: 'manifest' },   // a ghost event begins, where the ghost stands
@@ -105,22 +105,24 @@ const SFX_POOL = {
   death: { files: ['js-scream', 'js-destroy'], fb: 'scare' },
   doll: { files: ['js-freak', 'js-destroy'], fb: 'scare' },                       // the pin goes into the voodoo doll
   wrong: { files: ['hit-trapped'], fb: 'scare' },                                 // the wrong ghost named on the clipboard
+  meow: { files: ['cat-meow'], fb: 'meow', vary: 0.14 },                          // the cats (a little higher or lower each time)
+  meowLoud: { files: ['cat-meow'], fb: 'meowLoud', vary: 0.1 },                   // Izzabelle's call through the house
 };
 function loadSfxFiles() {
   for (const n of SFX_FILES) fetch('sfx-' + n + '.mp3').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
     .then(a => AU.ctx.decodeAudioData(a)).then(b => { AU.bufs['f:' + n] = b; }).catch(e => console.warn('sfx', n, e));
 }
-const _sfxLast = {};
+const _sfxLast = {}, _sfxVary = {};
 function sfxKey(name) {   // a pool name -> the buffer to play this time
   const P = SFX_POOL[name]; if (!P) return name;
   const ready = P.files.filter(n => AU.bufs['f:' + n]); if (!ready.length) return P.fb;
   const choice = ready.length > 1 ? pick(ready.filter(n => n !== _sfxLast[name])) : ready[0];
-  _sfxLast[name] = choice; return 'f:' + choice;
+  _sfxLast[name] = choice; _sfxVary['f:' + choice] = P.vary || 0; return 'f:' + choice;
 }
 const SFX_ROLLOFF = { meowLoud: 0.45, manifest: 0.9 };   // sounds meant to carry through the house
 function sfxAt(name, pos, vol = 1, rate) {
   const pool = name; name = AU.ready && sfxKey(name); if (!name || !AU.bufs[name]) return;
-  const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = AU.bufs[name]; s.playbackRate.value = rate || (name.startsWith('f:') ? 1 : 0.92 + Math.random() * 0.16);
+  const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = AU.bufs[name]; s.playbackRate.value = rate || (name.startsWith('f:') ? 1 + ((_sfxVary[name] || 0) * (Math.random() * 2 - 1)) : 0.92 + Math.random() * 0.16);
   const p = ctx.createPanner(); p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = 1.2; p.rolloffFactor = SFX_ROLLOFF[pool] ?? SFX_ROLLOFF[name] ?? 1.4; p.maxDistance = 60;
   p.positionX.value = pos.x; p.positionY.value = pos.y; p.positionZ.value = pos.z;
   // walls muffle sounds that come from another room

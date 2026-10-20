@@ -254,7 +254,7 @@ function buildFarm(gb, root) {
   prop('mug', 0.4, Y0 + 0.445, 3.55); prop('remote', 0.8, Y0 + 0.445, 3.7, 0.6); prop('book', 0.1, Y0 + 0.445, 3.45, 1.1);
   picFrame(root, 'x', -0.89, 4.2, Y0 + 1.7, 1, 'p61', 0, 0.55);
   // master bedroom
-  { const f = F0(2.69, 7.9, -Math.PI / 2); placeModel(root, { url: 'prop-bed3.json', x: 2.69, z: 7.9, y: Y0, ry: -Math.PI / 2, len: 1.65, axis: 'x', cols: false }); f.solid(-0.82, -1.08, 0.82, 1.08, 0.7); }
+  { const f = F0(2.69, 7.9, -Math.PI / 2); placeModel(root, { url: 'prop-bed3.json', x: 2.69, z: 7.9, y: Y0, ry: Math.PI / 2, len: 1.65, axis: 'x', cols: false }); f.solid(-0.82, -1.08, 0.82, 1.08, 0.7); }   // headboard to the wall
   { const f = F0(3.45, 6.4, -Math.PI / 2); nightstand(f); f.solid(-0.25, -0.22, 0.25, 0.22, 0.6); tableLamp(f, 0.05, 0.58, 0.05); }
   { const f = F0(2.9, 9.65, Math.PI); dresser(f); f.solid(-0.7, -0.25, 0.7, 0.25, 1); }
   prop('clock', 3.45, Y0 + 0.585, 6.25); prop('jbox', 2.6, Y0 + 0.93, 9.65); prop('book', 3.1, Y0 + 0.93, 9.6, 0.4);
