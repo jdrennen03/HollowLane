@@ -145,7 +145,7 @@ function applyEvent(ev) {
   else if (t === 'msg') { if (ev[1] === G.mySlot || ev[1] < 0) sub(ev[2], 'sys'); }
   else if (t === 'pick') { if (ev[1] === G.mySlot) { hudBuildInventory(); sfx('pickup', 0.6); } }
   else if (t === 'sb') onSpiritAnswer(ev[1], ev[2], ev[3], ev[4]);
-  else if (t === 'ge') onGhostEventStart(ev[1], ev[2]);
+  else if (t === 'ge') onGhostEventStart(ev[1], ev[2], ev[3], ev[4], ev[5]);
   else if (t === 'hunt') onHunt(ev[1]);
   else if (t === 'kill') onKill(ev[1]);
   else if (t === 'caught') onCaught(ev[1]);
@@ -323,7 +323,7 @@ function tryGhostEvent() {
     if (!sightClear(x, z, P.pos.x, P.pos.z, py, P.pos.y)) continue;
     gs.x = x; gs.z = z; gs.y = py; gs.l = pl; gs.yaw = Math.atan2(-(P.pos.x - x), -(P.pos.z - z));
     gs.mode = 1; gs.vis = 1; gs.target = P.slot; gs.evKind = Math.random() < 0.45 ? 1 : 0; gs.evT = gs.evKind ? 3.4 : 2.6; gs.path = []; gs.repath = 0;
-    hostEvent(['ge', gs.evKind, P.slot]);
+    hostEvent(['ge', gs.evKind, P.slot, r2(x), r2(py), r2(z)]);
     if (G.ghost.wail) hostEvent(['snd', 'wail', r2(x), r2(py + 1.6), r2(z), 1]);
     hostEvent(['emf', r2(x), r2(py + 1), r2(z), emfLevel(4)]);
     const ri = logicalRoom(x, z, py), g = G.ghost;
@@ -411,9 +411,10 @@ function onSpiritAnswer(slot, text, x, z) {
     if (mine) G.journal.heard = true;
   } else if (mine) setTimeout(() => sub('Only static answers.', 'sys'), 1200);
 }
-function onGhostEventStart(kind, slot) {
+function onGhostEventStart(kind, slot, x, y, z) {
   G.eventFx = 1; G.evWatch = { t: 0, seen: false };
-  sfxAt('manifest', new V3(G.ghostView.x, G.ghostView.y + 1.4, G.ghostView.z), 0.9);   // a recorded horror hit, where it stands
+  // a recorded horror hit where it appears (the event carries the spot: the ghost's drawn position hasn't caught up yet)
+  const v = G.ghostView; sfxAt('manifest', x !== undefined ? new V3(x, y + 1.4, z) : new V3(v.x, v.y + 1.4, v.z), 1);
 }
 function onRepel() {
   G.repelFx = 1;
