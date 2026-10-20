@@ -153,3 +153,25 @@ function ghostVoice(text) {
   } catch (e) { }
   sfx('whisper', 1, 0.7);
 }
+
+// ---------------------------------------------------------------- title music
+// A plain looping audio element (not routed through the sound graph, so it plays the same in the browser and the desktop app).
+// It fades in on the title screen and in the lobby and out once a round starts; its loudness is the Music slider times the
+// main Volume. Browsers only allow it to start after the first click or key press.
+const MUSIC = { el: null, vol: 0.35, fade: 0, started: false };
+try { const v = parseFloat(localStorage.getItem('hl-music')); if (!isNaN(v)) MUSIC.vol = clamp(v, 0, 1); } catch (e) { }
+function musicWanted() { return !$('menu').hidden || !$('lobby').hidden; }
+function musicStart() {
+  if (!MUSIC.el) { MUSIC.el = new Audio('music-title.mp3'); MUSIC.el.loop = true; MUSIC.el.volume = 0; }
+  if (MUSIC.el.paused && musicWanted()) MUSIC.el.play().then(() => { MUSIC.started = true; }).catch(() => { });
+}
+function setMusicVol(v) { MUSIC.vol = clamp(v, 0, 1); try { localStorage.setItem('hl-music', MUSIC.vol); } catch (e) { } }
+setInterval(() => {
+  const want = musicWanted();
+  if (want && (!MUSIC.el || MUSIC.el.paused)) musicStart();
+  if (!MUSIC.el) return;
+  MUSIC.fade = clamp(MUSIC.fade + (want ? 0.1 / 1.5 : -0.1 / 1.2), 0, 1);   // ~1.5 s in, ~1.2 s out
+  MUSIC.el.volume = clamp(MUSIC.vol * AU.vol * MUSIC.fade * MUSIC.fade, 0, 1);
+  if (!want && MUSIC.fade === 0 && !MUSIC.el.paused) MUSIC.el.pause();
+}, 100);
+for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => musicStart(), { capture: true });

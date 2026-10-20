@@ -140,6 +140,10 @@ function bindUI() {
   $('btnAgain').onclick = () => Net.lobby ? backToLobby() : quitToMenu();
   const sens = $('sens'); sens.oninput = () => { PL.sens = +sens.value; $('sensV').textContent = (+sens.value).toFixed(1); };
   const vol = $('vol'); vol.oninput = () => { AU.vol = +vol.value; if (AU.master) AU.master.gain.value = AU.vol; $('volV').textContent = Math.round(vol.value * 100); };
+  // the Music slider sits on the title screen and in the pause menu; both move together
+  const mus = [['musicM', 'musicMV'], ['musicP', 'musicPV']], showMus = () => { for (const [id, lab] of mus) { $(id).value = MUSIC.vol; $(lab).textContent = Math.round(MUSIC.vol * 100); } };
+  for (const [id] of mus) $(id).oninput = () => { setMusicVol(+$(id).value); showMus(); };
+  showMus();
   const q = $('qual'); q.oninput = () => { setQuality(+q.value); $('qualV').textContent = ['Low', 'Medium', 'High'][+q.value]; };
   addEventListener('keydown', e => {
     if (e.code === 'Escape') { if (UI.journalOpen) { closeJournal(); } }
