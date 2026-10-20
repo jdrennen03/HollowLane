@@ -23,6 +23,8 @@ function buildLights() {
   }
   const lantern = new THREE.PointLight(0xffa860, 5, 9, 2); lantern.position.set(TENT.x + 0.85, 1.05, TENT.z - 0.05); lantern.castShadow = false; scene.add(lantern); LIGHTS.lantern = lantern;
   const street = new THREE.SpotLight(0xff9a48, 60, 22, 0.9, 0.7, 1.8); street.position.set(19.6, 5.0, -16.0); street.target.position.set(19.6, 0, -15.5); scene.add(street, street.target); LIGHTS.street = street;
+  // the stables' lanterns: lit whenever the barn is loaded (home base is never dark)
+  LIGHTS.stable = [0, 1, 2, 3, 4].map(() => { const l = new THREE.PointLight(0xffbf7a, 0, 9, 1.6); scene.add(l); return l; });
   const porch = new THREE.PointLight(0xffc070, 0, 6, 2); porch.position.set(10.35, FY + 1.82, -0.35); scene.add(porch); LIGHTS.porch = porch;
 }
 // sky dome with stars, moon and drifting cloud
@@ -250,6 +252,8 @@ function updateRoomLights(t, dt) {
     const pw = ROOMS[ri].lampPow || 1; s.intensity = 32 * pw * flick; p.intensity = 3.2 * (ROOMS[ri].outdoor ? 0 : Math.min(pw, 2)) * flick; s.shadow.autoUpdate = true;
   }
   for (let i = 0; i < NROOM; i++) { const F = FIXTURES[i]; if (!F) continue; const lit = G.lights[i]; F.bulbMat.emissiveIntensity = lit ? 1.6 * huntFlick : 0; }
+  const barn = MAP.id === 'barn', SL = [[1.8, 5.7], [9.0, 5.7], [16.2, 5.7], [23.4, 5.7], [17.1, 2.0]];
+  LIGHTS.stable.forEach((l, i) => { l.intensity = barn ? 7.5 * (0.94 + Math.sin(t * 7 + i * 2) * 0.03 + Math.random() * 0.03) : 0; if (barn) l.position.set(SL[i][0], BA0 + 2.2, SL[i][1]); });
   // switches show their state
   for (const S of SWITCHES) S.tog.rotation.x = G.lights[S.room] ? -0.5 : 0.5;
   // porch light sputters; street lamp hums and flickers

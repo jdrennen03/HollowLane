@@ -145,8 +145,11 @@ function stbReinsOff(g) { if (g && g.userData.reins) for (const m of g.userData.
 function harnessFit(A) {
   const F = stbFitFor(A), g = new THREE.Group(); if (!F) return g;
   const lm = new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: 0.65 }), brass = MATS.brass;
-  const wz = F.dipZ + 0.42, base = new V3(0, F.backY(wz) - 0.25, wz + 0.12), na = F.Qz.clone().sub(base).normalize();
-  const S = stbSection(F.pts, base.clone().addScaledVector(na, 0.12), na, 0.04, p => p.y > F.H * 0.38 && p.z > F.dipZ);
+  // the collar sits at the base of the neck, resting on the shoulders and across the chest in front of the forelegs
+  let yB = 1e9; for (const q of F.pts) if (Math.abs(q.z - F.dipZ) < 0.08 && q.y > F.dipY * 0.3) yB = Math.min(yB, q.y);
+  const fl = F.pts.filter(q => q.z > F.dipZ && q.y < yB - 0.05 && q.y > yB - 0.2), frontZ = fl.length ? fl.reduce((s2, q) => s2 + q.z, 0) / fl.length : F.dipZ + 0.5;
+  const na = new V3(0, 0.62, 1).normalize(), base = new V3(0, (F.backY(frontZ + 0.1) + yB) / 2 + 0.06, frontZ + 0.24);
+  const S = stbSection(F.pts, base, na, 0.04, p => p.y > yB - 0.02 && p.z > frontZ - 0.15 && p.distanceTo(F.tip) > F.hl * 0.9);
   if (S) {
     const loop = loopPts(S, 0.045, 36); for (let i = 0; i < loop.length - 1; i++) { const a = loop[i], b = loop[i + 1], d = b.clone().sub(a), L = d.length(); const m = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, L + 0.01, 8), lm); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(new V3(0, 1, 0), d.normalize()); m.castShadow = true; g.add(m); }
     for (const s of [1, -1]) {   // brass hames up the sides of the collar, traces back along the body
@@ -221,9 +224,9 @@ function rigNamed(A, M) {
   A.root.updateMatrixWorld(true); const P = b => b ? pbRel(b, A.body) : null;
   const R = { root: P(find(/^Middle_01/)), neck: [P(find(/^Neck_base/)), P(find(/^Neck_middle/))], head: P(find(/^Head_07/)),
     tail: [/^joint21_/, /^joint22_/, /^joint23_/, /^joint24_/].map(r => P(find(r))).filter(Boolean),
-    legs: [[/^shoulder_left/, /^elbow_left/, /^knee_front_left/, 1, 1], [/^shoulder_right/, /^elbow_right/, /^knee_front_right/, 1, -1],
-           [/^Hip_left/, /^Knee_back_left/, /^Ankle_back_left/, 0, 1], [/^hip_right/, /^knee_back_right/, /^Ankle_back_right/, 0, -1]]
-      .map(([a, b, c, f, sx]) => ({ a: P(find(a)), b: P(find(b)), c: P(find(c)), front: !!f, sx })) };
+    legs: [[/^shoulder_left/, /^elbow_left/, /^knee_front_left/, /^ankle_front_left/, 1, 1], [/^shoulder_right/, /^elbow_right/, /^knee_front_right/, /^ankle_front_right/, 1, -1],
+           [/^Hip_left/, /^Knee_back_left/, /^Ankle_back_left/, /^foot_up_left/, 0, 1], [/^hip_right/, /^knee_back_right/, /^Ankle_back_right/, /^foot_up_right/, 0, -1]]
+      .map(([a, st, k, f, fr, sx]) => ({ a: P(find(a)), st: P(find(st)), k: P(find(k)), f: P(find(f)), front: !!fr, sx })) };
   R.up = rigUp(R.root, A.body); return R;
 }
 // Dakota: a skeleton fitted to the static model (spine, four three-joint legs, neck, head, tail) and skin weights by position
@@ -243,8 +246,9 @@ function rigDraft(A, M, extra) {
   }
   const bones = [], mk = (name, w, parent) => { const b = new THREE.Bone(); b.name = name; b.userData.w = w.clone(); b.position.copy(w).sub(parent ? parent.userData.w : new V3()); if (parent) parent.add(b); bones.push(b); return b; };
   const root = mk('DRoot', new V3(0, yB + 0.12, F.dipZ), null);
-  for (const L of legs) { L.ba = mk('LegUp', new V3(L.top.x, yB + 0.16, L.top.z), root); L.bb = mk('LegMid', new V3(L.knee.x, L.yK, L.knee.z), L.ba); L.bc = mk('LegLow', new V3(L.fet.x, L.yF, L.fet.z), L.bb); }
-  const zN = (legs[0].top.z + legs[1].top.z) / 2 + 0.06, neck = mk('Neck_1', new V3(0, F.backY(zN) - 0.2, zN), root), head = mk('Head_1', new V3(0, F.Qz.y, F.Qz.z), neck);
+  legs.forEach((L, i) => { L.ba = mk('LegUp' + i, new V3(L.top.x, yB + 0.16, L.top.z), root); L.bb = mk('LegMid' + i, new V3(L.knee.x, L.yK, L.knee.z), L.ba); L.bc = mk('LegLow' + i, new V3(L.fet.x, L.yF, L.fet.z), L.bb); });
+  const zN = (legs[0].top.z + legs[1].top.z) / 2 + 0.06, nY0 = F.backY(zN) - 0.2, neck = mk('Neck_1', new V3(0, nY0, zN), root), head = mk('Head_1', new V3(0, F.Qz.y, F.Qz.z), neck);
+  const neckY = z => nY0 - 0.06 + Math.max(0, z - zN) * 0.75;   // underside of the neck: a line rising forward from the base of the neck
   const tr = extra && extra.tailRoot, tail = tr ? mk('Tail_1', new V3(0, tr.y - 0.04, tr.z + 0.06), root) : null;
   // weights: legs blend into the body above the belly and bend at knee and fetlock; neck and head ahead of the shoulder; the tail behind the rump
   const pos = geo.attributes.position, n = pos.count, si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), p = new V3(), B = b => bones.indexOf(b);
@@ -259,8 +263,8 @@ function rigDraft(A, M, extra) {
       else if (p.y > L.yF + 0.03) w = [[B(L.bb), 1]];
       else if (p.y > L.yF - 0.03) { const t = ramp(L.yF - 0.03, L.yF + 0.03, p.y); w = [[B(L.bb), t], [B(L.bc), 1 - t]]; }
       else w = [[B(L.bc), 1]];
-    } else if (p.z > zN - 0.12 && p.y > yB + 0.02) {
-      const hd = ramp(-0.08, 0.04, p.clone().sub(F.Qz).dot(F.axis)), nk = ramp(zN - 0.12, zN + 0.12, p.z);
+    } else if (p.z > zN - 0.14 && p.y > neckY(p.z) - 0.08) {   // the neck rises from the withers; the chest below it belongs to the body
+      const hd = ramp(-0.08, 0.04, p.clone().sub(F.Qz).dot(F.axis)), nk = ramp(zN - 0.14, zN + 0.12, p.z) * ramp(neckY(p.z) - 0.08, neckY(p.z) + 0.08, p.y);
       w = hd > 0 ? [[B(head), hd], [B(neck), 1 - hd]] : [[B(neck), nk], [B(root), 1 - nk]];
     } else if (tail && p.z < tr.z + 0.1 && p.y > yB + 0.1 && Math.abs(p.x) < 0.15) { const t = ramp(tr.z + 0.1, tr.z - 0.02, p.z); w = [[B(tail), t], [B(root), 1 - t]]; }
     w.forEach(([b, x], k) => { si[i * 4 + k] = b; sw[i * 4 + k] = x; });
@@ -271,40 +275,119 @@ function rigDraft(A, M, extra) {
   // the mane rides on the neck, the tail on its bone
   if (extra) { for (const m of extra.mane) neck.attach(m); if (extra.tail && tail) tail.attach(extra.tail); }
   const P = b => pbRel(b, A.body);
-  const R = { root: P(root), neck: [P(neck)], head: P(head), tail: tail ? [P(tail)] : [], legs: legs.map(L => ({ a: P(L.ba), b: P(L.bb), c: P(L.bc), front: L.front, sx: L.sx })) };
+  const R = { root: P(root), neck: [P(neck)], head: P(head), tail: tail ? [P(tail)] : [], legs: legs.map(L => ({ a: P(L.ba), st: null, k: P(L.bb), f: P(L.bc), front: L.front, sx: L.sx })) };
   R.up = rigUp(R.root, A.body);
   return { G2, R };
 }
-const rigBones = R => [R.root, ...R.neck, R.head, ...R.tail, ...R.legs.flatMap(L => [L.a, L.b, L.c])].filter(Boolean);
+const rigBones = R => [R.root, ...R.neck, R.head, ...R.tail, ...R.legs.flatMap(L => [L.a, L.st, L.k, L.f])].filter(Boolean);
 function horseRest(A) { if (!A.rig) return; for (const pb of rigBones(A.rig)) { pb.b.quaternion.copy(pb.q0); pb.b.position.copy(pb.p0); } A.root.updateMatrixWorld(true); }
-// gaits: walk is four-beat, trot two-beat on the diagonals, canter three-beat; standing, a horse shifts, looks round and swishes its tail
-const GAITS = [   // stride length, leg swing, knee lift, back bob, phase per leg (LF, RF, LH, RH)
-  { stride: 1.7, swing: 0.3, lift: 0.7, bob: 0.015, ph: [0.25, 0.75, 0, 0.5] },
-  { stride: 2.6, swing: 0.42, lift: 1.0, bob: 0.035, ph: [0, 0.5, 0.5, 0] },
-  { stride: 3.4, swing: 0.55, lift: 1.1, bob: 0.05, ph: [0.62, 0.36, 0.3, 0] },
+// gaits: walk is four-beat, trot two-beat on the diagonals, canter three-beat. The gait blends with the (smoothed) speed,
+// so there is no snap from one to the next. Joints: a swings the leg from shoulder or hip; st is the elbow or stifle; k the
+// knee (front) or hock (hind), the main fold; f the fetlock. Standing, a horse shifts its weight, looks round, grazes and swishes.
+const GAITS = [
+  { stride: 1.55, swing: 0.24, st: 0.22, k: 0.75, f: 0.45, bob: 0.012, ph: [0.25, 0.75, 0, 0.5] },
+  { stride: 2.4, swing: 0.32, st: 0.3, k: 1.0, f: 0.55, bob: 0.028, ph: [0, 0.5, 0.5, 0] },
+  { stride: 3.2, swing: 0.42, st: 0.35, k: 1.05, f: 0.6, bob: 0.04, ph: [0.62, 0.36, 0.3, 0] },
 ];
+const ease = x => x * x * (3 - 2 * x);
+// ---------- real horse motion: the ghost horse's recorded idle, walk, trot and gallop, carried over joint by joint
+// A hidden copy of the ghost horse plays the clips; every frame each of its joints' turn away from its standing pose is
+// applied, in the horse's own space, to the matching bone of Agrippa (her own skeleton) or Dakota (the one fitted to him).
+const MOCAP = { root: null, model: null, clips: null, rest: null, H: 1, loading: false, wait: [] };
+const MOCAP_CLIPS = { idle: [0, 96], walk: [109.9, 157.9], trot: [189.9, 205.9], gallop: [165.9, 181.9] };   // frames at 24 fps (the walk is a rein-back, played reversed)
+const MOCAP_PACE = { walk: 1.6, trot: 3.4, gallop: 6.5 };   // the ground speed each clip looks right at
+function mocapLoad(cb) {
+  if (MOCAP.root) return cb(); MOCAP.wait.push(cb); if (MOCAP.loading) return; MOCAP.loading = true;
+  loadModelFile('ghost-horse.json', gl => {
+    const root = new THREE.Group(), model = gl.scene; root.add(model);
+    const clip = gl.animations[0]; MOCAP.clips = {};
+    for (const n in MOCAP_CLIPS) MOCAP.clips[n] = THREE.AnimationUtils.subclip(clip, n, MOCAP_CLIPS[n][0], MOCAP_CLIPS[n][1], 24);
+    // standing reference: the first idle frame, every joint's rotation in the horse's own space
+    const mx = new THREE.AnimationMixer(model), a = mx.clipAction(MOCAP.clips.idle); a.play(); mx.setTime(0); root.updateMatrixWorld(true);
+    MOCAP.rest = {}; MOCAP.bones = {}; model.traverse(o => { if (o.isBone) { MOCAP.bones[o.name] = o; MOCAP.rest[o.name] = o.getWorldQuaternion(new THREE.Quaternion()); } });
+    const pel = Object.values(MOCAP.bones).find(b => /Pelvis/.test(b.name)); MOCAP.pelvis = pel; MOCAP.pelY0 = pel.getWorldPosition(new V3()).y;
+    MOCAP.H = new THREE.Box3().setFromObject(model, true).getSize(new V3()).y;
+    a.stop(); mx.uncacheRoot(model);
+    Object.assign(MOCAP, { root, model }); for (const f of MOCAP.wait) f(); MOCAP.wait = [];
+  }, e => { console.warn('horse motion', e); MOCAP.loading = false; });
+}
+// which ghost-horse joint drives which bone (in parent-before-child order)
+const MOCAP_MAP = {
+  agrippa: [['Pelvis', /^Middle_01/], ['Spine_', /^back_up_02/], ['Spine1', /^shoulder_03/], ['Neck_', /^Neck_base/], ['Neck1', /^Neck_middle/], ['Head_', /^Head_07/],
+    ['L_UpperArm', /^shoulder_left/], ['L_Forearm', /^elbow_left/], ['L_Hand', /^knee_front_left/], ['L_Finger0_', /^ankle_front_left/],
+    ['R_UpperArm', /^shoulder_right/], ['R_Forearm', /^elbow_right/], ['R_Hand', /^knee_front_right/], ['R_Finger0_', /^ankle_front_right/],
+    ['L_Thigh', /^Hip_left/], ['L_Calf', /^Knee_back_left/], ['L_HorseLink', /^Ankle_back_left/], ['L_Foot', /^foot_up_left/],
+    ['R_Thigh', /^hip_right/], ['R_Calf', /^knee_back_right/], ['R_HorseLink', /^Ankle_back_right/], ['R_Foot', /^foot_up_right/],
+    ['Tail_', /^joint21_/], ['Tail1', /^joint22_/], ['Tail2', /^joint23_/], ['Tail3', /^joint24_/]],
+  draft: [['Pelvis', 'DRoot'], ['Neck_', 'Neck_1'], ['Head_', 'Head_1'], ['Tail_', 'Tail_1'],
+    ['L_Forearm', 'LegUp0'], ['L_Hand', 'LegMid0'], ['L_Finger0_', 'LegLow0'], ['R_Forearm', 'LegUp1'], ['R_Hand', 'LegMid1'], ['R_Finger0_', 'LegLow1'],
+    ['L_Calf', 'LegUp2'], ['L_HorseLink', 'LegMid2'], ['L_Foot', 'LegLow2'], ['R_Calf', 'LegUp3'], ['R_HorseLink', 'LegMid3'], ['R_Foot', 'LegLow3']],
+};
+function mocapBind(A) {
+  mocapLoad(() => {
+    const M = stbShown(A); if (!M || !A.rig) return; horseRest(A);
+    const find = k => { let r = null; M.traverse(o => { if (!r && o.isBone && (typeof k === 'string' ? o.name === k : k.test(o.name))) r = o; }); return r; };
+    const src = n => Object.values(MOCAP.bones).find(b => b.name.replace(/\s/g, '_').includes('Bip01_' + n) || b.name.includes(n));
+    const bq = A.body.getWorldQuaternion(new THREE.Quaternion()).invert(), map = [];
+    for (const [sn, tk] of MOCAP_MAP[A.def.draft ? 'draft' : 'agrippa']) {
+      const t = find(tk), s = src(sn); if (!t || !s) continue;
+      map.push({ t, s, s0i: MOCAP.rest[s.name].clone().invert(), t0: bq.clone().multiply(t.getWorldQuaternion(new THREE.Quaternion())) });
+    }
+    const mixer = new THREE.AnimationMixer(MOCAP.model), acts = {};
+    for (const n in MOCAP.clips) { acts[n] = mixer.clipAction(MOCAP.clips[n]); acts[n].play(); acts[n].setEffectiveWeight(n === 'idle' ? 1 : 0); acts[n].time = Math.random() * MOCAP.clips[n].duration; }
+    A.moc = { mixer, acts, map, w: { idle: 1, walk: 0, trot: 0, gallop: 0 } };
+  });
+}
+const _q1 = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion();
+function mocapAnimate(A, dt) {
+  const C = A.moc, v = A.as = lerp(A.as || 0, Math.abs(A.speed), clamp(dt * 2.5, 0, 1));
+  const tw = { idle: 1 - smooth(0.08, 0.5, v), walk: 0, trot: 0, gallop: smooth(4.0, 5.0, v) };
+  const mov = 1 - tw.idle - tw.gallop; tw.trot = Math.max(0, mov * smooth(2.0, 2.8, v)); tw.walk = Math.max(0, mov - tw.trot);
+  for (const n in C.acts) {
+    const a = C.acts[n]; C.w[n] = lerp(C.w[n], tw[n], clamp(dt * 4, 0, 1)); a.setEffectiveWeight(C.w[n]);
+    a.timeScale = n === 'idle' ? 1 : (n === 'walk' ? -1 : 1) * clamp(Math.max(v, 0.6) / MOCAP_PACE[n], 0.55, 1.5);
+  }
+  C.mixer.update(dt); MOCAP.root.updateMatrixWorld(true);
+  const bw = A.body.getWorldQuaternion(_q3);
+  for (const m of C.map) {
+    const d = m.s.getWorldQuaternion(_q1).multiply(m.s0i);             // the joint's turn away from standing, in horse space
+    const want = _q2.copy(bw).multiply(d).multiply(m.t0);              // the target bone's world rotation
+    m.t.quaternion.copy(m.t.parent.getWorldQuaternion(_q1).invert().multiply(want));
+  }
+  // the back rises and falls with the gait, scaled to this horse
+  const R = A.rig; if (R && R.root) { const dy = (MOCAP.pelvis.getWorldPosition(_fv).y - MOCAP.pelY0) / MOCAP.H * A.H; R.root.b.position.copy(R.root.p0).addScaledVector(R.up, clamp(dy, -0.1, 0.06)); }
+}
 function horseAnimate(A, T, dt) {
   const R = A.rig; if (!R) return;
-  const g = Math.abs(A.speed), gi = g > 4.2 ? 2 : g > 1.9 ? 1 : 0, G = GAITS[gi], k = clamp(dt * 5, 0, 1);
-  A.mw = lerp(A.mw || 0, g > 0.15 ? 1 : 0, k); const mw = A.mw;
-  A.gph = (A.gph || 0) + dt * g / G.stride * Math.sign(A.speed || 1);
-  const ph = A.gph * Math.PI * 2;
+  if (A.moc) return mocapAnimate(A, dt);
+  if (!A.mocReq) { A.mocReq = true; mocapBind(A); }
+  A.as = lerp(A.as || 0, Math.abs(A.speed), clamp(dt * 2.5, 0, 1)); const v = A.as;   // smoothed: no flicker from jittery speeds
+  const w2 = smooth(4.0, 4.8, v), w0 = 1 - smooth(1.9, 2.5, v), w1 = Math.max(0, 1 - w0 - w2), W = [w0, w1, w2], mw = smooth(0.05, 0.45, v);
+  const stride = GAITS.reduce((s, G, i) => s + G.stride * W[i], 0);
+  A.gph = (A.gph || 0) + dt * v / stride; const ph = A.gph * Math.PI * 2;
   R.legs.forEach((L, i) => {
-    const c = ph + G.ph[i] * Math.PI * 2, swing = Math.sin(c) * G.swing * mw, lift = Math.max(0, Math.cos(c)) * G.lift * mw;
-    const shift = (1 - mw) * Math.sin(T * 0.4 + A.i * 2 + (L.front ? 0 : 1.5)) * 0.04;   // weight shifting at rest
-    if (L.a) L.a.ax = -swing + shift; if (L.b) L.b.ax = L.front ? lift * 0.9 : -lift * 0.6; if (L.c) L.c.ax = L.front ? -lift * 0.35 : lift * 0.8;
-    for (const pb of [L.a, L.b, L.c]) if (pb) applyPose(pb);
+    let a = 0, st = 0, k = 0, f = 0;
+    GAITS.forEach((G, gi) => {
+      if (W[gi] < 1e-3) return; const c = ph + G.ph[i] * Math.PI * 2, sw = Math.sin(c), lift = ease(Math.max(0, Math.cos(c))), w = W[gi] * mw;
+      a += -sw * G.swing * w; st += lift * G.st * w; k += lift * G.k * w; f += lift * G.f * w;
+    });
+    const shift = (1 - mw) * Math.sin(T * 0.35 + A.i * 2 + (L.front ? 0 : 1.5)) * 0.03;   // weight shifting at rest
+    if (L.a) { L.a.ax = a + shift; applyPose(L.a); }
+    if (L.front) { if (L.st) { L.st.ax = -st * 0.5; applyPose(L.st); } if (L.k) { L.k.ax = k; applyPose(L.k); } if (L.f) { L.f.ax = -f * 0.6; applyPose(L.f); } }
+    else { if (L.st) { L.st.ax = -st; applyPose(L.st); } if (L.k) { L.k.ax = -k * 0.6; applyPose(L.k); } if (L.f) { L.f.ax = f; applyPose(L.f); } }
   });
-  // the back bobs with each stride; at the canter it rocks
-  if (R.root) { R.root.ax = gi === 2 ? Math.sin(ph) * 0.04 * mw : 0; R.root.b.position.copy(R.root.p0).addScaledVector(R.up, -Math.abs(Math.sin(ph * (gi === 1 ? 2 : 1))) * G.bob * mw); applyPose(R.root); }
-  // head and neck: a nod with each stride; at rest, looking about and now and then dropping to graze
-  A.lookT = (A.lookT || 0) + dt; const graze = (1 - mw) * smooth(0.6, 1, Math.sin(A.lookT * 0.11 + A.i * 3)) * 0.55;
-  const nod = Math.sin(ph * 2) * 0.05 * mw, look = (1 - mw) * Math.sin(T * 0.23 + A.i * 1.7) * 0.25;
-  R.neck.forEach((pb, i) => { if (!pb) return; pb.ax = nod * (i ? 0.6 : 1) + graze * (i ? 0.35 : 0.65); pb.ay = look * (i ? 0.5 : 0.5); applyPose(pb); });
-  if (R.head) { R.head.ax = -nod * 0.5 + graze * 0.2; applyPose(R.head); }
+  // the back: bobs twice a stride at the trot, rocks at the canter
+  if (R.root) { const bob = Math.abs(Math.sin(ph * 2)) * GAITS[1].bob * w1 * mw + Math.abs(Math.sin(ph)) * GAITS[0].bob * w0 * mw + Math.abs(Math.sin(ph)) * GAITS[2].bob * w2 * mw;
+    R.root.ax = Math.sin(ph) * 0.035 * w2 * mw; R.root.b.position.copy(R.root.p0).addScaledVector(R.up, -bob); applyPose(R.root); }
+  // head and neck: a nod with each step at the walk, a rocking swing at the canter, still at the trot; at rest, looking about and grazing now and then
+  A.lookT = (A.lookT || 0) + dt; const graze = (1 - mw) * smooth(0.65, 1, Math.sin(A.lookT * 0.09 + A.i * 3)) * 1.0;
+  const nod = Math.sin(ph * 2 + 0.6) * 0.045 * w0 * mw + Math.sin(ph + 0.8) * 0.07 * w2 * mw, look = (1 - mw) * Math.sin(T * 0.19 + A.i * 1.7) * 0.22;
+  const nn = R.neck.length;   // the drop to graze is shared out down the neck
+  R.neck.forEach((pb, i) => { if (!pb) return; pb.ax = nod * (i ? 0.6 : 1) + graze * (nn > 1 ? (i ? 0.45 : 0.6) : 0.95); pb.ay = look * 0.5; applyPose(pb); });
+  if (R.head) { R.head.ax = -nod * 0.4 + graze * 0.2; applyPose(R.head); }
   // tail: a lazy sway, a sharp swish now and then, carried a little higher on the move
-  const swish = Math.pow(Math.max(0, Math.sin(T * 0.37 + A.i * 2.3)), 8);
-  R.tail.forEach((pb, i) => { pb.ay = Math.sin(T * (1.4 + swish * 7) + i * 0.6 + A.i) * (0.08 + swish * 0.3) * (0.6 + i * 0.25); pb.ax = -0.15 * mw * (i ? 0.3 : 1); applyPose(pb); });
+  const swish = Math.pow(Math.max(0, Math.sin(T * 0.31 + A.i * 2.3)), 10);
+  R.tail.forEach((pb, i) => { pb.ay = Math.sin(T * (1.1 + swish * 6) + i * 0.6 + A.i) * (0.06 + swish * 0.28) * (0.6 + i * 0.25); pb.ax = -0.12 * mw * (i ? 0.3 : 1); applyPose(pb); });
 }
 // a rope from whoever is leading an animal to its nose
 function stbRope(A, show) {

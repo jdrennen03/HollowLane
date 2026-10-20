@@ -109,6 +109,7 @@ function barnTextures() {
   defMat('fenceBoard', TEX.stallBoard, 1.4, { color: 0xa89478, ns: 0.6 });
   defMat('barrelWood', TEX.stallBoard, 0.9, { color: 0xb08a62, ns: 0.9 });
   defMat('rubberBlack', null, 1, { color: 0x141414, roughness: 0.85 });
+  defMat('lanternLit', null, 1, { color: 0xffe2b0, emissive: 0xffb050, emissiveIntensity: 2.2, roughness: 0.3 });
   defMat('saltBlock', null, 1, { color: 0xc89a92, roughness: 0.75 });
   defMat('sackCloth', TEX.canvas, 0.6, { color: 0xc9b48a, ns: 0.8 });
     Object.assign(BEVEL, { stallBoard: [0.008, 1], fenceBoard: [0.01, 1], hayBale: [0.035, 2], sackCloth: [0.05, 2], galv: [0.006, 1], rubberBlack: [0.01, 1], saltBlock: [0.012, 1], barrelWood: [0.01, 1], pinePanel: [0.006, 1] });
@@ -319,8 +320,8 @@ function hayBale(gb, x, y, z, ry, tw = true) {
 function buildBarnInterior(gb, root) {
   const F0 = (x, z, ry = 0) => fur(gb, x, z, ry, BA0), F1 = (x, z, ry = 0) => fur(gb, x, z, ry, BA1);
   const Y = BA0, art = roomArtBarn();
-  // ---------- the aisle: cold lanterns on their hooks, blanket bars, halters, tools, a fire bucket
-  for (let x = 1.8; x < BW; x += 3.6) { if (Math.abs(x - 12.6) < 1) continue; rod(gb, 'railBlack', [x, Y + 2.72, 5.7], [x, Y + 2.5, 5.7], 0.008); hangLantern(gb, x, Y + 2.5, 5.7); }
+  // ---------- the aisle: lanterns burning on their hooks, blanket bars, halters, tools, a fire bucket
+  for (let x = 1.8; x < BW; x += 3.6) { if (Math.abs(x - 12.6) < 1) continue; rod(gb, 'railBlack', [x, Y + 2.72, 5.7], [x, Y + 2.5, 5.7], 0.008); hangLantern(gb, x, Y + 2.5, 5.7, 1, true); }
   const blankets = ['blanketRed', 'fabricGreen', 'fabricBlue', 'beddingHorse', 'fabricBrown', 'blanketRed', 'fabricBlue', 'beddingGame'];
   for (const side of [0, 1]) for (let k = 0; k < 4; k++) {
     const c = STALL_X[k] + 1.8, wz = side ? AZ1 : AZ0, out = side ? -1 : 1, face = wz + out * 0.07;
@@ -508,10 +509,10 @@ function barrel55(gb, x, z, y = 0, m = 'barrelWood') {
   gb.cyl('lightWood', x, y + 0.87, z, 0.255, 0.255, 0.02, 20);
 }
 // an oil lantern hanging by its bail from (x, y, z): cap, glass chimney with the wick, base
-function hangLantern(gb, x, y, z, s = 1) {
+function hangLantern(gb, x, y, z, s = 1, lit = false) {
   gb.add(new THREE.TorusGeometry(0.035 * s, 0.004 * s, 4, 10, Math.PI), mat4(x, y - 0.035 * s, z), 'railBlack', false);
   gb.add(new THREE.ConeGeometry(0.06 * s, 0.07 * s, 10), mat4(x, y - 0.1 * s, z), 'railBlack', false);
-  gb.cyl('glass', x, y - 0.2 * s, z, 0.045 * s, 0.05 * s, 0.14 * s, 12);
+  gb.cyl(lit ? 'lanternLit' : 'glass', x, y - 0.2 * s, z, 0.045 * s, 0.05 * s, 0.14 * s, 12);
   for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2; gb.cyl('railBlack', x + Math.cos(a) * 0.055 * s, y - 0.2 * s, z + Math.sin(a) * 0.055 * s, 0.004 * s, 0.004 * s, 0.15 * s, 4); }
   gb.cyl('railBlack', x, y - 0.29 * s, z, 0.065 * s, 0.07 * s, 0.04 * s, 12);
 }

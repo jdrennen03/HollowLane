@@ -413,8 +413,9 @@ function stbMove(P, dt, blocked) {
     P.pos.set(p.x, W.y, p.z); P.moving = 0; cam.position.set(p.x, W.y + WAGON_DEF.bedY + 0.95, p.z); cam.rotation.set(PL.pitch, PL.yaw, 0, 'YXZ'); return true;
   }
   const E = A || W, fast = !blocked && (k.ShiftLeft || k.ShiftRight), fw = !blocked && (k.KeyW || k.ArrowUp), bk = !blocked && (k.KeyS || k.ArrowDown);
-  const donkey = A && A.def.kind === 'donkey', top = A ? (fast ? (donkey ? 4.8 : 6.8) : (donkey ? 2.0 : 2.6)) : (fast ? 5.2 : 2.6), want = fw ? top : bk ? -1.1 : 0;
-  E.speed = lerp(E.speed, want, clamp(dt * (want === 0 ? 3 : 1.6), 0, 1)); if (Math.abs(E.speed) < 0.02 && !fw && !bk) E.speed = 0;
+  const donkey = A && A.def.kind === 'donkey', top = A ? (fast ? (donkey ? 4.2 : 5.6) : (donkey ? 1.4 : 1.7)) : (fast ? 4.4 : 2.2), want = fw ? top : bk ? -1.1 : 0;
+  E.speed = lerp(E.speed, want, clamp(dt * (want === 0 ? 2.2 : 0.9), 0, 1));   // horses gather and settle gradually
+  if (Math.abs(E.speed) < 0.02 && !fw && !bk) E.speed = 0;
   // the animal turns toward where you look, and A/D rein it round
   const turn = A ? 2.0 : 1.2, mv = Math.abs(E.speed) > 0.1 || fw;
   let dy = mv ? angDiff(E.yaw, PL.yaw + Math.PI) : 0; dy = clamp(dy, -turn * dt, turn * dt);
