@@ -639,6 +639,6 @@ function roomTemp(ri) {
   if (ri !== G.ghostRoom) return base;
   // always the coldest room, and it keeps dropping as the night goes on
   const start = Math.min(...ROOM_TEMP.slice(0, NROOM).filter((v, i) => i !== ri)) - 2.2;
-  const target = G.ghost.ev.includes('freeze') ? -2.6 : 6.4;
+  const target = G.ghost.ev.includes('freeze') ? (spellOn('freeze', EV_CHANCE, 12) ? -2.6 : 1.4) : 6.4;   // freezing comes and goes
   return lerp(start, target, smooth(5, 90, G.elapsed));
 }

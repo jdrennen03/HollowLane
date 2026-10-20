@@ -47,7 +47,7 @@ function hostToggleLight(ri, slot, force) {
   if (on && !G.lights[ri] && G.lights.filter(Boolean).length >= 4) { hostEvent(['msg', slot, 'The fuse box can only handle four lights at once.']); return; }
   G.lights[ri] = on;
   const gs = G.gs;
-  if (on && slot >= 0 && G.ghost.mare && gs && gs.mode === 0 && (logicalRoom(gs.x, gs.z, gs.y) === ri || Math.hypot(ROOMS[ri].lamp[0] - gs.x, ROOMS[ri].lamp[1] - gs.z) < 7) && Math.random() < 0.8) gs.mareOff = [ri, G.elapsed + rr(1.5, 4)];
+  if (on && slot >= 0 && G.ghost.mare && gs && gs.mode === 0 && Math.random() < TRAIT_CHANCE && (logicalRoom(gs.x, gs.z, gs.y) === ri || Math.hypot(ROOMS[ri].lamp[0] - gs.x, ROOMS[ri].lamp[1] - gs.z) < 7)) gs.mareOff = [ri, G.elapsed + rr(1.5, 4)];
 }
 function hostDoor(di, slot) {
   const D = DOORS[di]; if (!D) return;
@@ -95,7 +95,7 @@ function hostAsk(slot, q, x, y, z) {
   const dark = ri >= 0 && !G.lights[ri];
   const near = d < 6.5 || ri === G.ghostRoom;
   let text = '';
-  if (G.ghost.ev.includes('spirit') && near && dark && gs.mode !== 2 && Math.random() < 0.6) text = pick(SB_ANSWERS[q].a);
+  if (G.ghost.ev.includes('spirit') && near && dark && gs.mode !== 2 && Math.random() < 0.6 * EV_CHANCE) text = pick(SB_ANSWERS[q].a);
   if (text && G.ghost.echo && Math.random() < 0.4) text = SB_ANSWERS[q].q.replace('?', '').toLowerCase() + '…';   // the Changeling parrots you
   else if (text && Math.random() < 0.15) text = 'looking for Claire';   // something in the static is still searching for her
   hostEvent(['sb', slot, text, r2(x), r2(z)]);
@@ -177,7 +177,7 @@ function ghostActivity() {
   if (G.ghost.shy) { const near = ps.filter(p => Math.hypot(p.pos.x - G.gs.x, p.pos.z - G.gs.z) < 6).length; if (near > 1) a *= 0.3; }
   return a;
 }
-function emfLevel(base) { return (G.ghost.ev.includes('emf') && Math.random() < 0.32) ? 5 : base; }
+function emfLevel(base) { return (G.ghost.ev.includes('emf') && Math.random() < 0.32 * EV_CHANCE) ? 5 : base; }
 function ghostThink(dt) {
   const gs = G.gs, gh = G.ghost;
   hostIncense(); hostCarryTick();
@@ -195,8 +195,8 @@ function ghostThink(dt) {
       }
     }
     // ----- signature behaviours
-    if (gh.breathes) { gs.breathT -= dt; if (gs.breathT <= 0) { gs.breathT = rr(3.5, 6.5); if (alivePlayers().some(p => p.inside && Math.abs(p.pos.y - gs.y) < 1.4 && Math.hypot(p.pos.x - gs.x, p.pos.z - gs.z) < 2.6)) hostEvent(['snd', 'gbreath', r2(gs.x), r2(gs.y + 1.5), r2(gs.z), 0.35]); } }
-    if (gh.mimics) { gs.mimicT = (gs.mimicT ?? rr(8, 15)) - dt; if (gs.mimicT <= 0) { const c = alivePlayers().filter(p => p.inside && p.moving > 0.5 && Math.abs(p.pos.y - gs.y) < 1.4 && Math.hypot(p.pos.x - gs.x, p.pos.z - gs.z) < 9); gs.mimicT = c.length ? rr(18, 32) : 2; if (c.length) hostEvent(['mimic', pick(c).slot]); } }
+    if (gh.breathes) { gs.breathT -= dt; if (gs.breathT <= 0) { gs.breathT = rr(3.5, 6.5); if (Math.random() < TRAIT_CHANCE && alivePlayers().some(p => p.inside && Math.abs(p.pos.y - gs.y) < 1.4 && Math.hypot(p.pos.x - gs.x, p.pos.z - gs.z) < 2.6)) hostEvent(['snd', 'gbreath', r2(gs.x), r2(gs.y + 1.5), r2(gs.z), 0.35]); } }
+    if (gh.mimics) { gs.mimicT = (gs.mimicT ?? rr(8, 15)) - dt; if (gs.mimicT <= 0) { const c = alivePlayers().filter(p => p.inside && p.moving > 0.5 && Math.abs(p.pos.y - gs.y) < 1.4 && Math.hypot(p.pos.x - gs.x, p.pos.z - gs.z) < 9); gs.mimicT = c.length ? rr(18, 32) : 2; if (c.length && Math.random() < TRAIT_CHANCE) hostEvent(['mimic', pick(c).slot]); } }
     if (gs.mareOff && G.elapsed > gs.mareOff[1]) {
       const ri = gs.mareOff[0]; gs.mareOff = null;
       if (G.lights[ri]) { hostToggleLight(ri, -1, false); const [x, z] = ROOMS[ri].sw, sy = ROOMS[ri].y + 1.25; hostEvent(['snd', 'switch', x, sy, z, 0.8]); hostEvent(['emf', x, sy, z, emfLevel(2)]); }
@@ -259,19 +259,23 @@ function ghostInteract() {
   if (openDoors.length >= 2) opts.push(['shutall', 3]);
   const callable = gh.calls ? alivePlayers().filter(p => p.inside && Math.hypot(p.pos.x - gs.x, p.pos.z - gs.z) < 14) : [];
   if (callable.length) opts.push(['call', 2]);
-  opts.push(['emf', 1]); opts.push(['sound', gh.chatty || 1]);
+  opts.push(['emf', 1]); opts.push(['sound', gh.chatty ? 1 + (gh.chatty - 1) * TRAIT_CHANCE * 2.5 : 1]);
   let tot = opts.reduce((a, o) => a + o[1], 0), r = Math.random() * tot, choice = opts[0][0];
   for (const o of opts) { r -= o[1]; if (r <= 0) { choice = o[0]; break; } }
+  // evidence and signature moves only come off part of the time; otherwise it settles for a noise
+  if (choice === 'write' && Math.random() > EV_CHANCE) choice = 'sound';
+  if ((choice === 'lighton' || choice === 'call') && Math.random() > TRAIT_CHANCE) choice = 'sound';
+  if (choice === 'shutall' && Math.random() > TRAIT_CHANCE) choice = 'door';
   if (choice === 'write') {   // ghost writing: the journal's pages fill with scrawl
     const J = pick(journals); J.spent = true;
     hostEvent(['snd', 'scribble', r2(J.pos.x), r2(J.pos.y + 0.1), r2(J.pos.z), 0.7]); hostEvent(['jw', J.id]);
   } else if (choice === 'door') {
-    const D = pick(nearDoors); const slam = gh.slams && Math.random() < 0.6;
+    const D = pick(nearDoors); const slam = gh.slams && Math.random() < TRAIT_CHANCE;
     D.target = slam ? (D.angle > 0.5 ? 0 : 1.45) : clamp(D.angle + (D.angle > 0.7 ? -1 : 1) * rr(0.4, 1.0), 0, 1.5); D.speed = slam ? 7 : 0.7;
     const c = doorCenter(D); hostEvent(['emf', r2(c.x), r2(c.y), r2(c.z), emfLevel(3)]);
-    if (hasUV && Math.random() < 0.65) hostEvent(['pr', r2(rr(0.25, D.w - 0.12)), r2(rr(0.9, 1.5)), 0, 0, 0, r2(rr(-0.4, 0.4)), D.i, Math.random() < 0.5 ? 1 : -1, gh.childPrints ? 0.55 : false]);
+    if (hasUV && Math.random() < 0.6) hostEvent(['pr', r2(rr(0.25, D.w - 0.12)), r2(rr(0.9, 1.5)), 0, 0, 0, r2(rr(-0.4, 0.4)), D.i, Math.random() < 0.5 ? 1 : -1, gh.childPrints ? 0.55 : false]);
   } else if (choice === 'throw') {
-    const n = gh.throwy && Math.random() < 0.5 ? Math.min(3, nearProps.length) : 1;
+    const n = gh.throwy && Math.random() < TRAIT_CHANCE ? Math.min(3, nearProps.length) : 1;
     for (let k = 0; k < n; k++) {
       const p = nearProps.splice((Math.random() * nearProps.length) | 0, 1)[0]; if (!p) break;
       let dx = p.mesh.position.x - gs.x, dz = p.mesh.position.z - gs.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
@@ -288,14 +292,14 @@ function ghostInteract() {
       const y = best.y0 !== undefined ? rr(best.y0, best.y1) : rr(FL + 0.85, FL + 1.7);
       hostEvent(['emf', r2(best.x), r2(y), r2(best.z), emfLevel(2)]);
       hostEvent(['snd', 'knock', r2(best.x), r2(y), r2(best.z), 0.5]);
-      if (hasUV && Math.random() < 0.75) hostEvent(['pr', r2(best.x), r2(y), r2(best.z), best.nx, best.nz, r2(rr(-0.5, 0.5)), -1, 1, gh.childPrints ? 0.55 : false]);
+      if (hasUV && Math.random() < EV_CHANCE) hostEvent(['pr', r2(best.x), r2(y), r2(best.z), best.nx, best.nz, r2(rr(-0.5, 0.5)), -1, 1, gh.childPrints ? 0.55 : false]);
     }
   } else if (choice === 'switch') {
     hostToggleLight(ri, -1, false);
     const [x, z, nx, nz] = ROOMS[ri].sw, sy = ROOMS[ri].y + 1.25;
     hostEvent(['snd', 'switch', x, sy, z, 0.8]);
     hostEvent(['emf', x, sy, z, emfLevel(2)]);
-    if (hasUV && Math.random() < 0.6) hostEvent(['pr', r2(x + nz * 0.02), sy, r2(z + nx * 0.02), nx, nz, 0, -1, 1, true]);
+    if (hasUV && Math.random() < 0.55) hostEvent(['pr', r2(x + nz * 0.02), sy, r2(z + nx * 0.02), nx, nz, 0, -1, 1, true]);
   } else if (choice === 'lighton') {   // Lantern Man: a lamp comes on in a room nobody is in (its own, or one nearby)
     const r = pick(darkRooms); hostToggleLight(r, -1, true);
     const [x, z] = ROOMS[r].sw, sy = ROOMS[r].y + 1.25; hostEvent(['snd', 'switch', x, sy, z, 0.8]); hostEvent(['emf', x, sy, z, emfLevel(2)]);
@@ -324,10 +328,10 @@ function tryGhostEvent() {
     gs.x = x; gs.z = z; gs.y = py; gs.l = pl; gs.yaw = Math.atan2(-(P.pos.x - x), -(P.pos.z - z));
     gs.mode = 1; gs.vis = 1; gs.target = P.slot; gs.evKind = Math.random() < 0.45 ? 1 : 0; gs.evT = gs.evKind ? 3.4 : 2.6; gs.path = []; gs.repath = 0;
     hostEvent(['ge', gs.evKind, P.slot, r2(x), r2(py), r2(z)]);
-    if (G.ghost.wail) hostEvent(['snd', 'wail', r2(x), r2(py + 1.6), r2(z), 1]);
+    if (G.ghost.wail && Math.random() < TRAIT_CHANCE) hostEvent(['snd', 'wail', r2(x), r2(py + 1.6), r2(z), 1]);
     hostEvent(['emf', r2(x), r2(py + 1), r2(z), emfLevel(4)]);
     const ri = logicalRoom(x, z, py), g = G.ghost;
-    if (g.popLights) {   // Onryo: the bulb bursts wherever it shows itself, and where its witness stands
+    if (g.popLights && Math.random() < TRAIT_CHANCE) {   // Onryo: the bulb bursts wherever it shows itself, and where its witness stands
       for (const r of new Set([ri, logicalRoom(P.pos.x, P.pos.z, P.pos.y)])) {
         if (r < 0 || !G.lights[r]) continue;
         hostToggleLight(r, -1, false); const L = ROOMS[r].lamp; hostEvent(['snd', 'bulbPop', r2(L[0]), r2(ROOMS[r].y + 2.3), r2(L[1]), 1]);
@@ -347,7 +351,7 @@ function dollHunt(it) {
 }
 function startHunt() {
   const gs = G.gs;
-  if (G.ghost.preHunt) { for (let i = 0; i < NROOM; i++) G.lights[i] = false; hostEvent(['snd', 'breaker', r2(gs.x), r2(gs.y + 2), r2(gs.z), 1]); }
+  if (G.ghost.preHunt && Math.random() < TRAIT_CHANCE) { for (let i = 0; i < NROOM; i++) G.lights[i] = false; hostEvent(['snd', 'breaker', r2(gs.x), r2(gs.y + 2), r2(gs.z), 1]); }
   gs.mode = 2; gs.vis = 1; gs.huntT = 0; gs.repelT = 0; gs.huntDur = rr(28, 33); gs.path = []; gs.lastSeen = null; gs.target = -1;
   if (G.ghost.fixate) { const c = alivePlayers().filter(p => p.inside); gs.fixate = c.length ? pick(c).slot : -1; }
   for (const fd of DOORS) if (fd.ext) { fd.target = 0; fd.speed = 6; fd.locked = true; } G.frontLocked = true;

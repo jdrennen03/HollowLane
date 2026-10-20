@@ -114,7 +114,7 @@ function updateOrbs(t, dt) {
     const halo = artTex(64, 64, (x, w, h) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.25, 'rgba(255,255,255,0.75)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); });
     for (let i = 0; i < 4; i++) { const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })); m.scale.setScalar(0.16); m.visible = false; scene.add(m); ORBS.push({ m, p: new V3(), seed: i * 7.3 + 1 }); }
   }
-  const R = ROOMS[G.ghostRoom], show = CAM.on && G.ghost && G.ghost.ev.includes('orbs') && R && G.state === 'play';
+  const R = ROOMS[G.ghostRoom], show = CAM.on && G.ghost && G.ghost.ev.includes('orbs') && R && G.state === 'play' && spellOn('orbs', EV_CHANCE);
   for (const o of ORBS) {
     o.m.visible = !!show; if (!show) continue;
     const s = o.seed, w = R.r[2] - R.r[0], d = R.r[3] - R.r[1];
@@ -352,7 +352,7 @@ function updateGhostView(t, dt) {
   GHOST_U.uAlpha.value = v.mode === 1 ? 0.7 + Math.sin(t * 20) * 0.08 : 0.86;
   // laser projectors catch a silhouette
   LASER_U.uOn.value = 0;
-  if (look === 'hidden' && G.ghost.ev.includes('laser')) {
+  if (look === 'hidden' && G.ghost.ev.includes('laser') && spellOn('laser', EV_CHANCE)) {   // the grid only catches it part of the time
     for (const it of ITEMS) {
       if (it.type !== 'laser' || !it.on || it.holder >= 0) continue;
       it.light.getWorldPosition(_tv); it.light.target.getWorldPosition(_td); const f = _td.sub(_tv).normalize();
@@ -377,7 +377,7 @@ function updateGhostView(t, dt) {
   if (AU.loops.heart) AU.loops.heart.src.playbackRate.value = 0.9 + heartV * 0.9;
   loopGain('buzz', G.huntOn && G.lights.some(Boolean) ? 0.08 : 0, 0.2);
   // electronics stutter near a manifested ghost
-  PL.flashFlicker = (v.vis && dist < 11 && (v.mode === 2 || v.mode === 1)) || (G.ghost.drainsFlash && v.mode === 0 && dist < 2.8 && P && Math.abs(P.pos.y - v.y) < 1.4) ? (Math.random() < 0.35 ? 0.05 : 1) : 1;
+  PL.flashFlicker = (v.vis && dist < 11 && (v.mode === 2 || v.mode === 1)) || (G.ghost.drainsFlash && v.mode === 0 && spellOn('jinn', TRAIT_CHANCE, 4) && dist < 2.8 && P && Math.abs(P.pos.y - v.y) < 1.4) ? (Math.random() < 0.35 ? 0.05 : 1) : 1;
   // ghost-event witness check (local sanity drain)
   if (G.evWatch && v.mode === 1) {
     G.evWatch.t += dt;

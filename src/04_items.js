@@ -3,6 +3,15 @@ const EV = ['emf', 'spirit', 'uv', 'laser', 'freeze', 'orbs', 'writing'];
 const EV_NAME = { emf: 'EMF Level 5', spirit: 'Spirit Box', uv: 'UV Handprints', laser: 'Laser Dots', freeze: 'Freezing Temps', orbs: 'Ghost Orbs', writing: 'Ghost Writing' };
 const EV_SHORT = { emf: 'EMF 5', spirit: 'Spirit', uv: 'UV', laser: 'Laser', freeze: 'Freezing', orbs: 'Orbs', writing: 'Writing' };
 const EV_HINT = { emf: 'The EMF reader lights all five dots.', spirit: 'A voice answers through the static.', uv: 'Glowing prints on walls, doors or switches.', laser: 'A silhouette moves through the green grid.', freeze: 'Thermometer reads 0 °C or colder.', orbs: 'Floating lights in the camcorder\'s night vision.', writing: 'Something writes in the spirit journal.' };
+// How likely evidence is to show each time the ghost has a chance to leave it, and how likely its signature behaviour is
+// to fire each time it could. Evidence that is simply present or not (the laser silhouette, orbs, freezing air, the Jinn's
+// drain) comes and goes in spells of a few seconds, picked from the round seed and the clock so every player sees the same.
+const EV_CHANCE = 0.7, TRAIT_CHANCE = 0.4;
+function spellOn(key, p, span = 6) {
+  let h = (G.seed ^ Math.imul(Math.floor(G.elapsed / span) + 1, 2654435761) ^ Math.imul(key.length * 31 + key.charCodeAt(0), 40503)) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 2246822507) >>> 0; h = Math.imul(h ^ (h >>> 13), 3266489909) >>> 0; h ^= h >>> 16;
+  return ((h >>> 0) % 10000) / 10000 < p;
+}
 // seven evidences, every ghost a unique set of three, and a behaviour that singles it out even with no evidence
 const GHOSTS = [
   { name: 'Spirit', ev: ['emf', 'spirit', 'uv'], tell: 'The only ghost that slams doors shut with a bang (others just ease them). Waits a little longer between hunts.', huntCd: 1.3, slams: true },
