@@ -83,20 +83,45 @@ function initAudio() {
     const src = ctx.createBufferSource(); src.buffer = B[k]; src.loop = true; const gn = ctx.createGain(); gn.gain.value = g; src.connect(gn); gn.connect(AU.master); if (k === 'static') gn.connect(AU.revIn); src.start(); AU.loops[k] = { src, g: gn };
   }
   AU.ready = true;
+  loadSfxFiles();
 }
 function fadeLoop(d, sr) { const n = (0.3 * sr) | 0; for (let i = 0; i < n; i++) { const a = i / n; d[i] = d[i] * a + d[d.length - n + i] * (1 - a); } }
 function makeIR(sec, decay) { const ctx = AU.ctx, sr = ctx.sampleRate, b = ctx.createBuffer(2, sec * sr, sr); for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, decay) * (i < sr * 0.01 ? i / (sr * 0.01) : 1); } return b; }
 function loopGain(k, v, tc = 0.3) { const L = AU.loops[k]; if (!L) return; L.g.gain.setTargetAtTime(v, AU.ctx.currentTime, tc); }
 function sfx(name, vol = 1, rate = 1) {
-  if (!AU.ready || !AU.bufs[name]) return;
+  name = AU.ready && sfxKey(name); if (!name || !AU.bufs[name]) return;
   const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = AU.bufs[name]; s.playbackRate.value = rate;
   const g = ctx.createGain(); g.gain.value = vol; s.connect(g); g.connect(AU.master); g.connect(AU.revIn); s.start();
 }
-const SFX_ROLLOFF = { meowLoud: 0.45 };   // sounds meant to carry through the house
+// recorded scares (the Jump Scare & Horror Hits pack), decoded once audio starts. A pool name plays one of its sounds at random,
+// never the same one twice running; until they have loaded (or if they can't) the pool falls back to a synthesized sound.
+const SFX_FILES = ['js-horror', 'js-freak', 'js-feral', 'js-scream', 'js-destroy', 'hit-attack', 'hit-dungeon', 'hit-frighten', 'hit-slice', 'hit-trapped'];
+const SFX_POOL = {
+  seen: { files: ['js-horror', 'js-freak', 'js-feral'], fb: 'scare' },               // you look straight at it while it manifests
+  manifest: { files: ['hit-dungeon', 'hit-frighten', 'hit-trapped'], fb: 'manifest' },   // a ghost event begins, where the ghost stands
+  huntHit: { files: ['hit-attack', 'hit-slice'], fb: null },                      // laid over the hunt alarm
+  lunge: { files: ['js-scream', 'js-feral', 'js-horror'], fb: 'scare' },          // it rushes you and vanishes in your face
+  caught: { files: ['js-destroy', 'js-feral'], fb: 'scare' },                     // Rookie: grabbed and let go
+  death: { files: ['js-scream', 'js-destroy'], fb: 'scare' },
+  doll: { files: ['js-freak', 'js-destroy'], fb: 'scare' },                       // the pin goes into the voodoo doll
+  wrong: { files: ['hit-trapped'], fb: 'scare' },                                 // the wrong ghost named on the clipboard
+};
+function loadSfxFiles() {
+  for (const n of SFX_FILES) fetch('sfx-' + n + '.mp3').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(a => AU.ctx.decodeAudioData(a)).then(b => { AU.bufs['f:' + n] = b; }).catch(e => console.warn('sfx', n, e));
+}
+const _sfxLast = {};
+function sfxKey(name) {   // a pool name -> the buffer to play this time
+  const P = SFX_POOL[name]; if (!P) return name;
+  const ready = P.files.filter(n => AU.bufs['f:' + n]); if (!ready.length) return P.fb;
+  const choice = ready.length > 1 ? pick(ready.filter(n => n !== _sfxLast[name])) : ready[0];
+  _sfxLast[name] = choice; return 'f:' + choice;
+}
+const SFX_ROLLOFF = { meowLoud: 0.45, manifest: 0.9 };   // sounds meant to carry through the house
 function sfxAt(name, pos, vol = 1, rate) {
-  if (!AU.ready || !AU.bufs[name]) return;
-  const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = AU.bufs[name]; s.playbackRate.value = rate || (0.92 + Math.random() * 0.16);
-  const p = ctx.createPanner(); p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = 1.2; p.rolloffFactor = SFX_ROLLOFF[name] ?? 1.4; p.maxDistance = 60;
+  const pool = name; name = AU.ready && sfxKey(name); if (!name || !AU.bufs[name]) return;
+  const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = AU.bufs[name]; s.playbackRate.value = rate || (name.startsWith('f:') ? 1 : 0.92 + Math.random() * 0.16);
+  const p = ctx.createPanner(); p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = 1.2; p.rolloffFactor = SFX_ROLLOFF[pool] ?? SFX_ROLLOFF[name] ?? 1.4; p.maxDistance = 60;
   p.positionX.value = pos.x; p.positionY.value = pos.y; p.positionZ.value = pos.z;
   // walls muffle sounds that come from another room
   const P = typeof me === 'function' && me();

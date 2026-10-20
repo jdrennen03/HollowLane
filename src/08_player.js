@@ -314,7 +314,7 @@ function hotspot() {
 }
 // ---------------------------------------------------------------- death & spectating
 function beginDeath() {
-  PL.deathT = 0; G.stats.died = true; sfx('scream', 1); sfx('scare', 0.8);
+  PL.deathT = 0; G.stats.died = true; sfx('scream', 0.8); sfx('death', 1);
   document.getElementById('huntVig').classList.add('on');
 }
 function updateDeath(dt) {

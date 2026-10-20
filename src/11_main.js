@@ -375,7 +375,7 @@ function updateGhostView(t, dt) {
     G.evWatch.t += dt;
     if (!G.evWatch.seen && P && P.alive) {
       const toG = new V3(v.x, v.y + 1.3, v.z).sub(PL.cam.position); const d = toG.length(); const fwd = new V3(0, 0, -1).applyQuaternion(PL.cam.quaternion);
-      if (d < 13 && toG.normalize().dot(fwd) > 0.6 && sightClear(P.pos.x, P.pos.z, v.x, v.z, P.pos.y, v.y)) { G.evWatch.seen = true; P.sanity = clamp(P.sanity - 10 * (G.ghost.eventDrain || 1), 0, 100); POST.scare = 1; sfx('scare', 0.9); }
+      if (d < 13 && toG.normalize().dot(fwd) > 0.6 && sightClear(P.pos.x, P.pos.z, v.x, v.z, P.pos.y, v.y)) { G.evWatch.seen = true; P.sanity = clamp(P.sanity - 10 * (G.ghost.eventDrain || 1), 0, 100); POST.scare = 1; sfx('seen', 1); }
     }
   } else if (v.mode !== 1) { G.evWatch = null; }
   G.eventFx = v.mode === 1 ? 1 : 0;

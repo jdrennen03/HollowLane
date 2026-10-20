@@ -122,7 +122,7 @@ function onRoundEnd(guess, bySlot) {
   $('resStats').innerHTML = rows.map(([a, b]) => '<span>' + a + '</span><b>' + String(b).replace(/</g, '&lt;') + '</b>').join('');
   UI.show('journal', false); UI.journalOpen = false; UI.show('pause', false); UI.show('dead', false);
   setTimeout(() => UI.show('results', true), 600);
-  if (correct) sfx('huntEnd', 0.6); else sfx('scare', 0.6);
+  if (correct) sfx('huntEnd', 0.6); else sfx('wrong', 0.7);
 }
 function bindUI() {
   const nick = $('nick'); let stored = ''; try { stored = localStorage.getItem('hl-nick') || ''; } catch (e) { }

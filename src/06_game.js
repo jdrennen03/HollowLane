@@ -212,7 +212,7 @@ function ghostThink(dt) {
     gs.evT -= dt;
     if (gs.evKind === 1) { // brief chase
       const P = G.players[gs.target];
-      if (P && P.alive && P.inside) { gs.repath -= dt; if (gs.repath <= 0) { gs.repath = 0.4; gs.path = findPath(gs.x, gs.z, gs.l, P.pos.x, P.pos.z, levelOf(P.pos.y)); } gs.speed = 2.0; if (Math.hypot(P.pos.x - gs.x, P.pos.z - gs.z) < 0.7 && Math.abs(P.pos.y - gs.y) < 1) { gs.evT = 0; hostEvent(['snd', 'scare', gs.x, gs.y + 1.5, gs.z, 1]); } }
+      if (P && P.alive && P.inside) { gs.repath -= dt; if (gs.repath <= 0) { gs.repath = 0.4; gs.path = findPath(gs.x, gs.z, gs.l, P.pos.x, P.pos.z, levelOf(P.pos.y)); } gs.speed = 2.0; if (Math.hypot(P.pos.x - gs.x, P.pos.z - gs.z) < 0.7 && Math.abs(P.pos.y - gs.y) < 1) { gs.evT = 0; hostEvent(['snd', 'lunge', gs.x, gs.y + 1.5, gs.z, 1]); } }
     }
     if (gs.evT <= 0) { gs.mode = 0; gs.vis = 0; gs.path = []; gs.wait = 2; hostEvent(['snd', 'vanish', gs.x, gs.y + 1.2, gs.z, 0.8]); }
   } else if (gs.mode === 2) huntThink(dt);
@@ -315,7 +315,7 @@ function dollHunt(it) {
   const gs = G.gs; if (!gs || gs.mode === 2 || gs.mode === 3) return;
   if (gs.mode === 1) { gs.mode = 0; gs.vis = 0; }
   const P = G.players[it.holder] || me();
-  hostEvent(['snd', 'scare', r2(P.pos.x), r2(P.pos.y + 1.4), r2(P.pos.z), 1]);
+  hostEvent(['snd', 'doll', r2(P.pos.x), r2(P.pos.y + 1.4), r2(P.pos.z), 1]);
   hostEvent(['msg', -1, (it.holder >= 0 ? G.players[it.holder].nick : 'Someone') + ' drove the pin into the voodoo doll.']);
   startHunt();
 }
@@ -387,7 +387,7 @@ function onSpiritAnswer(slot, text, x, z) {
 }
 function onGhostEventStart(kind, slot) {
   G.eventFx = 1; G.evWatch = { t: 0, seen: false };
-  sfxAt('manifest', new V3(G.ghostView.x, G.ghostView.y + 1.4, G.ghostView.z), 0.8);
+  sfxAt('manifest', new V3(G.ghostView.x, G.ghostView.y + 1.4, G.ghostView.z), 0.9);   // a recorded horror hit, where it stands
 }
 function onRepel() {
   G.repelFx = 1;
@@ -395,13 +395,13 @@ function onRepel() {
 }
 function onHunt(on) {
   G.huntOn = !!on;
-  if (on) { sfx('huntStart', 1); sub('The lights are failing. Hide.', 'sys'); }
+  if (on) { sfx('huntStart', 0.8); sfx('huntHit', 0.75); sub('The lights are failing. Hide.', 'sys'); }
   else { sfx('huntEnd', 0.7); }
 }
 function onCaught(slot) {
   const P = G.players[slot]; if (!P) return;
   sfxAt('scream', P.pos.clone().setY(P.pos.y + 1.5), slot === G.mySlot ? 0.6 : 0.8);
-  if (slot === G.mySlot) { P.sanity = clamp(P.sanity - 25, 0, 100); POST.scare = 1; sfx('scare', 1); sub('It caught you, and let you go. Your sanity took the blow.', 'sys'); }
+  if (slot === G.mySlot) { P.sanity = clamp(P.sanity - 25, 0, 100); POST.scare = 1; sfx('caught', 1); sub('It caught you, and let you go. Your sanity took the blow.', 'sys'); }
   else sub(P.nick + ' was caught, but the ghost let them go.', 'sys');
 }
 function onKill(slot) {
