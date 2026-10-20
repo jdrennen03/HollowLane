@@ -102,8 +102,24 @@ function loadModelFile(url, onLoad, onError) {
     dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, glb.byteLength, true);
     dv.setUint32(12, jsLen, true); dv.setUint32(16, 0x4E4F534A, true); u8.fill(0x20, 20, 20 + jsLen); u8.set(js, 20);
     dv.setUint32(20 + jsLen, binLen, true); dv.setUint32(24 + jsLen, 0x004E4942, true); u8.set(bin, 28 + jsLen);
-    new GLTFLoader().parse(glb, '', onLoad, onError);
+    new GLTFLoader().parse(glb, '', gl => { capTextures(gl.scene); onLoad(gl); }, onError);
   }).catch(e => onError && onError(e));
+}
+// Big textures fill the graphics card's memory, and on a laptop that is what makes the game stutter. Every model's
+// textures are shrunk to suit the quality setting as they load: High 1024 px, Medium 512, Low 256.
+function capTextures(root) {
+  let q = 2; try { q = QUALITY; } catch (e) { }
+  const cap = [256, 512, 1024][q] || 1024, seen = new Set();
+  root.traverse(o => {
+    if (!o.material) return;
+    for (const m of [].concat(o.material)) for (const k in m) {
+      const t = m[k]; if (!t || !t.isTexture || seen.has(t)) continue; seen.add(t);
+      const im = t.image, model = (typeof ImageBitmap !== 'undefined' && im instanceof ImageBitmap) || im instanceof HTMLImageElement || t.userData.capped;   // model images only, never the game's own canvases
+      if (!model || !im.width || Math.max(im.width, im.height) <= cap) continue;
+      const s = cap / Math.max(im.width, im.height), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.width * s)); c.height = Math.max(1, Math.round(im.height * s));
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); if (im.close) im.close(); t.image = c; t.userData.capped = true; t.needsUpdate = true;
+    }
+  });
 }
 // ---------------------------------------------------------------- imported ghost models (one is picked at random each round)
 const GHOST_FILES = [

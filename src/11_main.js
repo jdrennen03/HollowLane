@@ -229,7 +229,7 @@ let QUALITY = 2;
 const QPREF = (() => { try { const q = localStorage.getItem('hl-qual'); return q === null ? null : clamp(+q, 0, 2); } catch (e) { return null; } })();
 function grassForQuality() { if (GRASS) GRASS.count = Math.round(GRASS.userData.full * [0.35, 0.65, 1][QUALITY]); }
 function setQuality(q) {
-  QUALITY = q; grassForQuality();
+  QUALITY = q; grassForQuality(); capTextures(scene); if (CINE.scene) capTextures(CINE.scene);   // lower quality: smaller model textures too
   renderer.setPixelRatio(q === 2 ? Math.min(devicePixelRatio, 1.5) : q === 1 ? 1 : 0.75);
   composer.setPixelRatio(renderer.getPixelRatio());
   bloom.enabled = q > 0; gtao.enabled = q === 2;
