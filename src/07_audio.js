@@ -140,8 +140,8 @@ function updateListener(cam) {
   else { L.setPosition(cam.position.x, cam.position.y, cam.position.z); L.setOrientation(f.x, f.y, f.z, u.x, u.y, u.z); }
 }
 let VOICE = null;
-function ghostVoice(text) {
-  sfx('radio', 0.8);
+function ghostVoice(text, noRadio) {
+  if (!noRadio) sfx('radio', 0.8);
   try {
     if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
       const u = new SpeechSynthesisUtterance(text);

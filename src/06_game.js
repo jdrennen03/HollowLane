@@ -154,12 +154,22 @@ function applyEvent(ev) {
   else if (t === 'egg') startGiant(ev[1]);
   else if (t === 'horse') { G.eggOn = true; startGhostHorse(ev[1]); }
   else if (t === 'gbait') G.gatorBait = true;
+  else if (t === 'call') { const P = G.players[ev[1]]; sfxAt('whisper', new V3(ev[2], ev[3], ev[4]), 1); if (ev[1] === G.mySlot && P) { sub('A voice whispers from somewhere close: "' + P.nick + '…"', 'ghost'); ghostVoice(P.nick, true); } }
+  else if (t === 'mimic') { if (ev[1] === G.mySlot) mimicSteps(); }
   else if (t === 'jw') { const J = ITEMS[ev[1]]; if (J) { J.spent = true; J.writeT = JOURNAL_LIFT; } }
   else if (t === 'gator') startGator();
   else if (t === 'hcalm') calmGhostHorse(ev[1], ev[2]);
   else if (t === 'throw') { const p = PROPO[ev[1]]; if (p && !G.isHost) { p.sleep = false; p.settle = 0; } }
 }
 
+// Wendigo: a few footsteps fall in a couple of paces behind you, in time with your own
+function mimicSteps() {
+  let n = 0; const go = () => {
+    const P = me(); if (!P || !P.alive || G.state !== 'play') return;
+    sfxAt('step_wood', new V3(P.pos.x + Math.sin(PL.yaw) * 2.2, P.pos.y + 0.05, P.pos.z + Math.cos(PL.yaw) * 2.2), 0.75);
+    if (++n < 5) setTimeout(go, 520);
+  }; go();
+}
 // ---------------------------------------------------------------- ghost brain (host only)
 function ghostActivity() {
   const ps = alivePlayers(); const avg = ps.length ? ps.reduce((a, p) => a + p.sanity, 0) / ps.length : 100;
@@ -186,6 +196,7 @@ function ghostThink(dt) {
     }
     // ----- signature behaviours
     if (gh.breathes) { gs.breathT -= dt; if (gs.breathT <= 0) { gs.breathT = rr(3.5, 6.5); if (alivePlayers().some(p => p.inside && Math.abs(p.pos.y - gs.y) < 1.4 && Math.hypot(p.pos.x - gs.x, p.pos.z - gs.z) < 2.6)) hostEvent(['snd', 'gbreath', r2(gs.x), r2(gs.y + 1.5), r2(gs.z), 0.9]); } }
+    if (gh.mimics) { gs.mimicT = (gs.mimicT ?? rr(8, 15)) - dt; if (gs.mimicT <= 0) { const c = alivePlayers().filter(p => p.inside && p.moving > 0.5 && Math.abs(p.pos.y - gs.y) < 1.4 && Math.hypot(p.pos.x - gs.x, p.pos.z - gs.z) < 9); gs.mimicT = c.length ? rr(18, 32) : 2; if (c.length) hostEvent(['mimic', pick(c).slot]); } }
     if (gs.mareOff && G.elapsed > gs.mareOff[1]) {
       const ri = gs.mareOff[0]; gs.mareOff = null;
       if (G.lights[ri]) { hostToggleLight(ri, -1, false); const [x, z] = ROOMS[ri].sw, sy = ROOMS[ri].y + 1.25; hostEvent(['snd', 'switch', x, sy, z, 0.8]); hostEvent(['emf', x, sy, z, emfLevel(2)]); }
@@ -242,7 +253,13 @@ function ghostInteract() {
   if (nearProps.length) opts.push(['throw', 2.5 * (gh.throwy || 1)]);
   opts.push(['touch', 2.5]);
   if (ri >= 0 && G.lights[ri] && !gh.noSwitch) opts.push(['switch', 1.5 * (gh.lightsOff || 1)]);
-  opts.push(['emf', 1]); opts.push(['sound', 1]);
+  const darkRooms = gh.lightsOn && G.lights.filter(Boolean).length < 4 ? [...Array(NROOM).keys()].filter(i => !G.lights[i] && !ROOMS[i].outdoor && ROOMS[i].sw && Math.abs(ROOMS[i].y - FL) < 1 && (i === ri || Math.hypot(ROOMS[i].lamp[0] - gs.x, ROOMS[i].lamp[1] - gs.z) < 8) && !alivePlayers().some(p => logicalRoom(p.pos.x, p.pos.z, p.pos.y) === i)) : [];
+  if (darkRooms.length) opts.push(['lighton', 3]);
+  const openDoors = gh.shutsAll ? nearDoors.filter(D => D.angle > 0.35 && !D.closet) : [];
+  if (openDoors.length >= 2) opts.push(['shutall', 3]);
+  const callable = gh.calls ? alivePlayers().filter(p => p.inside && Math.hypot(p.pos.x - gs.x, p.pos.z - gs.z) < 14) : [];
+  if (callable.length) opts.push(['call', 2]);
+  opts.push(['emf', 1]); opts.push(['sound', gh.chatty || 1]);
   let tot = opts.reduce((a, o) => a + o[1], 0), r = Math.random() * tot, choice = opts[0][0];
   for (const o of opts) { r -= o[1]; if (r <= 0) { choice = o[0]; break; } }
   if (choice === 'write') {   // ghost writing: the journal's pages fill with scrawl
@@ -279,6 +296,14 @@ function ghostInteract() {
     hostEvent(['snd', 'switch', x, sy, z, 0.8]);
     hostEvent(['emf', x, sy, z, emfLevel(2)]);
     if (hasUV && Math.random() < 0.6) hostEvent(['pr', r2(x + nz * 0.02), sy, r2(z + nx * 0.02), nx, nz, 0, -1, 1, true]);
+  } else if (choice === 'lighton') {   // Lantern Man: a lamp comes on in a room nobody is in (its own, or one nearby)
+    const r = pick(darkRooms); hostToggleLight(r, -1, true);
+    const [x, z] = ROOMS[r].sw, sy = ROOMS[r].y + 1.25; hostEvent(['snd', 'switch', x, sy, z, 0.8]); hostEvent(['emf', x, sy, z, emfLevel(2)]);
+  } else if (choice === 'shutall') {   // Yurei: every open door around it swings shut together
+    for (const D of openDoors) { D.target = 0; D.speed = 1.1; }
+    const c = doorCenter(openDoors[0]); hostEvent(['emf', r2(c.x), r2(c.y), r2(c.z), emfLevel(3)]); hostEvent(['snd', 'creak', r2(gs.x), r2(FL + 1.2), r2(gs.z), 0.7]);
+  } else if (choice === 'call') {   // Siren: whispers one investigator's name
+    hostEvent(['call', pick(callable).slot, r2(gs.x), r2(FL + 1.5), r2(gs.z)]);
   } else if (choice === 'emf') {
     hostEvent(['emf', r2(gs.x), r2(FL + 1.0), r2(gs.z), emfLevel(2)]);
   } else {

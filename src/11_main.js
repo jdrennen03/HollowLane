@@ -369,7 +369,7 @@ function updateGhostView(t, dt) {
   const P = me(); const dist = P ? Math.hypot(P.pos.x - v.x, P.pos.z - v.z) : 99;
   if (v.mode === 2) {
     const stepGap = G.ghost.fastSteps ? 0.26 : 0.52;
-    G.gstepT = (G.gstepT || 0) - dt; if (G.gstepT <= 0 && v.moving > 0.1) { G.gstepT = stepGap * (1.6 / Math.max(0.8, v.moving)); sfxAt('gstep', new V3(v.x, v.y + 0.1, v.z), 0.9); }
+    G.gstepT = (G.gstepT || 0) - dt; if (G.gstepT <= 0 && v.moving > 0.1) { G.gstepT = stepGap * (1.6 / Math.max(0.8, v.moving)); if (!G.ghost.silentSteps || dist < 4) sfxAt('gstep', new V3(v.x, v.y + 0.1, v.z), 0.9); }
     G.humT = (G.humT || 0) - dt; if (G.humT <= 0) { G.humT = 8; sfxAt('hum', new V3(v.x, v.y + 1.6, v.z), 0.5); }
   }
   loopGain('huntLoop', v.mode === 2 ? 0.25 : 0, 0.5);
