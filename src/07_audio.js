@@ -109,8 +109,46 @@ const SFX_POOL = {
   meowLoud: { files: ['cat-meow'], fb: 'meowLoud', vary: 0.1 },                   // Izzabelle's call through the house
 };
 function loadSfxFiles() {
+  loadStepFiles();
   for (const n of SFX_FILES) fetch('sfx-' + n + '.mp3').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
     .then(a => AU.ctx.decodeAudioData(a)).then(b => { AU.bufs['f:' + n] = b; }).catch(e => console.warn('sfx', n, e));
+}
+// Footsteps: one recording of concrete steps, cut into single steps when it loads; every surface gets its own version
+// of each step (filtered, re-pitched, grass mixed with a rustle), so floors still sound different underfoot.
+const STEP_SURF = {
+  step_concrete: { hp: 70, rate: 1, peak: 0.8 },
+  step_tile: { hp: 260, hi: [3800, 6], rate: 1.1, peak: 0.85 },                  // a harder, brighter click
+  step_wood: { lo: [230, 7], lp: 3000, rate: 0.88, peak: 0.9 },                  // a hollow knock on boards
+  step_carpet: { lp: 650, rate: 0.84, peak: 0.6 },                               // muffled
+  step_grass: { lp: 1300, rate: 0.9, peak: 0.5, mix: 'step_grass', mixGain: 0.3, dry: 1 },  // soft thud under a rustle of blades
+};
+function loadStepFiles() {
+  fetch('sfx-steps.mp3').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(a => AU.ctx.decodeAudioData(a)).then(async src => {
+    // find each footfall: the loudness envelope rising out of a stretch of quiet
+    const d = src.getChannelData(0), sr = src.sampleRate, win = Math.round(sr * 0.005), env = [];
+    for (let i = 0; i + win <= d.length; i += win) { let e = 0; for (let k = i; k < i + win; k++) e = Math.max(e, Math.abs(d[k])); env.push(e); }
+    const top = Math.max(...env), on = []; let quiet = 99;
+    env.forEach((e, i) => { if (e > top * 0.14) { if (quiet >= 40) on.push(i * win); quiet = 0; } else quiet++; });
+    const len = Math.round(sr * 0.3), mono = on.filter(o => o + len <= d.length).map(o => {
+      const b = new AudioBuffer({ length: len, sampleRate: sr }), c = b.getChannelData(0), o0 = Math.max(0, o - Math.round(sr * 0.008));
+      for (let i = 0; i < len; i++) c[i] = d[o0 + i] * Math.min(1, (len - i) / (sr * 0.08));
+      return b;
+    });
+    for (const name in STEP_SURF) {
+      const S = STEP_SURF[name], files = [];
+      for (let k = 0; k < mono.length; k++) {
+        const out = Math.ceil(len / S.rate), oc = new OfflineAudioContext(1, out, sr), bs = oc.createBufferSource(); bs.buffer = mono[k]; bs.playbackRate.value = S.rate;
+        let n = bs; const f = (type, freq, gain) => { const q = oc.createBiquadFilter(); q.type = type; q.frequency.value = freq; if (gain !== undefined) q.gain.value = gain; n.connect(q); n = q; };
+        if (S.hp) f('highpass', S.hp); if (S.lp) f('lowpass', S.lp); if (S.lo) f('peaking', S.lo[0], S.lo[1]); if (S.hi) f('peaking', S.hi[0], S.hi[1]);
+        const g = oc.createGain(); g.gain.value = S.dry ?? 1; n.connect(g); g.connect(oc.destination);
+        if (S.mix && AU.bufs[S.mix]) { const m = oc.createBufferSource(), ml = oc.createBiquadFilter(), mg = oc.createGain(); m.buffer = AU.bufs[S.mix]; ml.type = 'lowpass'; ml.frequency.value = 4500; mg.gain.value = S.mixGain; m.connect(ml); ml.connect(mg); mg.connect(oc.destination); m.start(); }
+        bs.start(); const r = await oc.startRendering(), c = r.getChannelData(0);
+        let pk = 0; for (const v of c) pk = Math.max(pk, Math.abs(v)); if (pk > 0) for (let i = 0; i < c.length; i++) c[i] *= S.peak / pk;
+        AU.bufs['f:' + name + k] = r; files.push(name + k);
+      }
+      SFX_POOL[name] = { files, fb: name, vary: 0.05 };
+    }
+  }).catch(e => console.warn('footsteps', e));
 }
 const _sfxLast = {}, _sfxVary = {};
 function sfxKey(name) {   // a pool name -> the buffer to play this time
