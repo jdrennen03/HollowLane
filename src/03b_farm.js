@@ -137,10 +137,10 @@ function railRun(gb, x0, z0, x1, z1, y, h = 0.95, post = true) {
   if (post) for (const [x, z] of [[x0, z0], [x1, z1]]) gb.mm('trim', x - 0.055, y, z - 0.055, x + 0.055, y + h + 0.08, z + 0.055);
   addCollider(Math.min(x0, x1) - 0.06, Math.min(z0, z1) - 0.06, Math.max(x0, x1) + 0.06, Math.max(z0, z1) + 0.06, h + 0.1, false, y);
 }
-function tubAt(gb, x, z, ry, y) { const f = fur(gb, x, z, ry, y); f.box('enamel', 0, 0.3, 0, 0.76, 0.56, 1.66); f.box('porcelain', 0, 0.6, 0, 0.8, 0.05, 1.7); f.box('screen', 0, 0.62, 0, 0.6, 0.02, 1.48); f.cyl('chrome', 0, 0.75, 0.78, 0.015, 0.015, 0.3, 6); f.solid(-0.4, -0.85, 0.4, 0.85, 0.65); }
+function tubAt(gb, x, z, ry, y) { const f = fur(gb, x, z, ry, y); furModel(f, 'prop-tub.json', null, { len: 1.7, axis: 'x', turn: -Math.PI / 2 }); f.solid(-0.4, -0.85, 0.4, 0.85, 0.65); }   // taps at local +z
 function toiletAt(gb, x, z, ry, y) { const f = fur(gb, x, z, ry, y); toilet(f); f.solid(-0.25, -0.35, 0.25, 0.35, 0.8); }
 function vanityAt(gb, root, x, z, ry, y) {
-  const f = fur(gb, x, z, ry, y); f.box('paintedWood', 0, 0.42, 0, 0.9, 0.84, 0.48); f.box('porcelain', 0, 0.86, 0, 0.94, 0.05, 0.52); f.box('screen', 0, 0.875, 0.02, 0.4, 0.01, 0.3); f.cyl('chrome', 0, 0.98, -0.18, 0.012, 0.012, 0.2, 6); f.solid(-0.47, -0.26, 0.47, 0.26, 0.9);
+  const f = fur(gb, x, z, ry, y); vanity(f); f.solid(-0.38, -0.26, 0.38, 0.45, 0.9);
   const [mx, mz] = f.pt(0, -0.25); const m = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.8), MATS.mirror); m.position.set(mx, y + 1.6, mz); m.rotation.y = ry; root.add(m);
 }
 function dressForm(gb, x, z, y) { // a sewing mannequin; easy to mistake for someone standing in the dark
@@ -261,19 +261,23 @@ function buildFarm(gb, root) {
   picFrame(root, 'z', 1.3, 5.56, Y0 + 1.6, 1, 'p33', 0, 0.5);
   // master bath
   tubAt(gb, 4.9, 9.48, Math.PI / 2, Y0); toiletAt(gb, 5.6, 7.3, -Math.PI / 2, Y0); vanityAt(gb, root, 4.1, 7.4, Math.PI / 2, Y0);
-  prop('soap', 4.05, Y0 + 0.885, 7.15);
+  prop('soap', 4.29, Y0 + VANITY_SHELF, 7.19);
   // kitchen
-  { gb.mm('paintedWood', 6.06, Y0, 0.1, 9.34, Y0 + 0.88, 0.74); gb.mm('porcelain', 6.06, Y0 + 0.88, 0.1, 9.34, Y0 + 0.92, 0.78); addCollider(6.06, 0.1, 9.34, 0.78, 0.95, true, Y0);
-    gb.mm('enamel', 6.1, Y0, 0.12, 6.8, Y0 + 0.9, 0.8); gb.mm('blackPlastic', 6.1, Y0 + 0.9, 0.12, 6.8, Y0 + 0.93, 0.8); for (const [a, b] of [[6.28, 0.3], [6.62, 0.3], [6.28, 0.6], [6.62, 0.6]]) gb.cyl('metal', a, Y0 + 0.94, b, 0.08, 0.08, 0.012, 14);
+  { gb.mm('paintedWood', 6.9, Y0, 0.1, 9.34, Y0 + 0.88, 0.74); gb.mm('porcelain', 6.9, Y0 + 0.88, 0.1, 9.34, Y0 + 0.92, 0.78); addCollider(6.06, 0.1, 9.34, 0.78, 0.95, true, Y0);
+    furModel(F0(6.48, 0.1, Math.PI), PACK.kit, 'Horno', { len: 0.84, axis: 'x', back: true });
     gb.mm('chrome', 7.35, Y0 + 0.82, 0.18, 8.05, Y0 + 0.93, 0.68); gb.mm('screen', 7.4, Y0 + 0.93, 0.22, 8.0, Y0 + 0.931, 0.64); gb.cyl('chrome', 7.7, Y0 + 1.05, 0.16, 0.015, 0.015, 0.25, 6);
     for (const [x0, x1] of [[8.5, 9.34], [6.06, 6.9]]) gb.mm('paintedWood', x0, Y0 + 1.45, 0.1, x1, Y0 + 2.2, 0.45); }
-  { const f = F0(6.45, 4.55, Math.PI / 2); f.box('enamelMint', 0, 0.9, 0, 0.74, 1.8, 0.72); f.box('chrome', -0.3, 1.2, -0.37, 0.03, 0.4, 0.03); f.solid(-0.38, -0.37, 0.38, 0.37, 1.8); }
+  { const f = F0(6.06, 4.55, -Math.PI / 2); furModel(f, PACK.kit, 'Heladera', { height: 1.8, back: true }); f.solid(-0.38, -0.74, 0.38, 0, 1.8); }
+  { const f = F0(8.95, 0.1, Math.PI); furModel(f, PACK.kit, 'Microondas', { len: 0.5, axis: 'x', back: true, dy: 0.92 }); }
+  { const f = F0(9.1, 4.7, 0); furModel(f, PACK.kit, 'TachoBasura', { height: 0.5 }); f.solid(-0.2, -0.15, 0.2, 0.15, 0.5); }
   { const f = F0(7.9, 2.6); f.box('lightWood', 0, 0.74, 0, 1.1, 0.04, 0.8); for (const [a, b] of [[-0.48, -0.33], [0.48, -0.33], [-0.48, 0.33], [0.48, 0.33]]) f.box('lightWood', a, 0.36, b, 0.05, 0.72, 0.05); f.solid(-0.55, -0.4, 0.55, 0.4, 0.8);
     for (const [a, r] of [[-0.8, Math.PI / 2], [0.8, -Math.PI / 2]]) { const [cx, cz] = f.pt(a, 0); const c = F0(cx, cz, r); chair(c, 'lightWood', 'fabricBlue'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
-  prop('pot', 6.45, Y0 + 0.94, 0.45); prop('kettle', 6.65, Y0 + 0.93, 0.62); prop('cup', 8.4, Y0 + 0.92, 0.4); prop('bottle', 9.0, Y0 + 0.92, 0.45); prop('plate', 7.75, Y0 + 0.76, 2.5); prop('mug', 8.1, Y0 + 0.76, 2.75);
+  prop('pot', 6.3, Y0 + 0.88, 0.45); prop('kettle', 6.65, Y0 + 0.88, 0.62); prop('cup', 8.4, Y0 + 0.92, 0.4); prop('bottle', 8.3, Y0 + 0.92, 0.6); prop('plate', 7.75, Y0 + 0.76, 2.5); prop('mug', 8.1, Y0 + 0.76, 2.75);
   // entry hall
   placeModel(root, { url: 'prop-sidetable2.json', x: 9.62, z: 2.2, y: Y0, ry: Math.PI / 2, len: 1.05, axis: 'x', cols: 'box' });   // the lamp, books and keepsake box come with it
   rug(gb, 10.3, 1.4, 1.4, 2.2, 0, Y0);
+  shoesAt(11.45, 0.3, Y0, [['shoe2', 0, 0.05], ['shoe2', 0.13, -0.03], ['shoe4', 0.38, 0.1], ['shoe4', 0.5, 0.0], ['shoe5', 0.72, 0.4, 1.4]]);
+  shoesAt(11.8, 9.7, Y0, [['slipper1', 0, 0, 3.1], ['slipper1', 0.14, -0.04, 3.3], ['shoe5', 0.4, -0.05, 2.9]]);
   // dining room + nook
   placeModel(root, { url: 'prop-dining.json', x: 14.15, z: 2.3, y: Y0, cols: 'parts' });   // clear of the hutch, with room to walk all the way round
   { const f = F0(15.68, 4.2, -Math.PI / 2); f.box('darkWood', 0, 0.45, 0, 1.4, 0.9, 0.48); f.box('darkWood', 0, 1.45, 0.06, 1.36, 1.1, 0.36); f.box('glass', 0, 1.45, -0.125, 1.2, 0.96, 0.01); for (let i = 0; i < 5; i++) f.cyl('porcelain', -0.5 + i * 0.25, 1.32, 0.12, 0.1, 0.1, 0.012, 16, Math.PI / 2 - 0.25); f.solid(-0.7, -0.25, 0.7, 0.25, 2); }
@@ -299,8 +303,8 @@ function buildFarm(gb, root) {
   // Claire's and Jim's bedrooms (see 03d_farmrooms.js)
   buildClaireRoom(gb, root); buildJimRoom(gb, root);
   // upstairs bath
-  tubAt(gb, 6.95, 6.55, Math.PI / 2, Y1); toiletAt(gb, 7.75, 5.36, Math.PI, Y1); vanityAt(gb, root, 6.6, 5.32, Math.PI, Y1);
-  prop('cup', 6.4, Y1 + 0.885, 5.3);
+  tubAt(gb, 6.95, 6.55, Math.PI / 2, Y1); toiletAt(gb, 7.75, 5.36, 0, Y1); vanityAt(gb, root, 6.6, 5.32, 0, Y1);   // backs to the wall
+  prop('cup', 6.39, Y1 + VANITY_SHELF, 5.51);
   // sewing room
   { const f = F1(14.4, 6.62, Math.PI); f.box('lightWood', 0, 0.74, 0, 1.3, 0.04, 0.6); for (const [a, b] of [[-0.6, -0.26], [0.6, -0.26], [-0.6, 0.26], [0.6, 0.26]]) f.box('lightWood', a, 0.36, b, 0.04, 0.72, 0.04); f.box('enamel', 0.1, 0.9, 0, 0.45, 0.28, 0.2); f.solid(-0.65, -0.3, 0.65, 0.3, 0.8);
     const [cx, cz] = f.pt(0, -0.6); const c = F1(cx, cz, Math.PI); chair(c, 'lightWood', 'fabricRose'); }
