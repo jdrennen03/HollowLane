@@ -244,35 +244,35 @@ function buildFarm(gb, root) {
   railRun(gb, 11.12, 1.37, 11.12, 5.0, Y1); railRun(gb, 11.12, 1.37, 12.34, 1.37, Y1, 0.95, false);
   // ---------- MAIN FLOOR FURNITURE
   // family room
-  { const f = F0(-0.1, 0.38, 0); f.box('darkWood', 0, 0.25, 0, 1.4, 0.5, 0.48); f.box('blackPlastic', 0, 0.68, 0.0, 0.66, 0.5, 0.46); f.box('screen', 0, 0.7, 0.235, 0.52, 0.38, 0.01); f.solid(-0.7, -0.25, 0.7, 0.25, 1.1); }
+  { const f = F0(-0.1, 0.14, Math.PI); tvStand(f); f.solid(-0.56, -0.38, 0.56, 0, 1.1); }
   { const f = F0(0.6, 4.72, 0); sofa(f, 2.0, 'fabricBrown', 'prop-couch2.json', root); f.solid(-1.1, -0.45, 1.1, 0.45, 1); }   // faces the TV, with a cat-sized gap behind it
-  { const f = F0(0.6, 3.6); f.box('lightWood', 0, 0.42, 0, 1.1, 0.05, 0.6); for (const [a, b] of [[-0.5, -0.25], [0.5, -0.25], [-0.5, 0.25], [0.5, 0.25]]) f.box('lightWood', a, 0.2, b, 0.05, 0.4, 0.05); f.solid(-0.55, -0.3, 0.55, 0.3, 0.45); }
+  { const f = F0(0.6, 3.6); coffeeTable(f); f.solid(-0.4, -0.4, 0.4, 0.4, 0.45); }
   rug(gb, 0.8, 3.4, 3.0, 2.2, 0, Y0);
   { const f = F0(3.6, 2.4, Math.PI / 2); armchair(f, 'fabricGreen'); f.solid(-0.45, -0.45, 0.45, 0.45, 1); }
   { const f = F0(5.62, 0.9, Math.PI / 2); bookshelf(f); f.solid(-0.5, -0.18, 0.5, 0.18, 2); }
   { const f = F0(5.5, 4.9); floorLamp(f); f.solid(-0.15, -0.15, 0.15, 0.15, 1.7); }
-  prop('mug', 0.4, Y0 + 0.445, 3.55); prop('remote', 0.8, Y0 + 0.445, 3.7, 0.6); prop('book', 0.1, Y0 + 0.445, 3.45, 1.1);
+  prop('mug', 0.4, Y0 + 0.445, 3.55); prop('remote', 0.8, Y0 + 0.445, 3.7, 0.6); prop('book', 0.55, Y0 + 0.445, 3.85, 1.1);
   picFrame(root, 'x', -0.89, 4.2, Y0 + 1.7, 1, 'p61', 0, 0.55);
   // master bedroom
   { const f = F0(2.69, 7.9, -Math.PI / 2); placeModel(root, { url: 'prop-bed3.json', x: 2.69, z: 7.9, y: Y0, ry: Math.PI / 2, len: 1.65, axis: 'x', cols: false }); f.solid(-0.82, -1.08, 0.82, 1.08, 0.7); }   // headboard to the wall
   { const f = F0(3.45, 6.4, -Math.PI / 2); nightstand(f); f.solid(-0.25, -0.22, 0.25, 0.22, 0.6); tableLamp(f, 0.05, 0.58, 0.05); }
-  { const f = F0(2.9, 9.65, Math.PI); dresser(f); f.solid(-0.7, -0.25, 0.7, 0.25, 1); }
-  prop('clock', 3.45, Y0 + 0.585, 6.25); prop('jbox', 2.6, Y0 + 0.93, 9.65); prop('book', 3.1, Y0 + 0.93, 9.6, 0.4);
+  { const f = F0(2.9, 9.62, 0); dresser(f); f.solid(-0.7, -0.25, 0.7, 0.25, 1); }
+  prop('clock', 3.45, Y0 + 0.585, 6.25); prop('jbox', 2.75, Y0 + 1.1, 9.65); prop('book', 3.05, Y0 + 1.1, 9.6, 0.4);
   picFrame(root, 'z', 1.3, 5.56, Y0 + 1.6, 1, 'p33', 0, 0.5);
   // master bath
   tubAt(gb, 4.9, 9.48, Math.PI / 2, Y0); toiletAt(gb, 5.6, 7.3, -Math.PI / 2, Y0); vanityAt(gb, root, 4.1, 7.4, Math.PI / 2, Y0);
   prop('soap', 4.29, Y0 + VANITY_SHELF, 7.19);
   // kitchen
-  { gb.mm('paintedWood', 6.9, Y0, 0.1, 9.34, Y0 + 0.88, 0.74); gb.mm('porcelain', 6.9, Y0 + 0.88, 0.1, 9.34, Y0 + 0.92, 0.78); addCollider(6.06, 0.1, 9.34, 0.78, 0.95, true, Y0);
+  { gb.mm('paintedWood', 8.9, Y0, 0.1, 9.34, Y0 + 0.88, 0.74); gb.mm('porcelain', 8.9, Y0 + 0.88, 0.1, 9.34, Y0 + 0.92, 0.78); addCollider(6.06, 0.1, 9.34, 0.78, 0.95, true, Y0);
     furModel(F0(6.48, 0.1, Math.PI), PACK.kit, 'Horno', { len: 0.84, axis: 'x', back: true });
-    gb.mm('chrome', 7.35, Y0 + 0.82, 0.18, 8.05, Y0 + 0.93, 0.68); gb.mm('screen', 7.4, Y0 + 0.93, 0.22, 8.0, Y0 + 0.931, 0.64); gb.cyl('chrome', 7.7, Y0 + 1.05, 0.16, 0.015, 0.015, 0.25, 6);
+    counter(F0(7.4, 0.1, Math.PI), 1); counter(F0(8.4, 0.1, Math.PI), 0);   // the sink unit, then a unit of drawers
     for (const [x0, x1] of [[8.5, 9.34], [6.06, 6.9]]) gb.mm('paintedWood', x0, Y0 + 1.45, 0.1, x1, Y0 + 2.2, 0.45); }
   { const f = F0(6.06, 4.55, -Math.PI / 2); furModel(f, PACK.kit, 'Heladera', { height: 1.8, back: true }); f.solid(-0.38, -0.74, 0.38, 0, 1.8); }
-  { const f = F0(8.95, 0.1, Math.PI); furModel(f, PACK.kit, 'Microondas', { len: 0.5, axis: 'x', back: true, dy: 0.92 }); }
+  { const f = F0(8.45, 0.1, Math.PI); furModel(f, PACK.kit, 'Microondas', { len: 0.5, axis: 'x', back: true, dy: 0.92 }); }
   { const f = F0(9.1, 4.7, 0); furModel(f, PACK.kit, 'TachoBasura', { height: 0.5 }); f.solid(-0.2, -0.15, 0.2, 0.15, 0.5); }
-  { const f = F0(7.9, 2.6); f.box('lightWood', 0, 0.74, 0, 1.1, 0.04, 0.8); for (const [a, b] of [[-0.48, -0.33], [0.48, -0.33], [-0.48, 0.33], [0.48, 0.33]]) f.box('lightWood', a, 0.36, b, 0.05, 0.72, 0.05); f.solid(-0.55, -0.4, 0.55, 0.4, 0.8);
+  { const f = F0(7.9, 2.6); kitchenTable(f, 1.1); f.solid(-0.55, -0.32, 0.55, 0.32, 0.8);
     for (const [a, r] of [[-0.8, Math.PI / 2], [0.8, -Math.PI / 2]]) { const [cx, cz] = f.pt(a, 0); const c = F0(cx, cz, r); chair(c, 'lightWood', 'fabricBlue'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
-  prop('pot', 6.3, Y0 + 0.88, 0.45); prop('kettle', 6.65, Y0 + 0.88, 0.62); prop('cup', 8.4, Y0 + 0.92, 0.4); prop('bottle', 8.3, Y0 + 0.92, 0.6); prop('plate', 7.75, Y0 + 0.76, 2.5); prop('mug', 8.1, Y0 + 0.76, 2.75);
+  prop('pot', 6.3, Y0 + 0.88, 0.45); prop('kettle', 6.65, Y0 + 0.88, 0.62); prop('cup', 9.1, Y0 + 0.92, 0.4); prop('bottle', 8.0, Y0 + 0.92, 0.75); prop('plate', 7.75, Y0 + 0.76, 2.5); prop('mug', 8.1, Y0 + 0.76, 2.75);
   // entry hall
   placeModel(root, { url: 'prop-sidetable2.json', x: 9.62, z: 2.2, y: Y0, ry: Math.PI / 2, len: 1.05, axis: 'x', cols: 'box' });   // the lamp, books and keepsake box come with it
   rug(gb, 10.3, 1.4, 1.4, 2.2, 0, Y0);
@@ -283,22 +283,22 @@ function buildFarm(gb, root) {
   { const f = F0(15.68, 4.2, -Math.PI / 2); f.box('darkWood', 0, 0.45, 0, 1.4, 0.9, 0.48); f.box('darkWood', 0, 1.45, 0.06, 1.36, 1.1, 0.36); f.box('glass', 0, 1.45, -0.125, 1.2, 0.96, 0.01); for (let i = 0; i < 5; i++) f.cyl('porcelain', -0.5 + i * 0.25, 1.32, 0.12, 0.1, 0.1, 0.012, 16, Math.PI / 2 - 0.25); f.solid(-0.7, -0.25, 0.7, 0.25, 2); }
   prop('plate', 13.65, Y0 + 0.785, 2.05); prop('plate', 14.6, Y0 + 0.785, 2.55); prop('candle', 14.15, Y0 + 0.785, 2.3); prop('cup', 13.85, Y0 + 0.785, 2.55); prop('vase', 15.6, Y0 + 0.9, 4.6);
   { const f = F0(14.3, -1.3, Math.PI * 0.85); armchair(f, 'fabricRose'); f.solid(-0.42, -0.42, 0.42, 0.42, 1); }
-  { const f = F0(15.55, -0.55); f.cyl('darkWood', 0, 0.3, 0, 0.22, 0.22, 0.04, 14); f.cyl('darkWood', 0, 0.15, 0, 0.04, 0.04, 0.3, 6); f.solid(-0.22, -0.22, 0.22, 0.22, 0.4); }
-  prop('book', 15.55, Y0 + 0.33, -0.55, 0.3);
+  { const f = F0(15.55, -0.55); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); }
+  prop('book', 15.55, Y0 + 0.58, -0.55, 0.3);
   // great room
   { gb.mm('railBlack', 6.7, Y0, 9.0, 7.5, Y0 + 0.7, 9.7); gb.mm('railBlack', 6.65, Y0 + 0.7, 8.95, 7.55, Y0 + 0.74, 9.75); gb.mm('screen', 6.9, Y0 + 0.2, 8.99, 7.3, Y0 + 0.55, 9.0); gb.cyl('railBlack', 7.4, (Y0 + 0.74 + CEIL_FARM0) / 2, 9.35, 0.08, 0.08, CEIL_FARM0 - Y0 - 0.74, 10); gb.mm('brick', 6.4, Y0 - 0.02, 8.7, 7.8, Y0 + 0.02, 9.98); addCollider(6.6, 8.9, 7.6, 9.8, 1, true, Y0); }
   { const f = F0(10.9, 6.3, Math.PI); sofa(f, 2.1, 'fabricGreen', 'prop-couch3.json', root); f.solid(-1.2, -0.45, 1.2, 0.45, 1); }
-  { const f = F0(10.9, 7.55); f.box('darkWood', 0, 0.42, 0, 1.2, 0.05, 0.6); for (const [a, b] of [[-0.55, -0.25], [0.55, -0.25], [-0.55, 0.25], [0.55, 0.25]]) f.box('darkWood', a, 0.2, b, 0.05, 0.4, 0.05); f.solid(-0.6, -0.3, 0.6, 0.3, 0.45); }
+  { const f = F0(10.9, 7.55); coffeeTable(f); f.solid(-0.4, -0.4, 0.4, 0.4, 0.45); }
   rug(gb, 10.9, 7.5, 3.4, 2.4, 0, Y0);
-  { const f = F0(8.3, 8.6, -Math.PI * 0.7); f.box('darkWood', 0, 0.45, 0, 0.5, 0.04, 0.5); f.box('darkWood', 0, 0.85, 0.24, 0.5, 0.8, 0.04, 0, -0.15); for (const a of [-0.24, 0.24]) f.box('darkWood', a, 0.04, 0, 0.04, 0.05, 0.9, 0, 0); f.solid(-0.3, -0.45, 0.3, 0.45, 1); }
+  { const f = F0(8.3, 8.6, -Math.PI * 0.7); armchair(f); f.solid(-0.42, -0.42, 0.42, 0.42, 1); }
   { const f = F0(15.6, 8.9, -Math.PI / 2); f.box('darkWood', 0, 0.65, 0, 1.4, 1.3, 0.55); f.box('enamel', 0, 0.78, -0.28, 1.2, 0.05, 0.02); f.box('darkWood', 0, 0.75, -0.35, 1.3, 0.04, 0.2); f.solid(-0.7, -0.3, 0.7, 0.3, 1.3); }
   { const f = F0(15.68, 5.9, -Math.PI / 2); bookshelf(f); f.solid(-0.5, -0.18, 0.5, 0.18, 2); }
   prop('book', 10.7, Y0 + 0.445, 7.5, 0.5); prop('candle', 11.2, Y0 + 0.445, 7.6); prop('vase', 15.6, Y0 + 1.33, 8.7);
   picFrame(root, 'z', 12.8, 5.06, Y0 + 1.7, 1, 'p17', 0, 0.85);
   // ---------- UPSTAIRS FURNITURE
-  { const f = F1(10.0, 0.4); f.box('darkWood', 0, 0.38, 0, 0.6, 0.76, 0.4); f.solid(-0.3, -0.2, 0.3, 0.2, 0.8); }
+  { const f = F1(10.0, 0.45); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); }
   gb.mm('runner', 9.6, Y1 + 0.004, 1.6, 10.9, Y1 + 0.012, 6.8);
-  prop('phone', 10.0, Y1 + 0.77, 0.4, 1.57);
+  prop('phone', 10.0, Y1 + 0.58, 0.45, 1.57);
   picFrame(root, 'x', 9.46, 4.0, Y1 + 1.6, 1, 'p18', 0, 0.55);
   // Claire's and Jim's bedrooms (see 03d_farmrooms.js)
   buildClaireRoom(gb, root); buildJimRoom(gb, root);
@@ -307,13 +307,13 @@ function buildFarm(gb, root) {
   prop('cup', 6.39, Y1 + VANITY_SHELF, 5.51);
   // sewing room
   { const f = F1(14.4, 6.62, Math.PI); f.box('lightWood', 0, 0.74, 0, 1.3, 0.04, 0.6); for (const [a, b] of [[-0.6, -0.26], [0.6, -0.26], [-0.6, 0.26], [0.6, 0.26]]) f.box('lightWood', a, 0.36, b, 0.04, 0.72, 0.04); f.box('enamel', 0.1, 0.9, 0, 0.45, 0.28, 0.2); f.solid(-0.65, -0.3, 0.65, 0.3, 0.8);
-    const [cx, cz] = f.pt(0, -0.6); const c = F1(cx, cz, Math.PI); chair(c, 'lightWood', 'fabricRose'); }
+    const [cx, cz] = f.pt(0, 0.55); const c = F1(cx, cz, 0); chair(c, 'lightWood', 'fabricRose'); }   // on the room side, pulled up to the table
   dressForm(gb, 12.9, 6.4, Y1);
   { const f = F1(15.6, 5.4, 0.2); f.box('cardboard', 0, 0.22, 0, 0.5, 0.44, 0.45); f.box('cardboard', 0.04, 0.6, 0, 0.42, 0.32, 0.4, 0.3); f.solid(-0.28, -0.26, 0.28, 0.26, 0.8); }
   prop('basket', 13.1, Y1 + 0.15, 5.4);
   // loft under the arched window
-  { const f = F1(11.0, 9.1, Math.PI); f.box('darkWood', 0, 0.42, 0, 0.5, 0.04, 0.5); f.box('darkWood', 0, 0.85, 0.24, 0.5, 0.8, 0.04, 0, -0.15); for (const a of [-0.24, 0.24]) f.box('darkWood', a, 0.04, 0, 0.04, 0.05, 0.9); f.solid(-0.3, -0.45, 0.3, 0.45, 1); }
-  { const f = F1(14.6, 8.6, -Math.PI / 2); bed(f, 0.95, 1.95, 'bedding', 'lightWood'); f.solid(-0.5, -1.0, 0.5, 1.0, 0.6); }
+  { const f = F1(11.0, 9.0, Math.PI); armchair(f); f.solid(-0.42, -0.42, 0.42, 0.42, 1); }
+  { const f = F1(14.6, 8.6, -Math.PI / 2); singleBed(f); f.solid(-0.5, -1.0, 0.5, 1.0, 0.6); }
   { const f = F1(6.3, 8.5, Math.PI / 2); bookshelf(f); f.solid(-0.5, -0.18, 0.5, 0.18, 2); }
   { const f = F1(8.6, 9.6, 0.1); f.box('darkWood', 0, 0.28, 0, 1.0, 0.56, 0.55); f.box('brass', 0, 0.5, -0.28, 0.12, 0.08, 0.02); f.solid(-0.52, -0.3, 0.52, 0.3, 0.6); }
   prop('teddy', 14.6, Y1 + 0.56, 9.4); prop('book', 6.35, Y1 + 0.5, 8.2, 1.3); prop('candle', 8.7, Y1 + 0.57, 9.6);

@@ -133,8 +133,8 @@ function rosette(gb, x, y, z, mat) {   // a show ribbon pinned to a wall that fa
 function buildClaireRoom(gb, root) {
   const Y = FA1, F = (x, z, ry = 0) => fur(gb, x, z, ry, Y), A = roomArt();
   // bed under the window, horse-print quilt, plush horse on the pillow and a hat on the bedpost
-  { const f = F(6.62, 1.15, 0); bed(f, 0.95, 1.95, 'beddingHorse', 'lightWood'); f.solid(-0.5, -1.0, 0.5, 1.0, 0.6);
-    f.cyl('hatTan', 0.505, 0.83, 0.995, 0.19, 0.19, 0.015, 18); f.cyl('hatTan', 0.505, 0.9, 0.995, 0.085, 0.1, 0.13, 14); f.cyl('leatherDark', 0.505, 0.86, 0.995, 0.102, 0.102, 0.025, 14); }
+  { const f = F(6.62, 1.15, 0); singleBed(f); f.solid(-0.5, -1.0, 0.5, 1.0, 0.6);
+    const hy = 0.5; f.cyl('hatTan', 0.12, hy, 0.62, 0.19, 0.19, 0.015, 18); f.cyl('hatTan', 0.12, hy + 0.07, 0.62, 0.085, 0.1, 0.13, 14); f.cyl('leatherDark', 0.12, hy + 0.03, 0.62, 0.102, 0.102, 0.025, 14); }   // her hat tossed on the quilt
   prop('horsePlush', 6.62, Y + 0.57, 0.55, 0.4);
   // nightstand with a lamp and a white horse
   { const f = F(6.38, 2.5, -Math.PI / 2); nightstand(f); tableLamp(f, 0.12, 0.585, 0.05); f.solid(-0.27, -0.23, 0.27, 0.23, 0.6); }
@@ -165,8 +165,8 @@ function buildClaireRoom(gb, root) {
     }
     f.solid(-0.56, -0.16, 0.56, 0.16, 2); }
   // dresser crowded with ribbons, a trophy and more horses
-  { const f = F(8.35, 4.72, 0); dresser(f); f.solid(-0.7, -0.25, 0.7, 0.25, 1); }
-  prop('horseBig', 7.92, Y + 0.925, 4.74, 0.3); prop('trophy', 8.3, Y + 0.925, 4.8); prop('horseBlack', 8.62, Y + 0.925, 4.62, 2.6); prop('horsePalo', 8.0, Y + 0.925, 4.55, -0.4); prop('brush', 8.86, Y + 0.925, 4.78, 0.3); prop('horseshoe', 8.62, Y + 0.925, 4.84, 0.8);
+  for (const dx of [-0.36, 0.36]) { const f = F(8.35 + dx, 4.66, 0); dresser(f); } F(8.35, 4.66, 0).solid(-0.72, -0.3, 0.72, 0.3, 1.1);   // two dressers side by side
+  prop('horseBig', 7.92, Y + 1.1, 4.74, 0.3); prop('trophy', 8.3, Y + 1.1, 4.8); prop('horseBlack', 8.62, Y + 1.1, 4.62, 2.6); prop('horsePalo', 8.0, Y + 1.1, 4.55, -0.4); prop('brush', 8.86, Y + 1.1, 4.78, 0.3); prop('horseshoe', 8.62, Y + 1.1, 4.84, 0.8);
   [['ribbonBlue', 7.85], ['ribbonRed', 8.15], ['ribbonYellow', 8.45], ['ribbonPurple', 8.75]].forEach(([m, x]) => rosette(gb, x, Y + 1.5, 4.94, m));
   wallArt(root, 8.3, Y + 1.98, 4.94, Math.PI, A.claire, 0.9, 0.25, null);
   // posters, a calendar left on October 2009, a lucky horseshoe over the door and a bridle on its hook
@@ -198,7 +198,7 @@ function buildJimRoom(gb, root) {
     f.cyl('metal', -0.5, 1.2, 0.3, 0.012, 0.012, 0.5, 6); f.box('metal', -0.38, 1.44, 0.18, 0.03, 0.03, 0.4, 0.8, 0.3); f.cyl('toyGreen', -0.24, 1.36, 0.02, 0.04, 0.09, 0.12, 12, 0.5);
     f.solid(-0.53, -0.36, 0.53, 0.36, 1.1); }
   // stool
-  { const f = F(14.3, 1.02, 0); f.cyl('blackPlastic', 0, 0.66, 0, 0.18, 0.17, 0.05, 16); for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2; f.box('metal', Math.cos(a) * 0.1, 0.32, Math.sin(a) * 0.1, 0.025, 0.66, 0.025, 0, Math.sin(a) * 0.2, -Math.cos(a) * 0.2); } f.cyl('metal', 0, 0.25, 0, 0.13, 0.13, 0.015, 14); f.solid(-0.15, -0.15, 0.15, 0.15, 0.7); }
+  { const f = F(14.3, 1.02, Math.PI); furModel(f, PACK.tl, 'TinyLiving_NotQuiteOrbitalSitting_41', { height: 1.0, turn: 0 }); f.solid(-0.2, -0.2, 0.2, 0.2, 0.7); }   // a tall stool at the drafting table
   // rolling supply cart with pencils, rulers and triangles
   { const f = F(15.45, 0.44, Math.PI); f.box('toyRed', 0, 0.34, 0, 0.5, 0.58, 0.4); f.box('metal', 0, 0.645, 0, 0.52, 0.02, 0.42); for (let i = 0; i < 3; i++) f.box('metal', 0, 0.16 + i * 0.18, -0.205, 0.4, 0.012, 0.01); for (const a of [-0.2, 0.2]) for (const b of [-0.15, 0.15]) f.cyl('blackPlastic', a, 0.025, b, 0.025, 0.025, 0.03, 8, Math.PI / 2); f.solid(-0.26, -0.21, 0.26, 0.21, 0.7); }
   prop('pencilcup', 15.32, Y + 0.655, 0.36); prop('triangle', 15.55, Y + 0.655, 0.5, 0.3); prop('ruler', 15.45, Y + 0.67, 0.6, 0.1); prop('triangle', 15.5, Y + 0.67, 0.3, 1.9);
