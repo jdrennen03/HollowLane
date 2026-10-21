@@ -3,7 +3,7 @@
 // positions with the team; everyone animates them locally.
 //   Izzabelle (blue) - a fat Russian Blue with a pink collar and an always-upright tail; roams the whole downstairs, never outside
 //   Mitty (tort)     - Claire's small, low tortoiseshell with a turquoise collar and a black "claires cat" tag; Claire's room and the
-//                      landing only. She trusts only Claire (the host): strangers without Claire send her under the bed.
+//                      landing only. She trusts only Claire (a player named Claire): strangers without her send her under the bed.
 //   Toby (white)     - tall and slender, white with one black ear, a black spot on a hind leg and a black tail; lives outside, follows
 //                      you in, runs up to Claire's room, and runs back out the next time someone leaves the house
 // During a hunt each one runs to its hiding place until it is over: Mitty under Claire's bed, Izzabelle behind the couch, Toby under the porch.
@@ -202,18 +202,19 @@ function whiteCatThink(c, dt) {
     c.mode = 'exit'; catGo(c, [...inner, ...catOutsideLeg(true).slice(1)], 2.1);
   }
 }
-// Mitty trusts only Claire (the host, slot 0). Strangers in her room without Claire: she hides under the bed.
+// Mitty trusts only Claire: any player who goes by that name. Strangers in her room without Claire: she hides under the bed.
+function isClaire(P) { return !!P && (P.nick || '').trim().toLowerCase() === 'claire'; }
 // With Claire there she is wary: low, slow, and keeps her distance from everyone else.
 function mittyThink(c, dt) {
   const ri = logicalRoom(c.hide ? c.hide.spot[0] : c.x, c.hide ? c.hide.spot[1] : c.z, MAP.levels[1] + 0.1);
-  const here = alivePlayers().filter(P => logicalRoom(P.pos.x, P.pos.z, P.pos.y) === ri), claire = here.find(P => P.slot === 0), strangers = here.filter(P => P.slot !== 0);
+  const here = alivePlayers().filter(P => logicalRoom(P.pos.x, P.pos.z, P.pos.y) === ri), claire = here.find(isClaire), strangers = here.filter(P => !isClaire(P));
   c.shy = strangers.length > 0 && !claire;
   c.wary = !!claire && strangers.length > 0;   // hesitant when Claire has company
   if (c.shy && !c.hide) { hostEvent(['snd', 'hiss', r2(c.x), r2(c.y + 0.2), r2(c.z), 0.35]); catHide(c, 'shy'); return; }
   if (c.hide) return;
   // whenever Claire is upstairs, Mitty follows her (to the doorway, if Claire steps outside Mitty's two rooms)
-  const C0 = G.players[0];
-  c.following = !!(C0 && C0.alive && levelOf(C0.pos.y) === 1 && insideHouse(C0.pos.x, C0.pos.z, C0.pos.y));
+  const C0 = alivePlayers().find(P => isClaire(P) && levelOf(P.pos.y) === 1 && insideHouse(P.pos.x, P.pos.z, P.pos.y));
+  c.following = !!C0;
   if (c.following && !strangers.some(P => Math.hypot(P.pos.x - c.x, P.pos.z - c.z) < 1.2)) { mittyFollow(c, C0, dt); return; }
   if (!c.wary) return;
   c.waryT = (c.waryT || 0) - dt;
@@ -256,9 +257,9 @@ function mittyFollow(c, C0, dt) {
 }
 function hostPet(i, slot) {
   const c = CATS[i]; if (!c || c.hide) return; if (c.mode === 'enter' || c.mode === 'exit') return;
-  if (c.def.id === 'tort' && slot !== 0) {   // Mitty won't be touched by anyone but Claire
+  if (c.def.id === 'tort' && !isClaire(G.players[slot])) {   // Mitty won't be touched by anyone but Claire
     hostEvent(['snd', 'hiss', r2(c.x), r2(c.y + 0.2), r2(c.z), 0.45]); hostEvent(['msg', slot, 'Mitty flinches away from you. She only trusts Claire.']);
-    if (!alivePlayers().some(P => P.slot === 0 && logicalRoom(P.pos.x, P.pos.z, P.pos.y) === logicalRoom(c.x, c.z, c.y + 0.1))) catHide(c, 'shy');
+    if (!alivePlayers().some(P => isClaire(P) && logicalRoom(P.pos.x, P.pos.z, P.pos.y) === logicalRoom(c.x, c.z, c.y + 0.1))) catHide(c, 'shy');
     else { c.waryT = 0; const p = catPoint(c), path = findPath(c.x, c.z, 1, p[0], p[1], p[2]); if (path.length && catPathOK(c, path)) catGo(c, path, c.def.walk * 1.6); }
     return;
   } c.path = []; c.state = 'idle'; c.speed = 0; c.pose = 1; c.t = 5; hostEvent(['snd', 'purr', r2(c.x), r2(c.y + 0.25), r2(c.z), 0.8]); }
