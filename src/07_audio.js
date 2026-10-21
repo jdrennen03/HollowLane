@@ -161,7 +161,7 @@ function sfxKey(name) {   // a pool name -> the buffer to play this time
   const choice = ready.length > 1 ? pick(ready.filter(n => n !== _sfxLast[name])) : ready[0];
   _sfxLast[name] = choice; _sfxVary['f:' + choice] = P.vary || 0; return 'f:' + choice;
 }
-const SFX_ROLLOFF = { meowLoud: 0.45, manifest: 0.9 };   // sounds meant to carry through the house
+const SFX_ROLLOFF = { meowLoud: 0.45, manifest: 0.9, wail: 0.4, knock: 0.85, whisper: 0.9, creak: 0.85, gstep: 0.8, vanish: 0.9, switch: 1.0, bulbPop: 0.8, scribble: 1.0, slam: 0.6, clatter: 1.0, breaker: 0.6 };   // sounds meant to carry through the house
 const SFX_WET = { meow: 0.12, meowLoud: 0.15, gbreath: 0.3, breath: 0.2 };   // how much of a sound goes to the room reverb (1 = all of it)
 const SFX_ROLLOFF_CLOSE = { gbreath: 2.6 };   // heard only up close
 function sfxAt(name, pos, vol = 1, rate) {

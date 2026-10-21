@@ -18,7 +18,7 @@ const GHOSTS = [
   { name: 'Wraith', ev: ['emf', 'spirit', 'laser'], tell: 'Breathes. Stand close to it and you will hear slow, heavy breathing in the dark. Drifts out of its room often.', wander: 0.35, breathes: true },
   { name: 'Phantom', ev: ['spirit', 'laser', 'orbs'], tell: 'Seeing it drains far more sanity, and when it manifests the lights stay on. Almost invisible during hunts: you catch it only in brief flashes.', eventDrain: 2, flick: 0.25, keepsLights: true },
   { name: 'Poltergeist', ev: ['emf', 'uv', 'laser'], tell: 'Throws objects constantly, and is the only ghost that hurls several at once.', throwy: 3 },
-  { name: 'Banshee', ev: ['freeze', 'orbs', 'writing'], tell: 'Lets out a long, mournful wail whenever it manifests. Fixates on one investigator for every hunt.', fixate: true, wail: true },
+  { name: 'Banshee', ev: ['freeze', 'orbs', 'writing'], tell: 'Lets out a long, mournful wail: sometimes when it manifests, sometimes out of nowhere while it roams. Fixates on one investigator for every hunt.', fixate: true, wail: true },
   { name: 'Jinn', ev: ['emf', 'freeze', 'orbs'], tell: 'Feeds on electricity: your flashlight stutters whenever it is right beside you, even when nothing is manifesting. Never touches light switches.', speedLos: 1.2, noSwitch: true, drainsFlash: true },
   { name: 'Mare', ev: ['laser', 'freeze', 'orbs'], tell: 'Hates the light. Switch on a light near it and it snaps it back off within seconds.', lightsOff: 3, mare: true },
   { name: 'Revenant', ev: ['spirit', 'laser', 'freeze'], tell: 'Crawls at a walking pace when it loses you, then sprints faster than anything else the moment it sees you.', revenant: true },

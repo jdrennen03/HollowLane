@@ -197,6 +197,8 @@ function ghostThink(dt) {
     // ----- signature behaviours
     if (gh.breathes) { gs.breathT -= dt; if (gs.breathT <= 0) { gs.breathT = rr(3.5, 6.5); if (Math.random() < TRAIT_CHANCE && alivePlayers().some(p => p.inside && Math.abs(p.pos.y - gs.y) < 1.4 && Math.hypot(p.pos.x - gs.x, p.pos.z - gs.z) < 2.6)) hostEvent(['snd', 'gbreath', r2(gs.x), r2(gs.y + 1.5), r2(gs.z), 0.35]); } }
     if (gh.mimics) { gs.mimicT = (gs.mimicT ?? rr(8, 15)) - dt; if (gs.mimicT <= 0) { const c = alivePlayers().filter(p => p.inside && p.moving > 0.5 && Math.abs(p.pos.y - gs.y) < 1.4 && Math.hypot(p.pos.x - gs.x, p.pos.z - gs.z) < 9); gs.mimicT = c.length ? rr(18, 32) : 2; if (c.length && Math.random() < TRAIT_CHANCE) hostEvent(['mimic', pick(c).slot]); } }
+    // the Banshee also wails now and then as it roams, loud enough to carry across the property
+    if (gh.wail) { gs.wailT = (gs.wailT ?? rr(25, 50)) - dt; if (gs.wailT <= 0) { gs.wailT = rr(40, 80); if (Math.random() < TRAIT_CHANCE * 1.5) hostEvent(['snd', 'wail', r2(gs.x), r2(gs.y + 1.6), r2(gs.z), 1]); } }
     if (gs.mareOff && G.elapsed > gs.mareOff[1]) {
       const ri = gs.mareOff[0]; gs.mareOff = null;
       if (G.lights[ri]) { hostToggleLight(ri, -1, false); const [x, z] = ROOMS[ri].sw, sy = ROOMS[ri].y + 1.25; hostEvent(['snd', 'switch', x, sy, z, 0.8]); hostEvent(['emf', x, sy, z, emfLevel(2)]); }
@@ -206,7 +208,7 @@ function ghostThink(dt) {
     if (gs.interactT <= 0) { ghostInteract(); gs.interactT = rr(5, 11); }
     // ----- ghost events
     gs.eventT -= dt * (0.6 + ghostActivity() * 0.4);
-    if (gs.eventT <= 0) { gs.eventT = rr(55, 100); tryGhostEvent(); }
+    if (gs.eventT <= 0) { gs.eventT = rr(40, 75); tryGhostEvent(); }
     // ----- hunts
     gs.huntCheckT -= dt;
     if (gs.huntCheckT <= 0) {
@@ -291,7 +293,7 @@ function ghostInteract() {
     if (best) {
       const y = best.y0 !== undefined ? rr(best.y0, best.y1) : rr(FL + 0.85, FL + 1.7);
       hostEvent(['emf', r2(best.x), r2(y), r2(best.z), emfLevel(2)]);
-      hostEvent(['snd', 'knock', r2(best.x), r2(y), r2(best.z), 0.5]);
+      hostEvent(['snd', 'knock', r2(best.x), r2(y), r2(best.z), 0.9]);
       if (hasUV && Math.random() < EV_CHANCE) hostEvent(['pr', r2(best.x), r2(y), r2(best.z), best.nx, best.nz, r2(rr(-0.5, 0.5)), -1, 1, gh.childPrints ? 0.55 : false]);
     }
   } else if (choice === 'switch') {
@@ -311,7 +313,7 @@ function ghostInteract() {
   } else if (choice === 'emf') {
     hostEvent(['emf', r2(gs.x), r2(FL + 1.0), r2(gs.z), emfLevel(2)]);
   } else {
-    hostEvent(['snd', pick(['whisper', 'creak', 'knock', 'step']), r2(gs.x), r2(FL + 1.2), r2(gs.z), 0.6]);
+    hostEvent(['snd', pick(['whisper', 'creak', 'knock', 'gstep']), r2(gs.x), r2(FL + 1.2), r2(gs.z), 1]);
   }
 }
 function tryGhostEvent() {
