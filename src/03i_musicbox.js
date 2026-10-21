@@ -315,14 +315,33 @@ function cineMusic(name) {
     for (let i = 0; i < n; i++) { const a = ring[k], b = ring[(k + 1) % P], y = (a + b) * 0.5 * decay; d[s0 + i] += a * amp * (i < 40 ? i / 40 : 1); ring[k] = y; k = (k + 1) % P; }
   };
   const norm = (d, p) => { let m = 0; for (const v of d) m = Math.max(m, Math.abs(v)); if (m) for (let i = 0; i < d.length; i++) d[i] *= p / m; return d; };
-  if (name === 'banjo') {   // a slow forward roll in G, eight bars, then round again
-    const beat = 60 / 76 / 2, bars = [[55, 59, 62, 67, 71], [55, 59, 62, 67, 74], [48, 60, 64, 67, 72], [48, 60, 64, 67, 71], [50, 62, 66, 69, 69], [50, 62, 66, 69, 74], [55, 59, 62, 67, 67], [50, 62, 66, 69, 71]];
-    const mel = [71, 74, 72, 71, 69, 74, 67, 66];
-    return CINE_BUF[name] = mk(bars.length * 8 * beat + 1.5, d => {
-      bars.forEach((ch, b) => { const roll = [ch[0], ch[3], 79, ch[1], ch[4], 79, ch[2], mel[b]];   // 79: the high G drone string
-        roll.forEach((m, i) => pluck(d, (b * 8 + i) * beat, hz(m), i === 0 ? 0.9 : m === 79 ? 0.35 : 0.6, 0.994, 0.85, 1.4));
-        pluck(d, b * 8 * beat, hz(mel[b]), 0.8, 0.996, 0.7, 2.2); });
-      norm(d, 0.8);
+  if (name === 'banjo') {   // a slow western tune, clawhammer style: melody note, brush strum, the high drone string; a plucked bass under it
+    const beat = 60 / 88, bar = beat * 4;
+    // chords as [bass root, bass fifth, strum notes]; a cowboy's I–IV–V in G, sixteen bars
+    const G = [43, 50, [55, 59, 62, 67]], C = [36, 43, [55, 60, 64, 67]], D = [38, 45, [54, 57, 62, 66]], Em = [40, 47, [55, 59, 64, 67]];
+    const prog = [G, G, C, G, G, Em, D, D, G, G, C, C, G, D, G, G];
+    // the tune, one [note, beats] list per bar (0 = rest); a slide up into some notes, marked with a negative beat
+    const tune = [[[62, 1], [67, 1], [71, 2]], [[69, 1], [67, 1], [64, 2]], [[64, 1], [67, 1], [72, 2]], [[71, 2], [67, 2]],
+                  [[62, 1], [67, 1], [71, 1.5], [72, 0.5]], [[71, 1], [69, 1], [67, 2]], [[66, 1], [67, 1], [69, 2]], [[69, 3], [0, 1]],
+                  [[74, 1.5], [72, 0.5], [71, 2]], [[69, 1], [67, 1], [64, 2]], [[64, 1], [67, 1], [72, 1], [71, 1]], [[69, 2], [67, 2]],
+                  [[67, 1], [71, 1], [74, 2]], [[72, 1], [69, 1], [66, 2]], [[67, 4]], [[0, 4]]];
+    const len = prog.length * bar + 2.5;
+    return CINE_BUF[name] = mk(len, d => {
+      // banjo: a very bright pluck that dies fast, with a second string a hair sharp for the jangle
+      const banjo = (at, m, amp) => { pluck(d, at, hz(m), amp, 0.9925, 0.95, 1.1); pluck(d, at + 0.004, hz(m) * 1.003, amp * 0.45, 0.992, 0.95, 0.9); };
+      prog.forEach((ch, b) => {
+        const t0 = b * bar;
+        // the plucked bass: boom on the root, then the fifth
+        pluck(d, t0, hz(ch[0]), 0.9, 0.9985, 0.25, beat * 1.9); pluck(d, t0 + 2 * beat, hz(ch[1]), 0.75, 0.9985, 0.25, beat * 1.9);
+        // bum-ditty on every beat: a strum across the strings on the off-beat, the high G drone right after
+        for (let k = 0; k < 4; k++) { const tb = t0 + k * beat; ch[2].forEach((m, q) => banjo(tb + beat * 0.5 + q * 0.012, m, 0.22)); banjo(tb + beat * 0.75, 79, 0.2); }
+        let at = t0; for (const [m, n] of tune[b]) { if (m) { banjo(at, m, 0.75); if (n >= 2 && (b + m) % 3 === 0) banjo(at + beat * 0.25, m + 2, 0.45); } at += n * beat; }   // now and then a hammer-on a tone up
+      });
+      // the drum head: a resonance round 1.1 kHz adds the banjo's honk, a low cut keeps it light
+      const out = new Float32Array(d.length), w = 2 * Math.sin(Math.PI * 1100 / sr); let lo = 0, bp = 0, hp = 0, prev = 0;
+      for (let i = 0; i < d.length; i++) { const hi = d[i] - lo - 0.45 * bp; bp += w * hi; lo += w * bp; out[i] = d[i] * 0.75 + bp * 0.6; }
+      for (let i = 0; i < d.length; i++) { hp = 0.995 * (hp + out[i] - prev); prev = out[i]; d[i] = hp; }
+      norm(d, 0.85);
     });
   }
   if (name === 'waltz') {   // a courtly waltz in D on a harpsichord: oom on the bass, pah-pah on the chord, a tune over the top
