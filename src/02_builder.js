@@ -73,6 +73,8 @@ function buildMaterials() {
   defMat('wpRose', TEX.wpRose, 1.0, { ns: 0.5 });
   defMat('wpBlue', TEX.wpBlue, 1.0, { ns: 0.5 });
   defMat('wpBeige', TEX.wpBeige, 1.0, { ns: 0.5 });
+  defMat('wpGold', TEX.wpGold, 1.0, { ns: 0.5 });
+  defMat('wpSage', TEX.wpSage, 1.0, { ns: 0.5 });
   defMat('plasterY', TEX.plaster, 2, { color: 0xe8dcae, ns: 0.4 });
   defMat('plasterG', TEX.plaster, 2, { color: 0xb8bcb0, ns: 0.4 });
   defMat('ceiling', TEX.plaster, 2.5, { color: 0xd6d0c4, ns: 0.4 });
@@ -139,6 +141,11 @@ function buildMaterials() {
   defMat('trimWhite', TEX.plaster, 1, { color: 0xeeece6, roughness: 0.6, ns: 0.15 });
   defMat('railBlack', null, 1, { color: 0x151617, roughness: 0.5, metalness: 0.3 });
   defMat('shutterBlack', null, 1, { color: 0x0e1012, roughness: 0.6 });
+  defMat('sidingWhite', TEX.siding, 2, { color: 0xe9e6de, ns: 0.8 });
+  defMat('shutterGreen', null, 1, { color: 0x1c3326, roughness: 0.6 });
+  defMat('hauntBlue', TEX.plaster, 2, { color: 0x9fc6c4, roughness: 0.8, ns: 0.2 });
+  defMat('marbleW', TEX.plaster, 1, { color: 0xf4f1ea, roughness: 0.25, ns: 0.1 });
+  defMat('oakLeaf', TEX.grass, 1, { color: 0x2c3a22, ns: 1 });
   defMat('pine', TEX.grass, 1, { color: 0x3a5a40, ns: 1 });
   defMat('concreteFound', TEX.concrete, 2, { color: 0xb0aca2, ns: 0.7 });
   defMat('mud', TEX.grass, 6, { color: 0x8a7a5c, ns: 0.8 });

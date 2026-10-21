@@ -135,6 +135,8 @@ function buildTextures() {
   TEX.wpRose = wallpaper([0.52, 0.42, 0.40], [0.62, 0.50, 0.45], 'floral', 7);
   TEX.wpBlue = wallpaper([0.42, 0.52, 0.60], [0.70, 0.68, 0.52], 'stars', 9);
   TEX.wpBeige = wallpaper([0.52, 0.47, 0.36], [0.45, 0.40, 0.30], 'stripe', 11);
+  TEX.wpGold = wallpaper([0.55, 0.45, 0.24], [0.70, 0.60, 0.36], 'damask', 13);
+  TEX.wpSage = wallpaper([0.40, 0.46, 0.38], [0.56, 0.58, 0.46], 'floral', 15);
   // ---- plaster (span 2m)
   TEX.plaster = genMaps(512, (u, v, o) => {
     const n = fbm(u, v, 8, 8, 5, 21), s = fbm(u, v, 2, 2, 5, 23);
