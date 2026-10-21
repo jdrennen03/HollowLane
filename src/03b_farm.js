@@ -280,7 +280,7 @@ function buildFarm(gb, root) {
   shoesAt(11.8, 9.7, Y0, [['slipper1', 0, 0, 3.1], ['slipper1', 0.14, -0.04, 3.3], ['shoe5', 0.4, -0.05, 2.9]]);
   // dining room + nook
   placeModel(root, { url: 'prop-dining.json', x: 14.15, z: 2.3, y: Y0, cols: 'parts' });   // clear of the hutch, with room to walk all the way round
-  { const f = F0(15.68, 4.2, -Math.PI / 2); f.box('darkWood', 0, 0.45, 0, 1.4, 0.9, 0.48); f.box('darkWood', 0, 1.45, 0.06, 1.36, 1.1, 0.36); f.box('glass', 0, 1.45, -0.125, 1.2, 0.96, 0.01); for (let i = 0; i < 5; i++) f.cyl('porcelain', -0.5 + i * 0.25, 1.32, 0.12, 0.1, 0.1, 0.012, 16, Math.PI / 2 - 0.25); f.solid(-0.7, -0.25, 0.7, 0.25, 2); }
+  { const f = F0(15.94, 4.2, Math.PI / 2); chinaCabinet(f); f.solid(-0.75, -0.45, 0.75, 0, 2.1); }   // china cabinet
   prop('plate', 13.65, Y0 + 0.785, 2.05); prop('plate', 14.6, Y0 + 0.785, 2.55); prop('candle', 14.15, Y0 + 0.785, 2.3); prop('cup', 13.85, Y0 + 0.785, 2.55); prop('vase', 15.6, Y0 + 0.9, 4.6);
   { const f = F0(14.3, -1.3, Math.PI * 0.85); armchair(f, 'fabricRose'); f.solid(-0.42, -0.42, 0.42, 0.42, 1); }
   { const f = F0(15.55, -0.55); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); }
@@ -291,9 +291,9 @@ function buildFarm(gb, root) {
   { const f = F0(10.9, 7.55); coffeeTable(f); f.solid(-0.4, -0.4, 0.4, 0.4, 0.45); }
   rug(gb, 10.9, 7.5, 3.4, 2.4, 0, Y0);
   { const f = F0(8.3, 8.6, -Math.PI * 0.7); armchair(f); f.solid(-0.42, -0.42, 0.42, 0.42, 1); }
-  { const f = F0(15.6, 8.9, -Math.PI / 2); f.box('darkWood', 0, 0.65, 0, 1.4, 1.3, 0.55); f.box('enamel', 0, 0.78, -0.28, 1.2, 0.05, 0.02); f.box('darkWood', 0, 0.75, -0.35, 1.3, 0.04, 0.2); f.solid(-0.7, -0.3, 0.7, 0.3, 1.3); }
+  { const f = F0(14.85, 8.5, Math.PI / 2); grandPianoModel(f); }   // the grand piano in the corner, keyboard to the room
   { const f = F0(15.68, 5.9, -Math.PI / 2); bookshelf(f); f.solid(-0.5, -0.18, 0.5, 0.18, 2); }
-  prop('book', 10.7, Y0 + 0.445, 7.5, 0.5); prop('candle', 11.2, Y0 + 0.445, 7.6); prop('vase', 15.6, Y0 + 1.33, 8.7);
+  prop('book', 10.7, Y0 + 0.445, 7.5, 0.5); prop('candle', 11.2, Y0 + 0.445, 7.6); prop('vase', 15.68, Y0 + 1.0, 6.1);
   picFrame(root, 'z', 12.8, 5.06, Y0 + 1.7, 1, 'p17', 0, 0.85);
   // ---------- UPSTAIRS FURNITURE
   { const f = F1(10.0, 0.45); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); }

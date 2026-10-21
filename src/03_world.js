@@ -316,8 +316,8 @@ function buildFurniture(gb, root) {
   shoesAt(10.35, 0.32, FY, [['shoe1', 0, 0.1], ['shoe1', 0.13, -0.05], ['shoe3', 0.34, 0.2], ['shoe3', 0.46, 0.05], ['slipper2', 0.05, 0.9, 1.6]]);
   // ===== DINING
   placeModel(root, { url: 'prop-dining.json', x: 15.5, z: 3.0, y: FY, cols: 'parts' });   // the table and its six chairs
-  { const f = fur(gb, 18.3, 5.68, Math.PI); f.box('darkWood', 0, 0.45, 0, 1.4, 0.9, 0.48); f.box('darkWood', 0, 1.45, 0.06, 1.36, 1.1, 0.36); f.box('glass', 0, 1.45, -0.125, 1.2, 0.96, 0.01); for (const y of [1.15, 1.5]) f.box('darkWood', 0, y, 0.06, 1.3, 0.02, 0.32); for (let i = 0; i < 5; i++) f.cyl('porcelain', -0.5 + i * 0.25, 1.32, 0.12, 0.1, 0.1, 0.012, 16, Math.PI / 2 - 0.25); f.box('darkWood', 0, 2.03, 0.06, 1.44, 0.06, 0.4); f.solid(-0.7, -0.25, 0.7, 0.25, 2); }
-  { const f = fur(gb, 15.6, 0.36, 0); f.box('darkWood', 0, 0.45, 0, 2.0, 0.9, 0.5); for (const a of [-0.5, 0, 0.5]) f.box('brass', a, 0.72, 0.255, 0.08, 0.015, 0.01); f.solid(-1, -0.25, 1, 0.25, 0.9); }
+  { const f = fur(gb, 18.3, 5.94, 0); chinaCabinet(f); f.solid(-0.75, -0.45, 0.75, 0, 2.1); }   // china cabinet against the back wall
+  { const f = fur(gb, 15.6, 0.06, Math.PI); longCabinet(f, 1.9); f.solid(-0.95, -0.45, 0.95, 0, 1.6); }   // glass-fronted buffet
   prop('plate', 14.95, FY + 0.785, 2.75); prop('plate', 15.5, FY + 0.785, 2.75); prop('plate', 16.0, FY + 0.785, 3.25); prop('candle', 15.5, FY + 0.785, 3.0); prop('cup', 15.0, FY + 0.785, 3.25); prop('cup', 16.0, FY + 0.785, 2.75);
   prop('vase', 15.0, FY + 0.9, 0.36);
   picFrame(root, 'z', 15.6, 0.11, FY + 1.75, 1, 'p32', 0, 0.5);
@@ -448,7 +448,7 @@ function sofa(f, len, key, model, root) {
 }
 // a piece from one of the model packs, in a fur() frame. The packs' models face +z and the box furniture faces -z, so by default
 // the model is turned round (turn: 0 keeps it as it is). at: a local offset, dy: lift; the rest goes to placeModel (len/height/back...)
-const PACK = { tl: 'prop-tinyliving.json', kit: 'prop-kitchen.json', bath: 'prop-bathset.json' };
+const PACK = { tl: 'prop-tinyliving.json', kit: 'prop-kitchen.json', bath: 'prop-bathset.json', vint: 'prop-vintage.json', piano: 'prop-piano.json', rustic: 'prop-rustic.json' };
 function furModel(f, url, part, P = {}) {
   const [ox, oz, ry, oy] = f.o, [x, z] = P.at ? f.pt(P.at[0], P.at[1]) : [ox, oz];
   placeModel(WORLD.root, Object.assign({ cols: false }, P, { url, part, x, z, y: oy + (P.dy || 0), ry: ry + (P.turn !== undefined ? P.turn : Math.PI) }));
@@ -490,6 +490,23 @@ function tvStand(f) { furModel(f, PACK.tl, 'TinyLiving_MediaMarathoner_AllontheW
 function hallTable(f) { furModel(f, PACK.tl, 'TinyLiving_TinyConsole_44', { height: 0.76, back: true }); }
 function singleBed(f) { furModel(f, PACK.tl, 'TinyLiving_Space-SavingSingle_13', { len: 2.0, axis: 'z', turn: 0 }); }   // headboard at local -z, like bed()
 function kitchenTable(f) { furModel(f, 'prop-dining.json', 'Table', { height: 0.76 }); }   // 1.47 x 0.81 m
+// the Victorian set (camelback sofa, upholstered armchair, bentwood chair, oval tables, china cabinets, lamp, urn,
+// sconce, chandelier), the grand piano and the rustic set (hutch, chest of drawers, desk)
+function vicSofa(f, len = 2.0) { logFurn(f, 'sofa', -1); furModel(f, PACK.vint, 'SM_Koltuk_P1_5', { len, axis: 'x' }); }
+function vicArmchair(f) { logFurn(f, 'armchair', -1); furModel(f, PACK.vint, 'SM_Sandalye_20', { height: 1.02 }); }
+function bentChair(f) { logFurn(f, 'chair', 1); furModel(f, PACK.vint, 'SM_Sandalye_P1_40', { height: 0.92, turn: 0 }); }
+function ovalTable(f, h = 0.5) { furModel(f, PACK.vint, 'SM_Orta_Sehpa_P1_6', { height: h }); }
+function ovalDining(f) { furModel(f, PACK.vint, 'SM_Orta_Sehpa_28', { height: 0.76 }); }
+function chinaCabinet(f, h = 2.1) { furModel(f, PACK.vint, 'SM_Vitrin_P1_0', { height: h, back: true }); }
+function longCabinet(f, len = 1.9) { furModel(f, PACK.vint, 'SM_Vitrin_Uzun_P1_1', { len, axis: 'x', back: true }); }
+function vicLamp(f, x, y, z) { furModel(f, PACK.vint, 'SM_Lambader_62', { height: 0.62, at: [x, z], dy: y }); }
+function urn(f) { furModel(f, PACK.vint, 'SM_Ciceklik_69', { height: 0.85 }); f.solid(-0.2, -0.2, 0.2, 0.2, 0.8); }
+function sconce(f, y) { furModel(f, PACK.vint, 'SM_Aplik_63', { height: 0.5, dy: y, back: true }); }
+const PIANO_S = 0.384;   // the grand piano model to life size (about 1.5 m wide, 1.85 m long)
+function grandPianoModel(f) { furModel(f, PACK.piano, 'piano', { scale: PIANO_S }); furModel(f, PACK.piano, 'chair', { scale: PIANO_S, at: [0, -1.25] }); f.solid(-0.75, -0.95, 0.75, 0.95, 1.1); }
+function rusticHutch(f, h = 1.9) { furModel(f, PACK.rustic, 'RusticHutch', { height: h, back: true }); }
+function rusticChest(f, h = 0.85) { furModel(f, PACK.rustic, 'RusticChest', { height: h, back: true }); }
+function rusticDesk(f, len = 1.5) { furModel(f, PACK.rustic, 'RusticDesk', { len, axis: 'x' }); }
 function counter(f, sink) { furModel(f, PACK.kit, sink ? 'MesadaConBacha' : 'Mesada', { len: 1.0, axis: 'x', back: true }); }   // 1 m wide, 0.92 m to the worktop
 function nightstand(f) { furModel(f, PACK.tl, 'TinyLiving_NotATableEnd_43', { height: 0.57 }); }
 function dresser(f) { furModel(f, PACK.tl, 'TinyLiving_StubbyCubbyDresser_38', { height: 1.1, turn: Math.PI / 2 }); }   // the model's drawers face +x
@@ -538,13 +555,8 @@ function buildFixture(gb, root, i) {
     FIXTURES[i] = { pos: new V3(x, R.y + 2.7, z), bulbMat, on: false, lvl: 0 }; return;
   }
   if (R.chandelier) {
-    gb.cyl('brass', x, CEIL - 0.3, z, 0.008, 0.008, 0.6, 6); gb.sphere('brass', x, CEIL - 0.62, z, 0.07);
-    for (let k = 0; k < 5; k++) {
-      const a = k / 5 * Math.PI * 2, ax = x + Math.cos(a) * 0.3, az = z + Math.sin(a) * 0.3;
-      gb.cyl('brass', x + Math.cos(a) * 0.15, CEIL - 0.64, z + Math.sin(a) * 0.15, 0.008, 0.008, 0.3, 5, -a, 0, Math.PI / 2);
-      gb.cyl('brass', ax, CEIL - 0.66, az, 0.03, 0.02, 0.05, 8);
-      const b = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), bulbMat); b.scale.y = 1.6; b.position.set(ax - x, -0.6, az - z); g.add(b);
-    }
+    placeModel(root, { url: PACK.vint, part: 'SM_Avize_22', x, z, y: CEIL - 0.85, height: 0.85, cols: false });   // the brass chandelier
+    for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2 + 0.3; const b = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), bulbMat); b.position.set(Math.cos(a) * 0.3, -0.62, Math.sin(a) * 0.3); g.add(b); }
   } else {
     gb.cyl('brass', x, CEIL - 0.02, z, 0.12, 0.12, 0.03, 16);
     const dome = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), bulbMat); dome.position.y = -0.03; g.add(dome);

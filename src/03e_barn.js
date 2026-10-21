@@ -411,7 +411,7 @@ function buildBarnInterior(gb, root) {
   }
   // ---------- office: desk under the window, filing cabinet, trophies, the calendar still on October 1994
   { const f = F0(24.6, 2.55, Math.PI / 2);
-    f.box('darkWood', 0, 0.74, 0, 1.4, 0.05, 0.7); for (const a of [-0.65, 0.65]) f.box('darkWood', a, 0.37, 0, 0.06, 0.72, 0.66); f.box('darkWood', 0.45, 0.45, 0, 0.42, 0.55, 0.62);
+    furModel(f, PACK.rustic, 'RusticDesk', { height: 0.76 });   // the old metal desk
     f.box('grayPlastic', -0.35, 0.85, 0.1, 0.3, 0.16, 0.22); f.cyl('chrome', -0.25, 0.95, 0.1, 0.004, 0.004, 0.25, 4); f.box('paper', 0.2, 0.775, 0.05, 0.3, 0.01, 0.22, 0.2); f.box('paper', 0.24, 0.79, -0.05, 0.3, 0.01, 0.22, -0.15);
     f.box('blackPlastic', 0.5, 0.79, -0.15, 0.2, 0.06, 0.16); f.solid(-0.72, -0.36, 0.72, 0.36, 0.8);
     tableLamp(f, -0.55, 0.765, -0.15);

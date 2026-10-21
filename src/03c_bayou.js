@@ -308,9 +308,9 @@ function furnishShack(gb, root, h, n) {
     for (const [a, r] of [[-0.8, Math.PI / 2], [0.8, -Math.PI / 2]]) { const [cx, cz] = h.W(tu + a, tv); const c = fur(gb, cx, cz, h.phi + r, Y); woodChair(c, 'darkWood', 'darkWood'); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
   for (const [t, a, b] of [['plate', -0.3, -0.15], ['plate', 0.3, 0.15], ['mug', 0.4, -0.2], ['cup', -0.4, 0.2], ['candle', 0.0, 0.0], ['bottle', 0.15, -0.25], ['bowl', -0.15, 0.25]]) P(t, tu + a, tv + b, 0.765);
   // shelves by the door side wall, full of jars and odds and ends
-  { const su = U1 - 0.75, sv = V0 + 0.2; const f = F(su, sv, Math.PI); f.box('darkWood', 0, 1.0, -0.17, 1.2, 2.0, 0.03); for (const y of [0.3, 0.8, 1.3, 1.8]) f.box('darkWood', 0, y, 0, 1.2, 0.03, 0.34); f.solid(-0.6, -0.18, 0.6, 0.18, 2);
+  { const su = U1 - 0.75, sv = V0 + 0.03; const f = F(su, sv, Math.PI); rusticHutch(f); f.solid(-0.55, -0.42, 0.55, 0, 2);
     const items = [['bottle', -0.4, 0.315], ['vase', 0.0, 0.315], ['book', 0.35, 0.315], ['candle', -0.35, 0.815], ['jbox', 0.1, 0.815], ['cup', 0.42, 0.815], ['bottle', -0.2, 1.315], ['clock', 0.25, 1.315], ['bowl', 0.0, 1.815]];
-    for (const [t, a, y] of items) { const [x, z] = f.pt(a, 0); prop(t, x, Y + y, z, WR() * 6); } }
+    for (const [t, a, y] of items) { const [x, z] = f.pt(a * 0.8, -0.18); prop(t, x, Y + y, z, WR() * 6); } }
   // a rocking chair and the room's own character
   { const f = F((U0 + U1) / 2, V0 + 1.7, -0.6); f.box('darkWood', 0, 0.45, 0, 0.5, 0.04, 0.5); f.box('darkWood', 0, 0.85, 0.24, 0.5, 0.8, 0.04, 0, -0.15); for (const a of [-0.24, 0.24]) f.box('darkWood', a, 0.04, 0, 0.04, 0.05, 0.9); f.solid(-0.3, -0.45, 0.3, 0.45, 1); }
   const cu = U1 - 0.6, cv = V1 - 0.55;
@@ -318,7 +318,7 @@ function furnishShack(gb, root, h, n) {
     const f = F(cu, cv); f.box('railBlack', 0, 0.4, 0, 0.6, 0.8, 0.55); f.cyl('railBlack', 0, 1.7, 0.1, 0.07, 0.07, 2.0, 8); f.solid(-0.35, -0.32, 0.35, 0.32, 1);
     P('pot', cu, cv - 0.1, 0.8); P('kettle', cu + 0.15, cv + 0.12, 0.8); P('basket', (U0 + U1) / 2 + 0.6, V0 + 0.6, 0); P('bottle', (U0 + U1) / 2, V0 + 0.4, 0);
   } else if (kind === 1) { // shrine: candles, a doll, a covered mirror
-    const f = F(cu, cv, Math.PI * 0.75); f.box('darkWood', 0, 0.45, 0, 0.85, 0.9, 0.45); f.box('fabricRose', 0, 0.91, 0, 0.9, 0.02, 0.5); f.solid(-0.45, -0.25, 0.45, 0.25, 1);
+    const f = F(cu, cv, Math.PI * 0.75); furModel(f, PACK.rustic, 'RusticChest', { height: 0.9 }); f.box('fabricRose', 0, 0.91, 0, 0.9, 0.02, 0.5); f.solid(-0.45, -0.25, 0.45, 0.25, 1);
     for (let j = 0; j < 6; j++) f.cyl('wax', -0.32 + j * 0.12, 0.98 + (j % 2) * 0.03, (j % 3 - 1) * 0.1, 0.02, 0.02, 0.12 + (j % 3) * 0.05, 6);
     P('teddy', cu, cv, 0.92); P('candle', cu - 0.5, cv + 0.2, 0); P('candle', cu - 0.8, cv - 0.1, 0); P('vase', U0 + 2.8, V1 - 0.4, 0);
   } else if (kind === 2) { // bait shop: crates, barrel, bottles everywhere

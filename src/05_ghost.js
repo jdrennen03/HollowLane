@@ -558,7 +558,7 @@ for (let i = 1; i <= 2; i++) PROP_DEF['slipper' + i] = PROP_DEF.slipper;
 function mergeGeos(gs) { const gb = new GB(); for (const g of gs) gb.add(g, new THREE.Matrix4(), 'x'); const B = gb.buf.x; const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(B.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(B.n, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(B.u, 2)); return g; }
 // props drawn with a loaded model instead of their simple shape (which stays as the invisible physics body)
 // h scales to a height, len to a length along z; part picks one named node out of a collection
-const PROP_MODELS = { teddy: { url: 'prop-teddy.json', h: 0.3 }, slipper1: { url: 'prop-bathset.json', part: 'bs1', len: 0.26 }, slipper2: { url: 'prop-bathset.json', part: 'bs2', len: 0.25 } };
+const PROP_MODELS = { teddy: { url: 'prop-teddy.json', h: 0.3 }, phone: { url: 'prop-vintage.json', part: 'SM_Cevirmeli_Ev_Telefonu_60', len: 0.22 }, slipper1: { url: 'prop-bathset.json', part: 'bs1', len: 0.26 }, slipper2: { url: 'prop-bathset.json', part: 'bs2', len: 0.25 } };
 ['base015_9', 'base016_23', 'base017_30', 'base018_40', 'base019_50'].forEach((part, i) => { PROP_MODELS['shoe' + (i + 1)] = { url: 'prop-shoes.json', part, len: 0.27 }; });
 const PROP_TPL = {};
 function propModel(type, mesh, hh) {

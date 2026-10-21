@@ -362,8 +362,8 @@ function buildMyrtles(gb, root) {
   addCollider(-0.4, -3.32, 11.0, -3.14, 1.0, false, MY0); addCollider(14.0, -3.32, 28.4, -3.14, 1.0, false, MY0);
   for (const sx of [-0.33, 28.33]) { lace.quad(sx, MY0 + 0.5, -1.65, 3.2, 0.9, Math.PI / 2); gb.mm('trimWhite', sx - 0.06, MY0 + 0.93, -3.3, sx + 0.06, MY0 + 1.0, 0); }
   // rocking chairs and ferns along the gallery
-  for (const [rx, rot] of [[3.5, 0.3], [5.2, -0.2], [19.8, 0.2], [21.6, -0.3]]) { const f = F0(rx, -1.6, Math.PI + rot); armchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
-  for (const px of [10.6, 14.4]) { gb.cyl('darkWood', px, MY0 + 0.3, -2.9, 0.22, 0.17, 0.6, 12); gb.sphere('pine', px, MY0 + 0.75, -2.9, 0.42, 1, 0.6, 1); addCollider(px - 0.25, -3.15, px + 0.25, -2.65, 1.1, false, MY0); }
+  for (const [rx, rot] of [[3.5, 0.3], [5.2, -0.2], [19.8, 0.2], [21.6, -0.3]]) { const f = F0(rx, -1.6, Math.PI + rot); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  for (const px of [10.6, 14.4]) urn(F0(px, -2.9));
   // the front door's painted-glass sidelights and transom, and a lantern beside it
   { const st = flatBatch(); for (const zz of [-0.115, 0.115]) { for (const sx of [11.55, 13.45]) st.quad(sx, MY0 + 1.2, zz, 0.38, 1.78, 0); st.quad(12.5, MY0 + 2.3, zz, 1.5, 0.36, 0, 0, 1, 0.4, 0.6); } root.add(st.mesh(M.stained)); }
   gb.box('brass', 14.0, MY0 + 2.2, -0.14, 0.16, 0.26, 0.12);
@@ -402,69 +402,71 @@ function buildMyrtles(gb, root) {
   WORLD_EXTRA.myrtlesMirror = mirror;
   placeModel(root, { url: 'prop-sidetable.json', x: 14.78, z: 10.4, y: MY0, ry: -Math.PI / 2, len: 1.1, axis: 'x', cols: 'box' });
   { const f = F0(14.84, 6.0, -Math.PI / 2); grandfatherClock(f); }
-  { const f = F0(14.6, 1.2, -Math.PI / 2); armchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  { const f = F0(14.6, 1.2, -Math.PI / 2); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
   gb.mm('runner', 11.8, MY0 + 0.002, 0.4, 13.8, MY0 + 0.012, 11.6);
+  urn(F0(14.62, 0.45)); urn(F0(11.75, 11.6));
+  for (const [x, z, r] of [[10.07, 1.1, -Math.PI / 2], [14.93, 2.2, Math.PI / 2], [14.93, 9.2, Math.PI / 2]]) sconce(F0(x, z, r), 1.7);
   picFrame(root, 'x', 10.08, 2.7, MY0 + 1.75, 1, 'p40', 0, 0.8); picFrame(root, 'x', 14.92, 4.1, MY0 + 2.65, -1, 'p12', 0, 0.55);
   prop('candle', 14.75, MY0 + 0.8, 10.2); prop('vase', 14.75, MY0 + 0.8, 10.65);
   // ---------- FRENCH ROOM (Mrs. Stirling's day room)
   { const f = F0(4.0, 5.89, 0); myMantel(f); } myMirror(gb, root, 4.0, MY0 + 2.05, 5.92, Math.PI, 0.9, 0.75);
-  { const f = F0(0.5, 4.75, -Math.PI / 2); sofa(f, 1.7, 'fabricRose', 'prop-couch2.json', root); f.solid(-0.85, -0.45, 0.85, 0.45, 1); }
-  { const f = F0(2.75, 4.75, Math.PI / 2); armchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
-  { const f = F0(1.6, 4.75); coffeeTable(f); f.solid(-0.38, -0.38, 0.38, 0.38, 0.45); }
+  { const f = F0(0.5, 4.75, -Math.PI / 2); vicSofa(f, 1.7); f.solid(-0.85, -0.45, 0.85, 0.45, 1); }
+  { const f = F0(2.75, 4.75, Math.PI / 2); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  { const f = F0(1.6, 4.75); ovalTable(f); f.solid(-0.38, -0.38, 0.38, 0.38, 0.45); }
   { const f = F0(1.0, 1.1, 0.5); dressingScreen(f); }
-  { const f = F0(4.55, 0.12, Math.PI); furModel(f, PACK.tl, 'TinyLiving_TinyDeskForTinyLiving_37', { height: 1.0, back: true }); f.solid(-0.45, -0.85, 0.45, 0, 0.8); const c = F0(4.55, 1.2, Math.PI); chair(c); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); }
+  { const f = F0(4.55, 0.12, Math.PI); furModel(f, PACK.tl, 'TinyLiving_TinyDeskForTinyLiving_37', { height: 1.0, back: true }); f.solid(-0.45, -0.85, 0.45, 0, 0.8); const c = F0(4.55, 1.2, Math.PI); bentChair(c); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); }
   rug(gb, 1.9, 4.6, 2.8, 2.0, 0, MY0);
   picFrame(root, 'x', 0.08, 1.2, MY0 + 1.7, 1, 'p22', 0, 0.6);
   prop('book', 1.5, MY0 + 0.45, 4.7, 0.4); prop('candle', 1.75, MY0 + 0.45, 4.9); prop('jbox', 4.3, MY0 + 0.75, 0.4);
   // ---------- MUSIC ROOM
-  { const f = F0(7.4, 3.2, 0.25); grandPiano(f); }
+  { const f = F0(7.4, 3.4, 0.25); grandPianoModel(f); }
   { const f = F0(9.2, 5.3, -0.6); harp(f); }
   { const f = F0(7.2, 5.62, 0); furModel(f, PACK.tl, 'TinyLiving_LovelyLoveseat_12', { len: 1.7, axis: 'x', back: true }); f.solid(-0.85, -0.7, 0.85, 0, 1); }
   { const f = F0(5.11, 4.6, -Math.PI / 2); myMantel(f); } myMirror(gb, root, 5.08, MY0 + 2.05, 4.6, Math.PI / 2, 0.8, 0.7);
-  for (const [cx, cz, r] of [[6.0, 1.5, 0.4], [8.6, 1.3, -0.5]]) { const c = F0(cx, cz, r); chair(c); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); }
+  for (const [cx, cz, r] of [[6.0, 1.5, 0.4], [8.6, 1.3, -0.5]]) { const c = F0(cx, cz, r); bentChair(c); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); }
   rug(gb, 7.5, 3.0, 3.4, 2.6, 0, MY0);
   picFrame(root, 'z', 7.5, 5.92, MY0 + 2.1, -1, 'p30', 0, 0.55);
   prop('book', 7.0, MY0 + 1.02, 3.0, 0.2);
   // ---------- LADIES' PARLOR
   { const f = F0(19.6, 5.89, 0); myMantel(f); } myMirror(gb, root, 19.6, MY0 + 2.1, 5.92, Math.PI, 1.1, 0.95);
-  { const f = F0(19.0, 2.4, Math.PI); sofa(f, 2.0, 'fabricGreen', 'prop-couch3.json', root); f.solid(-1.0, -0.45, 1.0, 0.45, 1); }
-  { const f = F0(17.4, 4.3, -Math.PI / 2); armchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
-  { const f = F0(20.7, 4.0, Math.PI / 2 + 0.2); armchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
-  { const f = F0(19.0, 3.65); coffeeTable(f); f.solid(-0.38, -0.38, 0.38, 0.38, 0.45); }
-  { const f = F0(15.55, 0.55); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); tableLamp(f, 0.0, 0.57, 0.0); }
+  { const f = F0(19.0, 2.4, Math.PI); vicSofa(f, 2.0); f.solid(-1.0, -0.45, 1.0, 0.45, 1); }
+  { const f = F0(17.4, 4.3, -Math.PI / 2); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  { const f = F0(20.7, 4.0, Math.PI / 2 + 0.2); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  { const f = F0(19.0, 3.65); ovalTable(f); f.solid(-0.38, -0.38, 0.38, 0.38, 0.45); }
+  { const f = F0(15.55, 0.55); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); vicLamp(f, 0.0, 0.57, 0.0); }
   rug(gb, 18.6, 3.2, 3.6, 2.8, 0, MY0);
   picFrame(root, 'x', 15.08, 1.8, MY0 + 1.8, 1, 'p5', 0, 0.75); picFrame(root, 'x', 21.42, 5.0, MY0 + 1.8, -1, 'p44', 0, 0.5);
   prop('cup', 18.85, MY0 + 0.45, 3.6); prop('book', 19.15, MY0 + 0.45, 3.75, 0.9); prop('candle', 19.1, MY0 + 1.36, 5.78); prop('candle', 20.1, MY0 + 1.36, 5.78); prop('clock', 19.6, MY0 + 1.36, 5.75, Math.PI);
   // ---------- GENTLEMEN'S PARLOR
   { const f = F0(27.89, 3.0, Math.PI / 2); myMantel(f); } myMirror(gb, root, 27.92, MY0 + 2.1, 3.0, -Math.PI / 2, 1.0, 0.9);
-  { const f = F0(24.6, 3.0, -Math.PI / 2); sofa(f, 2.0, 'fabricBrown', 'prop-couch.json', root); f.solid(-1.0, -0.45, 1.0, 0.45, 1); }
-  { const f = F0(26.4, 1.2, Math.PI); armchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
-  { const f = F0(26.4, 4.75, 0); armchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
-  { const f = F0(25.9, 3.0); coffeeTable(f); f.solid(-0.38, -0.38, 0.38, 0.38, 0.45); }
+  { const f = F0(24.6, 3.0, -Math.PI / 2); vicSofa(f, 2.0); f.solid(-1.0, -0.45, 1.0, 0.45, 1); }
+  { const f = F0(26.4, 1.2, Math.PI); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  { const f = F0(26.4, 4.75, 0); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  { const f = F0(25.9, 3.0); ovalTable(f); f.solid(-0.38, -0.38, 0.38, 0.38, 0.45); }
   { const f = F0(22.6, 5.62, 0); bookshelf(f); f.solid(-0.5, -0.2, 0.5, 0.2, 2); }
   rug(gb, 25.6, 3.0, 3.2, 3.0, 0, MY0);
   picFrame(root, 'x', 21.58, 2.2, MY0 + 1.8, 1, 'p18', 0, 0.8);
   prop('bottle', 25.75, MY0 + 0.45, 2.85); prop('cup', 26.05, MY0 + 0.45, 3.15); prop('candle', 27.75, MY0 + 1.36, 2.4);
   // ---------- DINING ROOM: table and chairs, the hutch, a sideboard and the punkah fan over the table
   placeModel(root, { url: 'prop-dining.json', x: 18.25, z: 9.0, y: MY0, scale: 1.15, cols: 'parts' });
-  { gb.mm('doorWood', 17.25, MY0 + 2.05, 8.98, 19.25, MY0 + 2.45, 9.02); gb.mm('brass', 17.25, MY0 + 2.45, 8.97, 19.25, MY0 + 2.48, 9.03); for (const px of [17.6, 18.9]) gb.cyl('brass', px, MY0 + 2.58, 9.0, 0.006, 0.006, 0.24, 4); }
-  { const f = F0(18.25, 11.72, Math.PI); hutch(f); }
-  { const f = F0(15.32, 10.6, -Math.PI / 2); sideboard(f); }
+  { const pz = 8.15; gb.mm('doorWood', 17.25, MY0 + 2.05, pz - 0.02, 19.25, MY0 + 2.45, pz + 0.02); gb.mm('brass', 17.25, MY0 + 2.45, pz - 0.03, 19.25, MY0 + 2.48, pz + 0.03); for (const px of [17.6, 18.9]) gb.cyl('brass', px, MY0 + 2.58, pz, 0.006, 0.006, 0.24, 4); }   // the punkah, clear of the chandelier
+  { const f = F0(18.25, 11.9, 0); chinaCabinet(f); f.solid(-0.75, -0.45, 0.75, 0, 2.1); }
+  { const f = F0(15.08, 10.6, -Math.PI / 2); longCabinet(f, 1.9); f.solid(-0.95, -0.3, 0.95, 0, 1.6); }
   picFrame(root, 'x', 21.42, 7.4, MY0 + 1.8, -1, 'p50', 0, 0.6); picFrame(root, 'x', 15.08, 10.6, MY0 + 1.9, 1, 'p27', 0, 0.62);
   for (const [px, pz] of [[17.7, 8.75], [18.8, 9.25], [18.25, 8.7], [17.6, 9.3]]) prop('plate', px, MY0 + 0.9, pz);
   prop('candle', 18.25, MY0 + 0.9, 9.0); prop('cup', 18.55, MY0 + 0.9, 8.75); prop('vase', 15.32, MY0 + 0.92, 10.2); prop('candle', 15.32, MY0 + 0.92, 11.1);
   // ---------- GAME ROOM: a card table with four chairs, a fireplace, books
-  { const f = F0(24.75, 9.0); kitchenTable(f); f.solid(-0.74, -0.4, 0.74, 0.4, 0.8);
-    for (const [a, b, r] of [[-1.0, 0, Math.PI / 2], [1.0, 0, -Math.PI / 2], [0, -0.75, 0], [0, 0.75, Math.PI]]) { const [cx, cz] = f.pt(a, b); const c = F0(cx, cz, r); chair(c); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
+  { const f = F0(24.75, 9.0, Math.PI / 2); ovalDining(f); f.solid(-0.42, -0.8, 0.42, 0.8, 0.8);
+    for (const [a, b, r] of [[0, -1.15, 0], [0, 1.15, Math.PI], [-0.75, 0, Math.PI / 2], [0.75, 0, -Math.PI / 2]]) { const [cx, cz] = f.pt(a, b); const c = F0(cx, cz, r); bentChair(c); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); } }
   { const f = F0(27.89, 10.2, Math.PI / 2); myMantel(f); }
   { const f = F0(22.0, 11.62, 0); bookshelf(f); f.solid(-0.5, -0.2, 0.5, 0.2, 2); }
-  { const f = F0(26.9, 6.7, Math.PI * 0.8); armchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  { const f = F0(26.9, 6.7, Math.PI * 0.8); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
   picFrame(root, 'z', 24.75, 6.08, MY0 + 1.8, 1, 'p57', 0, 0.6);
   prop('book', 24.5, MY0 + 0.77, 8.9, 0.3); prop('cup', 25.1, MY0 + 0.77, 9.2); prop('candle', 24.8, MY0 + 0.77, 9.05);
   // ---------- DOWNSTAIRS BEDROOM
   { const f = F0(3.25, 10.9, 0); fourPoster(gb, root, f); }
   for (const nx of [1.95, 4.55]) { const f = F0(nx, 11.6); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); }
-  { const f = F0(1.95, 11.6); tableLamp(f, 0, 0.57, 0); }
+  { const f = F0(1.95, 11.6); vicLamp(f, 0, 0.57, 0); }
   { const f = F0(6.1, 10.7, Math.PI / 2); dresser(f); f.solid(-0.38, -0.3, 0.38, 0.3, 1.1); }
   { const f = F0(4.6, 6.11, Math.PI); myMantel(f); }
   { const f = F0(0.36, 9.1, -Math.PI / 2); armoire(f); }
@@ -475,21 +477,21 @@ function buildMyrtles(gb, root) {
   tubAt(gb, 8.25, 11.55, Math.PI / 2, MY0); toiletAt(gb, 9.62, 6.6, -Math.PI / 2, MY0); vanityAt(gb, root, 7.7, 6.35, 0, MY0);
   prop('soap', 7.55, MY0 + VANITY_SHELF, 6.4);
   // ---------- UPSTAIRS LANDING (the main stair's top)
-  { const f = F1(14.62, 7.2, -Math.PI / 2); sofa(f, 1.6, 'fabricRose', 'prop-couch2.json', root); f.solid(-0.8, -0.4, 0.8, 0.4, 1); }
-  { const f = F1(14.6, 3.5); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); tableLamp(f, 0, 0.57, 0); }
+  { const f = F1(14.62, 7.2, -Math.PI / 2); vicSofa(f, 1.6); f.solid(-0.8, -0.4, 0.8, 0.4, 1); }
+  { const f = F1(14.6, 3.5); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); vicLamp(f, 0, 0.57, 0); }
   gb.mm('runner', 11.7, MY1 + 0.003, 3.3, 13.9, MY1 + 0.012, 8.7);
   picFrame(root, 'z', 12.9, 3.12, MY1 + 1.6, 1, 'p61', 0, 0.55); picFrame(root, 'x', 14.92, 5.6, MY1 + 1.7, -1, 'p53', 0, 0.5);
   // ---------- WOODRUFF SUITE: sitting room, bedroom with its four-poster, bath
-  { const f = F1(7.5, 8.62, 0); sofa(f, 1.9, 'fabricGreen', 'prop-couch3.json', root); f.solid(-0.95, -0.45, 0.95, 0.45, 1); }
-  { const f = F1(7.5, 7.0); coffeeTable(f); f.solid(-0.38, -0.38, 0.38, 0.38, 0.45); }
-  { const f = F1(6.2, 5.6, -Math.PI * 0.8); armchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
-  { const f = F1(8.9, 5.6, Math.PI * 0.8); armchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  { const f = F1(7.5, 8.62, 0); vicSofa(f, 1.9); f.solid(-0.95, -0.45, 0.95, 0.45, 1); }
+  { const f = F1(7.5, 7.0); ovalTable(f); f.solid(-0.38, -0.38, 0.38, 0.38, 0.45); }
+  { const f = F1(6.2, 5.6, -Math.PI * 0.8); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  { const f = F1(8.9, 5.6, Math.PI * 0.8); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
   { const f = F1(5.11, 7.6, -Math.PI / 2); myMantel(f); }
   { const f = F1(9.62, 8.2, Math.PI / 2); bookshelf(f); f.solid(-0.5, -0.2, 0.5, 0.2, 2); }
   rug(gb, 7.5, 6.6, 3.2, 2.4, 0, MY1);
   prop('book', 7.3, MY1 + 0.45, 6.9, 1.1); prop('cup', 7.7, MY1 + 0.45, 7.1);
   { const f = F1(1.45, 4.3, -Math.PI / 2); fourPoster(gb, root, f, 2.0, 1.55); }
-  { const f = F1(1.0, 3.35); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); tableLamp(f, 0, 0.57, 0); }
+  { const f = F1(1.0, 3.35); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); vicLamp(f, 0, 0.57, 0); }
   { const f = F1(4.6, 5.9, Math.PI / 2); dresser(f); f.solid(-0.38, -0.3, 0.38, 0.3, 1.1); }
   prop('teddy', 1.9, MY1 + 0.62, 4.1, 0.4); prop('candle', 1.0, MY1 + 0.58, 3.4);
   tubAt(gb, 2.6, 8.55, Math.PI / 2, MY1); toiletAt(gb, 4.62, 7.3, -Math.PI / 2, MY1); vanityAt(gb, root, 1.1, 6.95, 0, MY1);
@@ -501,15 +503,15 @@ function buildMyrtles(gb, root) {
   { const f = F1(16.08, 6.85, -Math.PI / 2); fourPoster(gb, root, f, 2.0, 1.5); }
   { const f = F1(18.85, 8.62); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); }
   prop('clock', 18.85, MY1 + 0.58, 8.62, 1.6);
-  { const f = F1(21.4, 8.62, 0); sofa(f, 2.0, 'fabricBrown', 'prop-couch.json', root); f.solid(-1.0, -0.45, 1.0, 0.45, 1); }
-  { const f = F1(21.4, 7.1); coffeeTable(f); f.solid(-0.38, -0.38, 0.38, 0.38, 0.45); }
-  { const f = F1(20.0, 5.3, -Math.PI * 0.75); armchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
-  { const f = F1(22.8, 5.3, Math.PI * 0.75); armchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  { const f = F1(21.4, 8.62, 0); vicSofa(f, 2.0); f.solid(-1.0, -0.45, 1.0, 0.45, 1); }
+  { const f = F1(21.4, 7.1); ovalTable(f); f.solid(-0.38, -0.38, 0.38, 0.38, 0.45); }
+  { const f = F1(20.0, 5.3, -Math.PI * 0.75); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  { const f = F1(22.8, 5.3, Math.PI * 0.75); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
   { const f = F1(21.4, 3.12, Math.PI); furModel(f, PACK.tl, 'TinyLiving_TinyConsole_44', { height: 0.76, back: true, turn: 0 }); }
   rug(gb, 21.4, 6.4, 3.0, 2.6, 0, MY1);
   prop('cup', 21.2, MY1 + 0.45, 7.0); prop('book', 21.65, MY1 + 0.45, 7.25, 0.6);
   { const f = F1(26.75, 4.5, Math.PI / 2); fourPoster(gb, root, f, 2.0, 1.5); }
-  { const f = F1(27.35, 3.35); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); tableLamp(f, 0, 0.57, 0); }
+  { const f = F1(27.35, 3.35); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); vicLamp(f, 0, 0.57, 0); }
   { const f = F1(24.2, 5.62, 0); dresser(f); f.solid(-0.38, -0.3, 0.38, 0.3, 1.1); }
   prop('jbox', 24.2, MY1 + 1.1, 5.55); prop('candle', 27.35, MY1 + 0.58, 3.5);
   { const f = F1(25.6, 8.0, 0); singleBed(f); f.solid(-0.45, -1.0, 0.45, 1.0, 0.6); }
