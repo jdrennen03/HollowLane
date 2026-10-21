@@ -126,11 +126,18 @@ function onRoundEnd(guess, bySlot) {
 }
 function bindUI() {
   const nick = $('nick'); let stored = ''; try { stored = localStorage.getItem('hl-nick') || ''; } catch (e) { }
-  nick.value = stored || ('Investigator ' + (100 + (Math.random() * 900 | 0)));
-  const nm = () => { const v = nick.value.trim().slice(0, 14) || 'Investigator'; try { localStorage.setItem('hl-nick', v); } catch (e) { } return v; };
-  $('btnSolo').onclick = () => { initAudio(); const n = nm(); beginGame({ map: CURMAP, mode: CURMODE, gm: (Math.random() * GHOST_FILES.length) | 0, seed: (Math.random() * 1e9) | 0, ghostIdx: (Math.random() * GHOSTS.length) | 0, ghostRoom: pickGhostRoom(), roster: [{ slot: 0, nick: n, peer: 'solo', ch: CURCHAR }], mySlot: 0, mp: false, host: true }); };
-  $('btnHost').onclick = async () => { initAudio(); if (!Net.room) return; const code = randCode(); $('lobbyCode').textContent = code; UI.show('menu', false); UI.show('lobby', true); UI.lobbyNote('Opening lobby…'); try { await Net.open(code, true, nm()); } catch (e) { UI.lobbyNote('Could not open a lobby here (' + (e && e.code || 'error') + ').'); } };
-  $('btnJoin').onclick = async () => { initAudio(); if (!Net.room) return; const code = $('joinCode').value.trim().toUpperCase().replace(/\s+/g, ''); if (!(window.hlDesktop ? /^[A-Z]{4}(@[A-Z0-9.:-]+)?$/ : /^[A-Z]{4}$/).test(code)) { $('mpNote').textContent = 'Lobby codes are four letters.'; return; } $('lobbyCode').textContent = code.slice(0, 4); UI.show('menu', false); UI.show('lobby', true); UI.lobbyNote('Joining…'); try { await Net.open(code, false, nm()); } catch (e) { UI.lobbyNote('Could not join (' + (e && e.code || 'error') + ').'); } };
+  if (/^Investigator( \d+)?$/.test(stored)) stored = '';   // an old auto-made name is not one you chose
+  nick.value = stored;
+  nick.oninput = () => { nick.classList.remove('need'); $('nickNeed').hidden = true; };
+  // your name is required: with none yet, the buttons point you at the field instead of starting
+  const nm = () => {
+    const v = nick.value.trim().slice(0, 14);
+    if (!v) { nick.classList.remove('need'); void nick.offsetWidth; nick.classList.add('need'); $('nickNeed').hidden = false; nick.focus(); return null; }
+    try { localStorage.setItem('hl-nick', v); } catch (e) { } return v;
+  };
+  $('btnSolo').onclick = () => { const n = nm(); if (!n) return; initAudio(); beginGame({ map: CURMAP, mode: CURMODE, gm: (Math.random() * GHOST_FILES.length) | 0, seed: (Math.random() * 1e9) | 0, ghostIdx: (Math.random() * GHOSTS.length) | 0, ghostRoom: pickGhostRoom(), roster: [{ slot: 0, nick: n, peer: 'solo', ch: CURCHAR }], mySlot: 0, mp: false, host: true }); };
+  $('btnHost').onclick = async () => { const n = nm(); if (!n) return; initAudio(); if (!Net.room) return; const code = randCode(); $('lobbyCode').textContent = code; UI.show('menu', false); UI.show('lobby', true); UI.lobbyNote('Opening lobby…'); try { await Net.open(code, true, n); } catch (e) { UI.lobbyNote('Could not open a lobby here (' + (e && e.code || 'error') + ').'); } };
+  $('btnJoin').onclick = async () => { const n = nm(); if (!n) return; initAudio(); if (!Net.room) return; const code = $('joinCode').value.trim().toUpperCase().replace(/\s+/g, ''); if (!(window.hlDesktop ? /^[A-Z]{4}(@[A-Z0-9.:-]+)?$/ : /^[A-Z]{4}$/).test(code)) { $('mpNote').textContent = 'Lobby codes are four letters.'; return; } $('lobbyCode').textContent = code.slice(0, 4); UI.show('menu', false); UI.show('lobby', true); UI.lobbyNote('Joining…'); try { await Net.open(code, false, n); } catch (e) { UI.lobbyNote('Could not join (' + (e && e.code || 'error') + ').'); } };
   $('btnStart').onclick = () => { Net.hostStart(); };
   $('btnLeave').onclick = async () => { await Net.leave(); UI.show('lobby', false); UI.show('menu', true); };
   $('btnResume').onclick = closePause;

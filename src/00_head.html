@@ -74,6 +74,9 @@ h1.title span{display:block;font-size:.42em;letter-spacing:.32em;color:var(--pap
 .field label{font:600 11px/1 var(--f-ui);letter-spacing:.18em;text-transform:uppercase;color:var(--paper-dim);}
 input.txt{background:rgba(255,255,255,.04);border:1px solid var(--rule);color:var(--paper);font:500 17px/1 var(--f-ui);padding:11px 12px;outline:none;letter-spacing:.04em;}
 input.txt:focus{border-color:var(--paper);}
+input.txt.need{border-color:#c0473a;animation:nickshake .35s;}
+.nickneed{font:500 13px/1.3 var(--f-ui);color:#e07a6c;margin-top:2px;}
+@keyframes nickshake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .btns{display:grid;gap:10px;}
 button.b{appearance:none;cursor:pointer;text-align:left;background:transparent;color:var(--paper);border:1px solid var(--rule);padding:14px 16px;font:600 15px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;transition:background .2s,border-color .2s;}
 button.b:hover:not(:disabled),button.b:focus-visible{background:rgba(217,210,191,.08);border-color:var(--paper);outline:none;}
@@ -185,7 +188,7 @@ button.b small{font-weight:500;letter-spacing:.06em;text-transform:none;opacity:
       <div class="field"><label>Location</label><div class="maps" id="mapPick"><button class="mapc" data-map="lane">13 Hollow Lane<small>Ranch house · one floor · 9 rooms</small></button><button class="mapc" data-map="farm">Drennen Estate<small>Two floors · stairs · 14 rooms</small></button><button class="mapc" data-map="bayou">Bayou Maudit<small>Five stilt shacks · courtyard · mostly outdoors</small></button><button class="mapc" data-map="barn">Whitlock Stables<small>Horse barn · hayloft · riding arena</small></button><button class="mapc" data-map="myrtles">The Myrtles<small>Plantation house · two floors · 18 rooms</small></button></div></div>
       <div class="field"><label>Difficulty</label><div class="maps modes" id="modePick"><button class="mapc" data-mode="rookie">Rookie<small>All 3 evidences · hunts can't kill</small></button><button class="mapc" data-mode="pro">Pro<small>All 3 evidences · hunts kill</small></button><button class="mapc" data-mode="nightmare">Nightmare<small>Only 2 evidences · hunts kill</small></button></div></div>
       <div class="field"><label>Character</label><div class="maps chars" id="charPick"><button class="mapc" data-char="f">Female investigator<small>What your teammates see</small></button><button class="mapc" data-char="m">Male investigator<small>What your teammates see</small></button></div></div>
-      <div class="field"><label for="nick">Investigator name</label><input id="nick" class="txt" maxlength="14" autocomplete="off" value=""></div>
+      <div class="field"><label for="nick">Investigator name</label><input id="nick" class="txt" maxlength="14" autocomplete="off" value="" placeholder="Your name"><div id="nickNeed" class="nickneed" hidden>Enter your name to play.</div></div>
       <div class="range"><span>Music</span><input type="range" id="musicM" min="0" max="1" step="0.05" value="0.35"><span id="musicMV">35</span></div>
       <div class="btns">
         <button class="b primary" id="btnSolo">Investigate alone <small>1 player</small></button>

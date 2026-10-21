@@ -189,13 +189,13 @@ function updateListener(cam) {
   else { L.setPosition(cam.position.x, cam.position.y, cam.position.z); L.setOrientation(f.x, f.y, f.z, u.x, u.y, u.z); }
 }
 let VOICE = null;
-function ghostVoice(text, noRadio) {
+function ghostVoice(text, noRadio, whisper) {
   if (!noRadio) sfx('radio', 0.8);
   try {
     if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
       const u = new SpeechSynthesisUtterance(text);
       if (!VOICE) { const vs = speechSynthesis.getVoices(); VOICE = vs.find(v => /en/i.test(v.lang) && /male|daniel|fred|alex|google uk english male/i.test(v.name)) || vs.find(v => /en/i.test(v.lang)) || null; }
-      if (VOICE) u.voice = VOICE; u.pitch = 0.05; u.rate = 0.55; u.volume = 1;
+      if (VOICE) u.voice = VOICE; u.pitch = whisper ? 0.3 : 0.05; u.rate = whisper ? 0.6 : 0.55; u.volume = whisper ? 0.55 : 1;
       speechSynthesis.cancel(); speechSynthesis.speak(u);
       return;
     }

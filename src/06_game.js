@@ -21,7 +21,6 @@ function startRound({ seed, ghostIdx, ghostRoom, roster, mode }) {
   G.elapsed = 0; G.ended = false; G.eggOn = false; G.gatorBait = false; G.frontLocked = false; G.stats = { deaths: 0 }; G.journal = { ev: {}, pick: -1 };
   G.lights = new Array(NROOM).fill(false);
   G.players = roster.map(r => makePlayer(r.slot, r.nick));
-  if (G.players[0]) G.players[0].nick = 'Claire';   // the host plays Claire
   for (const p of G.players) { p.peer = roster[p.slot].peer; p.ch = roster[p.slot].ch || 'f'; loadPlayerModel(p.ch); }
   initTemps(seed);
   // reset world
@@ -154,7 +153,7 @@ function applyEvent(ev) {
   else if (t === 'egg') startGiant(ev[1]);
   else if (t === 'horse') { G.eggOn = true; startGhostHorse(ev[1]); }
   else if (t === 'gbait') G.gatorBait = true;
-  else if (t === 'call') { const P = G.players[ev[1]]; sfxAt('whisper', new V3(ev[2], ev[3], ev[4]), 1); if (ev[1] === G.mySlot && P) { sub('A voice whispers from somewhere close: "' + P.nick + '…"', 'ghost'); ghostVoice(P.nick, true); } }
+  else if (t === 'call') { const P = G.players[ev[1]]; sfxAt('whisper', new V3(ev[2], ev[3], ev[4]), 1); if (ev[1] === G.mySlot && P) ghostVoice(P.nick, true, true); }   // no caption: only the voice, whispering your name
   else if (t === 'mimic') { if (ev[1] === G.mySlot) mimicSteps(); }
   else if (t === 'jw') { const J = ITEMS[ev[1]]; if (J) { J.spent = true; J.writeT = JOURNAL_LIFT; } }
   else if (t === 'gator') startGator();
