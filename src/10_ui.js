@@ -135,7 +135,7 @@ function bindUI() {
     if (!v) { nick.classList.remove('need'); void nick.offsetWidth; nick.classList.add('need'); $('nickNeed').hidden = false; nick.focus(); return null; }
     try { localStorage.setItem('hl-nick', v); } catch (e) { } return v;
   };
-  $('btnSolo').onclick = () => { const n = nm(); if (!n) return; initAudio(); beginGame({ map: CURMAP, mode: CURMODE, gm: (Math.random() * GHOST_FILES.length) | 0, seed: (Math.random() * 1e9) | 0, ghostIdx: (Math.random() * GHOSTS.length) | 0, ghostRoom: pickGhostRoom(), roster: [{ slot: 0, nick: n, peer: 'solo', ch: CURCHAR }], mySlot: 0, mp: false, host: true }); };
+  $('btnSolo').onclick = () => { const n = nm(); if (!n) return; initAudio(); beginGame({ map: CURMAP, mode: CURMODE, gm: (Math.random() * GHOST_FILES.length) | 0, seed: (Math.random() * 1e9) | 0, ghostIdx: pickGhostIdx(), ghostRoom: pickGhostRoom(), roster: [{ slot: 0, nick: n, peer: 'solo', ch: CURCHAR }], mySlot: 0, mp: false, host: true }); };
   $('btnHost').onclick = async () => { const n = nm(); if (!n) return; initAudio(); if (!Net.room) return; const code = randCode(); $('lobbyCode').textContent = code; UI.show('menu', false); UI.show('lobby', true); UI.lobbyNote('Opening lobby…'); try { await Net.open(code, true, n); } catch (e) { UI.lobbyNote('Could not open a lobby here (' + (e && e.code || 'error') + ').'); } };
   $('btnJoin').onclick = async () => { const n = nm(); if (!n) return; initAudio(); if (!Net.room) return; const code = $('joinCode').value.trim().toUpperCase().replace(/\s+/g, ''); if (!(window.hlDesktop ? /^[A-Z]{4}(@[A-Z0-9.:-]+)?$/ : /^[A-Z]{4}$/).test(code)) { $('mpNote').textContent = 'Lobby codes are four letters.'; return; } $('lobbyCode').textContent = code.slice(0, 4); UI.show('menu', false); UI.show('lobby', true); UI.lobbyNote('Joining…'); try { await Net.open(code, false, n); } catch (e) { UI.lobbyNote('Could not join (' + (e && e.code || 'error') + ').'); } };
   $('btnStart').onclick = () => { Net.hostStart(); };
@@ -167,7 +167,7 @@ function bindUI() {
   for (const b of document.querySelectorAll('[data-char]')) b.onclick = () => { CURCHAR = b.dataset.char; try { localStorage.setItem('hl-char', CURCHAR); } catch (e) { } menuForChar(); if (Net.lobby) Net.lobby.presence({ ch: CURCHAR }).catch(() => { }); };
   try { const c = localStorage.getItem('hl-char'); if (c === 'm' || c === 'f') CURCHAR = c; } catch (e) { }
   menuForChar();
-  buildJournal();
+  buildJournal(); buildDev();
 }
 let CURMODE = 'pro', CURCHAR = 'f';
 function menuForChar() { document.querySelectorAll('[data-char]').forEach(b => b.classList.toggle('sel', b.dataset.char === CURCHAR)); }
@@ -188,5 +188,5 @@ function renderLobbySet(hostPeer) {
 function menuForMode() { document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('sel', b.dataset.mode === CURMODE)); }
 function menuForMap() {
   $('mapH1').innerHTML = '<span>' + MAP.eyebrow + '</span>' + MAP.title; $('mapLede').textContent = MAP.lede;
-  document.querySelectorAll('.mapc').forEach(b => b.classList.toggle('sel', b.dataset.map === CURMAP));
+  document.querySelectorAll('.mapc[data-map]').forEach(b => b.classList.toggle('sel', b.dataset.map === CURMAP));
 }

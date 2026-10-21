@@ -27,7 +27,7 @@ const Net = {
     const ps = this.lobbyPeers().filter(p => p.kind === 'viewer');
     const mine = ps.find(p => p.sameTab); const others = ps.filter(p => !p.sameTab).sort((a, b) => a.peer < b.peer ? -1 : 1).slice(0, 3);
     const ro = [mine, ...others].map((p, i) => [p.peer, String(p.presence.n).slice(0, 14) || ('Investigator ' + (i + 1)), p.presence.ch === 'm' ? 'm' : 'f']);
-    const seed = (Math.random() * 1e9) | 0, gi = (Math.random() * GHOSTS.length) | 0, gr = pickGhostRoom();
+    const seed = (Math.random() * 1e9) | 0, gi = pickGhostIdx(), gr = pickGhostRoom();
     this.gameId = 'g' + seed;
     this.evSeq = 0; this.evs = []; this.reqs = []; this.reqSeq = 0;
     const gm = (Math.random() * GHOST_FILES.length) | 0;
