@@ -275,7 +275,7 @@ function hostStable(slot, r) {
     if (!A || A.rider >= 0 || mounted(slot) || W.animal === A.i) return true;
     if (A.bridle < 0) { say('You can\'t ride ' + A.def.name + ' without a bridle. They hang in the tack room.'); return true; }
     if (A.harness >= 0) { say(A.def.name + ' is in the wagon harness. Take it off first (G).'); return true; }
-    A.rider = slot; A.leader = A.buddy = -1; A.x = r[3]; A.z = r[4];
+    A.rider = slot; A.leader = A.buddy = -1; A.x = r[3]; A.z = r[4]; if (Math.random() < 0.6) hostEvent(['snd', 'snort', r2(A.x), 1.6, r2(A.z), 0.7]);
   }
   else if (t === 'dis') { const B = riding(slot); if (B) { B.rider = -1; B.x = r[2]; B.z = r[3]; B.yaw = r[4]; B.speed = 0; } }
   else if (t === 'lead') {
@@ -444,7 +444,7 @@ function stbMove(P, dt, blocked) {
   const amp = A ? (Math.abs(E.speed) > 4 ? 0.07 : 0.04) * Math.min(1, Math.abs(E.speed)) : 0.015 * Math.min(1, Math.abs(E.speed));
   const st = A && stbSeat(A), seat = A ? animalLocal(A, 0, st.y + 0.8, st.z - 0.06) : wagonLocal(0, WAGON_DEF.seatY + 0.82, WAGON_DEF.seatZ);
   cam.position.set(seat.x, seat.y + Math.sin(E.bob * 2) * amp, seat.z); cam.rotation.set(PL.pitch, PL.yaw, Math.sin(E.bob) * amp * 0.12, 'YXZ');
-  stbHooves(A || STB.animals[W.animal], dt, 0.9);
+  if (A || !AU.bufs.rec_carriage) stbHooves(A || STB.animals[W.animal], dt, 0.9);
   if (!A) { E.creakT = (E.creakT || 0) - dt * Math.abs(E.speed); if (E.creakT <= 0 && Math.abs(E.speed) > 0.3) { E.creakT = rr(2, 5); sfx('creak', 0.25, rr(0.6, 0.9)); } }
   return true;
 }
@@ -506,7 +506,7 @@ function updateStable(dt) {
   }
   if (!W.away) {
     const D = W.driver >= 0 ? G.players[W.driver] : null;
-    if (D && W.driver !== G.mySlot) { W.x = D.pos.x; W.z = D.pos.z; W.yaw += angDiff(W.yaw, D.mountYaw ?? W.yaw) * clamp(dt * 8, 0, 1); W.speed = D.moving || 0; stbHooves(STB.animals[W.animal], dt, 0.8); }
+    if (D && W.driver !== G.mySlot) { W.x = D.pos.x; W.z = D.pos.z; W.yaw += angDiff(W.yaw, D.mountYaw ?? W.yaw) * clamp(dt * 8, 0, 1); W.speed = D.moving || 0; if (!AU.bufs.rec_carriage) stbHooves(STB.animals[W.animal], dt, 0.8); }
     W.y = terrainY(W.x, W.z);
     const pf = wagonLocal(0, 0, 1.6), pb = wagonLocal(0, 0, -1.6), fy = terrainY(pf.x, pf.z), by = terrainY(pb.x, pb.z);
     W.root.position.set(W.x, W.y, W.z); W.root.rotation.set(-Math.atan2(fy - by, 3.2), W.yaw, 0, 'YXZ');
@@ -514,7 +514,7 @@ function updateStable(dt) {
   }
   for (const t of STB.tack) stbAttach(t);
   if (G.isHost && G.state === 'play') hostStableTick();
-  stbRideCheck();
+  stbRideCheck(); stbCarriage(); stbCalls(dt);
 }
 // raise teammates who are riding or driving onto the horse / the wagon seat
 function stbAvatarOffset(P, out) {
@@ -698,4 +698,22 @@ function stbBolt(A, S, sp, dt) {
     if (stbFreeAt(A, x, z) && stbFreeAt(A, A.x + Math.sin(yaw) * 1.2, A.z + Math.cos(yaw) * 1.2)) { if (off) S.dir += off * 0.5; A.x = x; A.z = z; A.yaw += angDiff(A.yaw, yaw) * clamp(dt * 6, 0, 1); A.speed = sp; A.y = groundY(x, z, A.y); stbHooves(A, dt, 0.9); return; }
   }
   A.speed = 0; S.t = Math.max(S.t, 4.3);   // boxed in: stop where it is
+}
+
+// ---------- sounds of the animals: the carriage under the moving wagon, and now and then a horse calling out
+function stbCarriage() {
+  const W = STB.wagon, buf = AU.bufs.rec_carriage; if (!AU.ready || !buf || !W) return;
+  if (!STB.carSnd) { const ctx = AU.ctx, s = ctx.createBufferSource(), g = ctx.createGain(), p = ctx.createPanner(); s.buffer = buf; s.loop = true; s.loopStart = 0.04; s.loopEnd = buf.duration - 0.04;
+    p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = 2; p.rolloffFactor = 1.2; g.gain.value = 0; s.connect(g); g.connect(p); p.connect(AU.master); s.start(); STB.carSnd = { s, g, p }; }
+  const C = STB.carSnd, on = !W.away && W.animal >= 0 && G.state === 'play' && Math.abs(W.speed) > 0.25, want = on ? Math.min(1, Math.abs(W.speed) / 2.2) * 0.9 : 0;
+  C.g.gain.setTargetAtTime(want, AU.ctx.currentTime, 0.25); C.s.playbackRate.value = clamp(0.8 + Math.abs(W.speed) * 0.1, 0.8, 1.25);
+  C.p.positionX.value = W.x; C.p.positionY.value = W.y + 1; C.p.positionZ.value = W.z;
+}
+function stbCalls(dt) {
+  if (G.state !== 'play') return;
+  for (const A of STB.animals) {
+    if (A.away || A.def.kind !== 'horse' || A.spookA) continue;
+    A.callT = (A.callT ?? 30 + Math.random() * 60) - dt;
+    if (A.callT <= 0) { A.callT = 45 + Math.random() * 75; const h = animalLocal(A, 0, A.H * 0.85, A.L * 0.42); sfxAt(Math.random() < 0.65 ? 'whinny' : 'snort', h, 0.55); }
+  }
 }

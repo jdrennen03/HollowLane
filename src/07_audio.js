@@ -89,20 +89,27 @@ function initAudio() {
   for (const [k, g] of [['wind', 0.0], ['crickets', 0.0], ['drone', 0.0], ['static', 0], ['huntLoop', 0], ['heart', 0], ['buzz', 0]]) {
     const src = ctx.createBufferSource(); src.buffer = B[k]; src.loop = true; const gn = ctx.createGain(); gn.gain.value = g; src.connect(gn); gn.connect(AU.master); if (k === 'static') gn.connect(AU.revIn); src.start(); AU.loops[k] = { src, g: gn };
   }
-  AU.ready = true;
+  AU.ready = true; loadRecorded();
 }
 function fadeLoop(d, sr) { const n = (0.3 * sr) | 0; for (let i = 0; i < n; i++) { const a = i / n; d[i] = d[i] * a + d[d.length - n + i] * (1 - a); } }
 function makeIR(sec, decay) { const ctx = AU.ctx, sr = ctx.sampleRate, b = ctx.createBuffer(2, sec * sr, sr); for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, decay) * (i < sr * 0.01 ? i / (sr * 0.01) : 1); } return b; }
 function loopGain(k, v, tc = 0.3) { const L = AU.loops[k]; if (!L) return; L.g.gain.setTargetAtTime(v, AU.ctx.currentTime, tc); }
+// recorded horse sounds stand in for the made-up ones once they've loaded: a random strike for each hoof beat, one of two calls
+// for a whinny; the carriage (wheels and a pair of horses) rolls under the wagon
+const AU_REC = { hoof: ['hoof1', 'hoof2', 'hoof3', 'hoof4'], whinny: ['whinny1', 'whinny2'] };
+function loadRecorded() {
+  for (const k of [...AU_REC.hoof, ...AU_REC.whinny, 'carriage']) fetch('snd-' + k + '.mp3').then(r => r.arrayBuffer()).then(b => AU.ctx.decodeAudioData(b)).then(buf => { AU.bufs['rec_' + k] = buf; }).catch(e => console.warn('sound', k, e));
+}
+function sfxBuf(name) { const L = AU_REC[name]; if (L) { const have = L.filter(k => AU.bufs['rec_' + k]); if (have.length) return AU.bufs['rec_' + have[(Math.random() * have.length) | 0]]; } return AU.bufs[name]; }
 function sfx(name, vol = 1, rate = 1) {
-  if (!AU.ready || !AU.bufs[name]) return;
-  const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = AU.bufs[name]; s.playbackRate.value = rate;
+  if (!AU.ready || !sfxBuf(name)) return;
+  const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = sfxBuf(name); s.playbackRate.value = rate;
   const g = ctx.createGain(); g.gain.value = vol; s.connect(g); g.connect(AU.master); g.connect(AU.revIn); s.start();
 }
 const SFX_ROLLOFF = { meowLoud: 0.45 };   // sounds meant to carry through the house
 function sfxAt(name, pos, vol = 1, rate) {
-  if (!AU.ready || !AU.bufs[name]) return;
-  const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = AU.bufs[name]; s.playbackRate.value = rate || (0.92 + Math.random() * 0.16);
+  if (!AU.ready || !sfxBuf(name)) return;
+  const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = sfxBuf(name); s.playbackRate.value = rate || (0.92 + Math.random() * 0.16);
   const p = ctx.createPanner(); p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = 1.2; p.rolloffFactor = SFX_ROLLOFF[name] ?? 1.4; p.maxDistance = 60;
   p.positionX.value = pos.x; p.positionY.value = pos.y; p.positionZ.value = pos.z;
   // walls muffle sounds that come from another room
