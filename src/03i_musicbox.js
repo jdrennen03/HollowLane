@@ -90,7 +90,14 @@ function cineBuild() {
   { const walk = new THREE.Mesh(new THREE.BoxGeometry(80, 0.18, 1.6), new THREE.MeshStandardMaterial({ color: 0x4a4038, roughness: 0.95 })); walk.position.set(0, 0.09, -5.8); city.add(walk); }   // the banquette
   for (let i = 0; i < 8; i++) { const lamp = new THREE.Group(); const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 3.4, 8), new THREE.MeshStandardMaterial({ color: 0x15130f, metalness: 0.6, roughness: 0.4 })); pole.position.y = 1.7; lamp.add(pole);
     const glow = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffd28a })); glow.position.y = 3.45; lamp.add(glow); lamp.position.set(-28 + i * 8, 0, -5.2); fronts.add(lamp); }
-  Object.assign(CINE, { scene: S, cam, U, sky, dust, PU, warm, fire, key, rim, city, fronts, cob, back, sand, PAINT });
+  fronts.visible = false; city.children.forEach(o => { if (o.geometry && o.geometry.type === 'BoxGeometry') o.visible = false; });   // the sharp street gives way to the painted one
+  // the street out of focus: a long painted row of townhouses and lamps, then two layers of passers-by, each scrolling at its own pace
+  const layer = (tex, w, h, z, y = 0) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, fog: false })); m.position.set(0, y + h / 2, z); city.add(m); return m; };
+  const rowL = layer(paintCityRow(), 72, 18, -9), crowdFar = layer(paintCrowd(1), 44, 4.2, -6.2), crowdNear = layer(paintCrowd(2), 36, 4.6, -4.4);
+  // blowing sand in the desert, drifting smoke on the battlefield: a closer ring of streaks turning faster than the painting
+  const streak = new THREE.Mesh(new THREE.CylinderGeometry(22, 22, 30, 64, 1, true), new THREE.MeshBasicMaterial({ map: paintStreaks('sand'), transparent: true, side: THREE.BackSide, depthWrite: false, fog: false }));
+  streak.position.y = 1.6; S.add(streak); PAINT.sandStreak = streak.material.map; PAINT.smokeStreak = paintStreaks('smoke');
+  Object.assign(CINE, { scene: S, cam, U, sky, dust, PU, warm, fire, key, rim, city, fronts, cob, back, sand, PAINT, rowL, crowdFar, crowdNear, streak });
   // the four figures
   const want = [['statue', 'prop-mbstatue.json', 'y', 2.3], ['napoleon', 'prop-napoleon.json', 'y', 2.6], ['arabian', 'prop-arabian.json', 'y', 2.15], ['coach', 'prop-stagecoach.json', 'y', 2.7]];
   let left = want.length;
@@ -127,7 +134,7 @@ function cineAssemble() {
 // ---------- open, wind, close
 function cineOpen() {
   if (CINE.on || MAP.id !== 'lane' || !MBOX.eye) return;
-  initAudio(); cineBuild();
+  initAudio(); cineLoadSounds(); cineBuild();
   Object.assign(CINE, { on: true, stage: 'in', t: 0, from: PL.cam.position.clone(), fromQ: PL.cam.quaternion.clone() });
   document.body.classList.add('cine'); PL.keys = {};
   sfx('creak', 0.5, 1.4);
@@ -194,7 +201,7 @@ function cineAnimate(dt) {
   const fight = C.fight, nap = C.nap, team = C.team;
   if (C.stage === 'look' || !C.ready) {   // the stage at rest: the two horses frozen, lit from above
     cam.position.set(0, 1.45, 6.2); cam.lookAt(0, 1.15, 0);
-    U.uSpin.value = 0.04; PU.uAlpha.value = 0.25; PU.uSpin.value = 0.01; C.warm.intensity = 0; cineBack0('desert'); C.back.rotation.y += dt * 0.01; PU.uCol.value.set(0xf0c890);
+    U.uSpin.value = 0.04; PU.uAlpha.value = 0.25; PU.uSpin.value = 0.01; C.warm.intensity = 0; cineBack0('desert'); C.back.rotation.y += dt * 0.03; C.streak.rotation.y += dt * 0.25; PU.uCol.value.set(0xf0c890);
     if (fight) { fight.rotation.y += dt * 0.05; fight.visible = true; for (const d of C.duel) { d.g.visible = true; d.g.position.set(d.sd * 0.75, 0, 0); d.g.rotation.set(0, d.sd > 0 ? 0 : Math.PI, 0); } }
     // a fresh stage every time it's played
     C.sand.position.y = 0; C.city.visible = false; if (team) team.visible = false; if (nap) nap.visible = false; C.fire.intensity = 0; U.uFade.value = 1;
@@ -203,7 +210,7 @@ function cineAnimate(dt) {
   // 1 · the duel: a slow tornado, banjo and the narrator
   if (C.shotT < 0) {
     cam.position.set(Math.sin(t * 0.13) * 0.6, 1.5 + Math.sin(t * 0.2) * 0.1, 6.0 - Math.min(t, 10) * 0.08); cam.lookAt(0, 1.2, 0);
-    U.uSpin.value = 0.12; PU.uAlpha.value = Math.min(0.6, 0.25 + t * 0.06); PU.uSpin.value = 0.02; cineBack0('desert'); C.back.rotation.y += dt * 0.04; PU.uCol.value.set(0xf0c890);
+    U.uSpin.value = 0.12; PU.uAlpha.value = Math.min(0.6, 0.25 + t * 0.06); PU.uSpin.value = 0.02; cineBack0('desert'); C.back.rotation.y += dt * 0.15; C.streak.rotation.y += dt * 0.6; PU.uCol.value.set(0xf0c890);
     if (fight) { fight.rotation.y += dt * 0.55; fight.position.y = Math.sin(t * 0.8) * 0.06; for (const d of C.duel) d.g.rotation.z = Math.sin(t * 0.7 + d.sd) * 0.04; }
     if (t >= C.shotAt && C.stage === 'play') cineShot();
     return cineOutro(dt);
@@ -214,7 +221,7 @@ function cineAnimate(dt) {
     const sh = Math.max(0, 1 - s * 1.5) * 0.25 + 0.04;
     cam.position.set((Math.random() - 0.5) * sh, 1.6 + (Math.random() - 0.5) * sh, 7.2); cam.lookAt(0, 1.3, 0);
     U.uSpin.value = lerp(U.uSpin.value, 1.4, dt * 2); U.uA.value.lerp(new THREE.Color(0x7a2412), dt * 2); U.uB.value.lerp(new THREE.Color(0x120402), dt * 2);
-    PU.uSpin.value = lerp(PU.uSpin.value, 0.9, dt * 2); PU.uCol.value.set(0xffb27a); cineBack0('field'); C.back.rotation.y += dt * Math.min(1.6, 0.3 + s * 0.5); C.sand.position.y -= dt * 6; if (C.sand.position.y < -30) C.sand.visible = false; PU.uAlpha.value = lerp(PU.uAlpha.value, 0.5, dt * 2); C.warm.intensity = 30 * Math.max(0, 1 - s * 2); C.fire.intensity = 26 * (0.85 + 0.15 * Math.sin(s * 23) * Math.sin(s * 7));
+    PU.uSpin.value = lerp(PU.uSpin.value, 0.9, dt * 2); PU.uCol.value.set(0xffb27a); cineBack0('field'); C.back.rotation.y += dt * Math.min(2.2, 0.4 + s * 0.6); C.streak.rotation.y -= dt * Math.min(3.2, 0.8 + s * 0.8); C.sand.position.y -= dt * 6; if (C.sand.position.y < -30) C.sand.visible = false; PU.uAlpha.value = lerp(PU.uAlpha.value, 0.5, dt * 2); C.warm.intensity = 30 * Math.max(0, 1 - s * 2); C.fire.intensity = 26 * (0.85 + 0.15 * Math.sin(s * 23) * Math.sin(s * 7));
     for (const d of C.duel) { d.vel.y -= 9.8 * dt * 0.45; d.g.position.addScaledVector(d.vel, dt); d.g.rotation.x += d.spin.x * dt; d.g.rotation.z += d.spin.z * dt; if (d.g.position.y < -30) d.g.visible = false; }
     if (nap) { const r = smooth01(s / 1.6); nap.visible = true; nap.position.y = lerp(-7, 0, r); nap.rotation.y = -Math.PI / 2 + (1 - r) * Math.PI * 4 + Math.sin(s * 0.9) * 0.4; nap.scale.setScalar(0.6 + r * 0.4); }
     if (s >= 10 && C.stage === 'play') cineCalm();
@@ -226,6 +233,7 @@ function cineAnimate(dt) {
   PU.uAlpha.value = Math.max(0, PU.uAlpha.value - dt * 0.6); C.fire.intensity = Math.max(0, C.fire.intensity - dt * 20); C.warm.intensity = lerp(C.warm.intensity, 12, dt); C.warm.position.set(-2, 5, 5);
   if (nap) { nap.position.y -= dt * 3; nap.rotation.y += dt * 0.8; if (nap.position.y < -12) nap.visible = false; }
   cineBack0('city'); C.back.rotation.y = lerp(C.back.rotation.y, Math.round(C.back.rotation.y / 6.283) * 6.283, dt); C.city.visible = true; C.cob.offset.x = -c * 2.6 / (80 / 12);   // the street rolls toward the back of the coach
+  C.rowL.material.map.offset.x = -c * 0.9 / 72; C.crowdFar.material.map.offset.x = -c * 2.2 / 44; C.crowdNear.material.map.offset.x = c * 1.1 / 36;   // the houses slide past, people stroll both ways
   for (const b of C.fronts.children) { const span = b.isGroup ? 64 : 60.2; b.position.x += dt * 2.6; if (b.position.x > span / 2) b.position.x -= span; }
   if (team) { team.visible = true; const k = smooth01(c / 3.8); team.position.x = lerp(16, 1.2, k); const ph = c * Math.PI * 2.1;
     if (C.parts.coach) C.parts.coach.position.y = 0.02 * Math.abs(Math.sin(ph));
@@ -244,14 +252,14 @@ function cineOutro(dt) {
 }
 function cineShot() {
   const C = CINE; C.shotT = C.t; cineStopAudio(0.05);
-  cinePlay(cineMusic('gunshot'), 1.0); flashWhite();
+  cinePlay(CINE_SND.gunshot || cineMusic('gunshot'), 0.95); flashWhite();
   for (const d of C.duel) { d.vel.set(d.sd * 3.4, 2.2, (Math.random() - 0.5) * 1.5); d.spin.set((Math.random() - 0.5) * 3, 0, -d.sd * 2.4); }
   C.timers.push(setTimeout(() => sfx('bell', 0.55, 1.3), 300));
   // the chaos: shouting, galloping, screaming horses, more shots in the distance
   C.audio.push(cinePlay(cineMusic('stampede'), 0.8, true));
-  C.audio.push(cinePlay(cineMusic('yells'), 0.65, true));
-  for (let i = 0; i < 9; i++) C.timers.push(setTimeout(() => cinePlay(cineMusic('neigh' + (i % 3)), 0.45 + Math.random() * 0.3, false, 0.9 + Math.random() * 0.25), 400 + i * 1050 + Math.random() * 500));
-  for (let i = 0; i < 5; i++) C.timers.push(setTimeout(() => cinePlay(cineMusic('gunshot'), 0.25 + Math.random() * 0.2, false, 0.8 + Math.random() * 0.4), 1800 + i * 1700 + Math.random() * 600));
+  C.audio.push(cinePlay(CINE_SND.mob || cineMusic('yells'), CINE_SND.mob ? 0.8 : 0.65, true));
+  for (let i = 0; i < 9; i++) C.timers.push(setTimeout(() => { const w = CINE_SND[i % 3 ? 'whinny1' : 'whinny2']; cinePlay(w || cineMusic('neigh' + (i % 3)), 0.5 + Math.random() * 0.35, false, 0.88 + Math.random() * 0.24); }, 400 + i * 1050 + Math.random() * 500));
+  for (let i = 0; i < 5; i++) C.timers.push(setTimeout(() => cinePlay(CINE_SND.gunshot || cineMusic('gunshot'), 0.2 + Math.random() * 0.15, false, 0.8 + Math.random() * 0.4), 1800 + i * 1700 + Math.random() * 600));
   const shouts = ['Charge!', 'Hold the line!', 'Fire!', 'Get them out of here!', 'Retreat! Retreat!'];
   shouts.forEach((w, i) => C.timers.push(setTimeout(() => cineSay(w, 'shout'), 900 + i * 1800)));
 }
@@ -259,7 +267,8 @@ function cineCalm() {
   const C = CINE; C.calmT = C.t; cineStopAudio(1.5);
   C.audio.push(cinePlay(cineMusic('waltz'), 0.7, true));
   C.audio.push(cinePlay(cineMusic('city'), 0.45, true));
-  C.audio.push(cinePlay(cineMusic('trot'), 0.5, true));
+  C.audio.push(cinePlay(CINE_SND.carriage || cineMusic('trot'), CINE_SND.carriage ? 1.0 : 0.5, true));
+  if (CINE_SND.trot) C.audio.push(cinePlay(CINE_SND.trot, 0.55, true));
   const calls = [['Fresh bread! Hot from the oven!', 'vendor'], ['Spare a coin, sir? Anything at all…', 'beggar'], ['Apples! Two for a penny!', 'vendor'], ['Newspaper! Read all about it!', 'vendor'], ['Please, miss… just a little change…', 'beggar'], ['Hot chestnuts! Get your chestnuts!', 'vendor'], ['God bless you, God bless…', 'beggar']];
   calls.forEach(([w, who], i) => C.timers.push(setTimeout(() => cineSay(w, who), 1500 + i * 2500)));
 }
@@ -281,10 +290,16 @@ function cineSay(text, who, onEnd) {
 }
 
 // ---------- the music and the soundscape, made on the spot (once) like the rest of the game's sounds
-const CINE_BUF = {};
+const CINE_BUF = {}, CINE_SND = {};
+// recorded sounds for the show (gunshot, mob, whinnies, trot, carriage); until they arrive, or if they can't, the made-up ones stand in
+function cineLoadSounds() {
+  if (!AU.ctx || CINE_SND.loading) return; CINE_SND.loading = true;
+  for (const k of ['gunshot', 'mob', 'trot', 'carriage', 'whinny1', 'whinny2']) fetch('snd-' + k + '.mp3').then(r => r.arrayBuffer()).then(b => AU.ctx.decodeAudioData(b)).then(buf => { CINE_SND[k] = buf; }).catch(e => console.warn('music box sound', k, e));
+}
 function cinePlay(buf, vol = 1, loop = false, rate = 1) {
   const none = { stop() { } }; if (!AU.ready || !buf) return none;
   const ctx = AU.ctx, s = ctx.createBufferSource(), g = ctx.createGain(); s.buffer = buf; s.loop = loop; s.playbackRate.value = rate; g.gain.value = vol;
+  if (loop && buf.duration > 1) { s.loopStart = 0.04; s.loopEnd = buf.duration - 0.04; }   // past the silence an mp3 carries at each end
   s.connect(g); g.connect(AU.master); g.connect(AU.revIn); s.start();
   return { stop(fade = 0.5) { try { g.gain.setTargetAtTime(0, ctx.currentTime, Math.max(0.01, fade / 3)); s.stop(ctx.currentTime + fade + 0.1); } catch (e) { } } };
 }
@@ -367,7 +382,8 @@ function cineMusic(name) {
   return null;
 }
 
-function cineBack0(k) { const C = CINE, m = C.back.material; if (m.map !== C.PAINT[k]) { m.map = C.PAINT[k]; m.needsUpdate = true; } C.sand.visible = k === 'desert' && C.sand.position.y > -30; if (k === 'desert') C.sand.position.y = Math.min(0, C.sand.position.y); }
+function cineBack0(k) { const C = CINE, m = C.back.material; if (m.map !== C.PAINT[k]) { m.map = C.PAINT[k]; m.needsUpdate = true; }
+  const st = C.streak, sm = k === 'field' ? C.PAINT.smokeStreak : C.PAINT.sandStreak; st.visible = k !== 'city'; if (st.material.map !== sm) { st.material.map = sm; st.material.needsUpdate = true; } C.sand.visible = k === 'desert' && C.sand.position.y > -30; if (k === 'desert') C.sand.position.y = Math.min(0, C.sand.position.y); }
 
 // ---------- the paintings (2048 × 1024 panoramas, horizon halfway down), softened by shrinking and enlarging
 function paintCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
@@ -383,7 +399,7 @@ function paintDesert() {
   x.fillStyle = '#7a4a3c'; for (const [mx, mw, mh] of [[260, 220, 70], [700, 160, 50], [1350, 260, 80], [1750, 140, 45]]) { x.beginPath(); x.moveTo(mx - mw / 2 - 30, hz); x.lineTo(mx - mw / 2, hz - mh); x.lineTo(mx + mw / 2, hz - mh); x.lineTo(mx + mw / 2 + 30, hz); x.fill(); }   // mesas far off
   const layers = [['#d99a62', 0, 18, 0.004], ['#c98450', 40, 30, 0.006], ['#b06c3e', 110, 46, 0.005], ['#8f5432', 220, 70, 0.0035], ['#6e3f25', 380, 90, 0.0028]];
   for (const [col, y0, a, f] of layers) { x.fillStyle = col; x.beginPath(); x.moveTo(0, H); for (let i = 0; i <= W; i += 8) x.lineTo(i, hz + y0 - a * (0.6 + 0.4 * Math.sin(i * f * 6.283 + y0)) * Math.abs(Math.sin(i * f * 3.1 + y0 * 0.1))); x.lineTo(W, H); x.fill(); }
-  return softTex(c, 7);
+  return softTex(c, 11);
 }
 function paintSand() { const [c, x] = paintCanvas(512, 512); x.fillStyle = '#b8794a'; x.fillRect(0, 0, 512, 512); for (let i = 0; i < 3000; i++) { x.fillStyle = `rgba(${90 + Math.random() * 80},${50 + Math.random() * 40},${30},${Math.random() * 0.25})`; x.fillRect(Math.random() * 512, Math.random() * 512, 2 + Math.random() * 10, 1 + Math.random() * 2); }
   for (let j = 0; j < 30; j++) { x.strokeStyle = 'rgba(80,40,20,0.15)'; x.lineWidth = 2; x.beginPath(); for (let i = 0; i <= 512; i += 16) x.lineTo(i, j * 18 + Math.sin(i * 0.03 + j) * 5); x.stroke(); }   // wind ripples
@@ -417,8 +433,8 @@ function paintField() {
   for (let i = 0; i < 140; i++) { const d = Math.random(), py = hz + 30 + d * 260, s = 0.7 + d * 1.3, dark = 10 + (1 - d) * 30; x.fillStyle = `rgb(${dark + 10},${dark},${dark - 4})`; if (Math.random() < 0.55) drawGalloper(x, Math.random() * W, py, s, Math.random() < 0.5 ? 1 : -1); else drawSoldier(x, Math.random() * W, py, s * 0.9, Math.random() < 0.5 ? 1 : -1); }
   for (let i = 0; i < 18; i++) { x.fillStyle = 'rgba(255,190,90,0.7)'; x.beginPath(); x.arc(Math.random() * W, hz + 10 + Math.random() * 120, 3 + Math.random() * 6, 0, 6.283); x.fill(); }   // muzzle flashes
   // motion: smear the whole picture sideways before softening it
-  const [m, mx] = paintCanvas(W, H); mx.globalAlpha = 1 / 6; for (let k = 0; k < 6; k++) mx.drawImage(c, k * 7, 0); x.clearRect(0, 0, W, H); x.drawImage(m, 0, 0);
-  return softTex(c, 3);
+  const [m, mx] = paintCanvas(W, H); mx.globalAlpha = 1 / 12; for (let k = 0; k < 12; k++) mx.drawImage(c, k * 9, 0); x.clearRect(0, 0, W, H); x.drawImage(m, 0, 0);
+  return softTex(c, 4);
 }
 function paintCitySky() {
   const W = 2048, H = 1024, hz = H / 2, [c, x] = paintCanvas(W, H);
@@ -426,7 +442,7 @@ function paintCitySky() {
   x.fillStyle = '#1a1622'; x.beginPath(); x.moveTo(0, hz); for (let i = 0; i <= W; i += 40) x.lineTo(i, hz - 40 - ((i * 7919) % 90)); x.lineTo(W, hz); x.fill();   // rooftops
   for (const cx of [W * 0.5, W * 0.0 + 120]) { x.fillRect(cx - 40, hz - 210, 80, 180); for (const o of [-70, 0, 70]) { x.beginPath(); x.moveTo(cx + o - 18, hz - (o ? 170 : 210)); x.lineTo(cx + o, hz - (o ? 260 : 330)); x.lineTo(cx + o + 18, hz - (o ? 170 : 210)); x.fill(); } x.fillRect(cx - 110, hz - 160, 220, 130); }   // the cathedral's three spires
   for (let i = 0; i < 160; i++) { x.fillStyle = `rgba(255,${190 + Math.random() * 40},120,${0.4 + Math.random() * 0.5})`; x.fillRect(Math.random() * W, hz - 10 - Math.random() * 90, 3, 4); }
-  return softTex(c, 6);
+  return softTex(c, 9);
 }
 // a two-storey Creole townhouse front (512 px square): pastel stucco, shuttered French doors, a lamp-lit doorway
 function paintFacade(n) {
@@ -487,4 +503,54 @@ function harnessFor(g, toX) {
   if (nose && poll) for (const sd of [0, 1]) { const z = sd ? nose.z1 : nose.z0, zp = sd ? poll.z1 : poll.z0; H.add(strapLine(new V3(nose.x + 0.04, nose.cy, z), new V3(poll.x, poll.cy, zp), null, 0.012)); const r2 = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.007, 6, 12), brass); r2.position.set(nose.x + 0.05, nose.y0 + 0.05, z); H.add(r2); }
   H.userData.bit = nose ? { x: nose.x + 0.05, y: nose.y0 + 0.05, z0: nose.z0, z1: nose.z1 } : { x: b.min.x, y: b.min.y + Ht * 0.6, z0: -0.1, z1: 0.1 };
   return H;
+}
+
+// a long painted row of Creole townhouses: lit doors and windows, iron balconies and gas lamps, then smeared and softened
+function paintCityRow() {
+  const W = 4096, H = 1024, street = H - 30, [c, x] = paintCanvas(W, H);
+  for (let i = 0, px = 0; px < W; i++) {
+    const w = 470 + (i * 37) % 90, h = 700 + (i * 53) % 220, f = paintFacade(i).image;
+    x.drawImage(f, px, street - h, w, h);
+    x.fillStyle = '#121212'; x.fillRect(px, street - h * 0.48, w, 10);   // the balcony floor
+    x.strokeStyle = 'rgba(15,15,15,0.95)'; x.lineWidth = 3; for (let k = px + 6; k < px + w; k += 14) { x.beginPath(); x.moveTo(k, street - h * 0.48); x.lineTo(k, street - h * 0.48 - 70); x.stroke(); }
+    x.fillRect(px, street - h * 0.48 - 72, w, 6);
+    px += w;
+  }
+  for (let px = 120; px < W; px += 340) {   // gas lamps: a dark post and a big warm glow
+    x.fillStyle = '#0d0d0d'; x.fillRect(px - 5, street - 330, 10, 330);
+    const g = x.createRadialGradient(px, street - 340, 4, px, street - 340, 150); g.addColorStop(0, 'rgba(255,236,190,1)'); g.addColorStop(0.2, 'rgba(255,190,110,0.75)'); g.addColorStop(1, 'rgba(255,150,60,0)'); x.fillStyle = g; x.fillRect(px - 150, street - 490, 300, 300);
+  }
+  const [m, mx] = paintCanvas(W, H); mx.globalAlpha = 1 / 8; for (let k = 0; k < 8; k++) mx.drawImage(c, k * 10, 0); x.clearRect(0, 0, W, H); x.drawImage(m, 0, 0);
+  const t = softTex(c, 9); t.wrapS = THREE.RepeatWrapping; return t;
+}
+// people on the banquette: walkers in coats and bonnets, vendors' carts under umbrellas with lanterns; blurred, moving
+function paintCrowd(seed) {
+  const W = 4096, H = 512, base = H - 20, [c, x] = paintCanvas(W, H);
+  let r = seed * 9301 + 49297; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280;
+  const person = (px, s, skirt, hat, col) => {
+    x.save(); x.translate(px, base); x.scale(s, s); x.fillStyle = col;
+    if (skirt) { x.beginPath(); x.moveTo(-34, 0); x.lineTo(34, 0); x.lineTo(14, -120); x.lineTo(-14, -120); x.fill(); } else { x.fillRect(-14, -90, 10, 90); x.fillRect(4, -90, 10, 90); }
+    x.beginPath(); x.ellipse(0, -150, 22, 50, 0, 0, 6.283); x.fill(); x.beginPath(); x.arc(0, -215, 17, 0, 6.283); x.fill();
+    if (hat === 1) { x.fillRect(-14, -262, 28, 30); x.fillRect(-24, -236, 48, 6); } else if (hat === 2) { x.beginPath(); x.arc(0, -222, 24, Math.PI, 0); x.fill(); }   // top hat or bonnet
+    x.restore();
+  };
+  for (let i = 0; i < 60; i++) { const px = rnd() * W, s = 0.85 + rnd() * 0.5, sk = rnd() < 0.45, tone = 20 + rnd() * 40; person(px, s, sk, sk ? 2 : (rnd() < 0.6 ? 1 : 0), `rgb(${tone + 20},${tone + 8},${tone})`); }
+  for (let i = 0; i < 6; i++) {   // vendors' carts with a lantern, the vendor beside
+    const px = 300 + i * 680 + rnd() * 200; x.fillStyle = '#2a1c12'; x.fillRect(px - 70, base - 110, 140, 60); x.beginPath(); x.arc(px - 40, base - 30, 30, 0, 6.283); x.fill(); x.beginPath(); x.arc(px + 40, base - 30, 30, 0, 6.283); x.fill();
+    x.fillStyle = ['#7a2a24', '#2c4a6a', '#5a4a1a'][i % 3]; x.beginPath(); x.moveTo(px - 110, base - 190); x.quadraticCurveTo(px, base - 260, px + 110, base - 190); x.fill(); x.fillStyle = '#111'; x.fillRect(px - 3, base - 200, 6, 90);
+    const g = x.createRadialGradient(px + 60, base - 140, 2, px + 60, base - 140, 70); g.addColorStop(0, 'rgba(255,220,150,0.95)'); g.addColorStop(1, 'rgba(255,170,80,0)'); x.fillStyle = g; x.fillRect(px - 10, base - 210, 140, 140);
+    person(px - 130, 1.05, false, 0, '#2a2018');
+  }
+  const [m, mx] = paintCanvas(W, H); mx.globalAlpha = 1 / 6; for (let k = 0; k < 6; k++) mx.drawImage(c, k * 8, 0); x.clearRect(0, 0, W, H); x.drawImage(m, 0, 0);
+  const t = softTex(c, seed === 1 ? 7 : 5); t.wrapS = THREE.RepeatWrapping; return t;
+}
+// soft horizontal streaks on a clear background: blown sand, or drifting gun smoke
+function paintStreaks(kind) {
+  const W = 2048, H = 512, [c, x] = paintCanvas(W, H);
+  for (let i = 0; i < (kind === 'sand' ? 260 : 120); i++) {
+    const y = H * 0.35 + Math.random() * H * 0.65, w = 80 + Math.random() * 400, px = Math.random() * W, a = kind === 'sand' ? 0.06 + Math.random() * 0.12 : 0.05 + Math.random() * 0.1;
+    const g = x.createLinearGradient(px, 0, px + w, 0), col = kind === 'sand' ? '230,180,120' : '150,140,130'; g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(0.5, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`);
+    x.fillStyle = g; x.fillRect(px, y, w, kind === 'sand' ? 2 + Math.random() * 6 : 20 + Math.random() * 60);
+  }
+  return softTex(c, 3);
 }
