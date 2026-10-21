@@ -238,9 +238,19 @@ function ghostThink(dt) {
     if (d <= step) { gs.x = tx; gs.z = tz; if (tl !== undefined) gs.l = tl; gs.path.shift(); }
     else { gs.x += dx / d * step; gs.z += dz / d * step; gs.yaw = gs.yaw + angDiff(gs.yaw, Math.atan2(-dx, -dz)) * clamp(dt * 6, 0, 1); }
     gs.moving = gs.speed;
+    ghostCollide(gs);
     gs.y = groundY(gs.x, gs.z, gs.y); gs.l = levelOf(gs.y);
     // brushing past doors makes them drift
     if (gs.mode === 0 && Math.random() < dt * 0.4) for (const D of DOORS) { const c = doorCenter(D); if (Math.hypot(c.x - gs.x, c.z - gs.z) < 1.0 && Math.abs(D.y - gs.y) < 1 && !D.locked) { D.target = clamp(D.angle + rr(-0.4, 0.4), 0, 1.5); D.speed = 0.5; } }
+  }
+}
+// the ghost's body obeys the same walls and furniture as a player's (doors aside: the house is its own)
+function ghostCollide(gs) {
+  const r = 0.18;
+  for (const c of COLL) {
+    if ((c.h < 0.25 && c.furn) || !collAt(c, gs.y)) continue;
+    const cx = clamp(gs.x, c.x0, c.x1), cz = clamp(gs.z, c.z0, c.z1), dx = gs.x - cx, dz = gs.z - cz, d2 = dx * dx + dz * dz;
+    if (d2 < r * r && d2 > 1e-8) { const d = Math.sqrt(d2); gs.x = cx + dx / d * r; gs.z = cz + dz / d * r; }
   }
 }
 function ghostInteract() {
@@ -354,7 +364,7 @@ function dollHunt(it) {
 function startHunt() {
   const gs = G.gs;
   if (G.ghost.preHunt && Math.random() < TRAIT_CHANCE) { for (let i = 0; i < NROOM; i++) G.lights[i] = false; hostEvent(['snd', 'breaker', r2(gs.x), r2(gs.y + 2), r2(gs.z), 1]); }
-  gs.mode = 2; gs.vis = 1; gs.huntT = 0; gs.repelT = 0; gs.huntDur = rr(28, 33); gs.path = []; gs.lastSeen = null; gs.target = -1;
+  gs.mode = 2; gs.vis = 1; gs.huntT = 0; gs.repelT = 0; gs.huntDur = rr(28, 33); gs.path = []; gs.lastSeen = null; gs.target = -1; gs.chasing = false; gs.lostT = 0;
   if (G.ghost.fixate) { const c = alivePlayers().filter(p => p.inside); gs.fixate = c.length ? pick(c).slot : -1; }
   for (const fd of DOORS) if (fd.ext) { fd.target = 0; fd.speed = 6; fd.locked = true; } G.frontLocked = true;
   hostEvent(['hunt', 1]);
@@ -364,31 +374,39 @@ function endHunt() {
   for (const fd of DOORS) if (fd.ext) fd.locked = false; G.frontLocked = false;
   hostEvent(['hunt', 0]);
 }
+// what a hunting ghost can sense: an electronic switched on in someone's hand gives them away even through a wall
+const HUNT_SENSE = 8, HUNT_CHASE = 1.3, HUNT_FORGET = 2, ELECTRONICS = new Set(['emf', 'spirit', 'uv', 'thermo', 'camera']);
+function liveElectronic(P) { const it = ITEMS[P.held]; return !!(it && it.holder === P.slot && it.on && ELECTRONICS.has(it.type)); }
 function huntThink(dt) {
   const gs = G.gs, gh = G.ghost; gs.huntT += dt;
   if (gs.huntT > gs.huntDur) { endHunt(); return; }
   if (gs.huntT < 2.5) return; // manifesting
   if (gs.repelT > 0) { gs.repelT -= dt; gs.speed = 2.4; return; }   // fleeing the incense: no chasing, no killing
-  // who can it see?
+  // who does it know about? anyone within 8 m that it can see, or that is holding a switched-on electronic
   let best = null, bd = 1e9;
   for (const P of alivePlayers()) {
     if (!P.inside || P.hidden) continue;
     if (gs.fixate >= 0 && P.slot !== gs.fixate && G.players[gs.fixate]?.alive) continue;
     const d = Math.hypot(P.pos.x - gs.x, P.pos.z - gs.z);
-    if (d < 16 && sightClear(gs.x, gs.z, P.pos.x, P.pos.z, gs.y, P.pos.y) && d < bd) { bd = d; best = P; }
+    if (d >= HUNT_SENSE || d >= bd || Math.abs(P.pos.y - gs.y) > 1.6) continue;
+    if (sightClear(gs.x, gs.z, P.pos.x, P.pos.z, gs.y, P.pos.y) || liveElectronic(P)) { bd = d; best = P; }
   }
   const dyn = new Set(); for (const di in NAV.closet) if (DOORS[di].angle < 0.3) for (const k of NAV.closet[di]) dyn.add(k);
-  let base = 1.65 * (gh.speed || 1);
+  const base = 1.65 * (gh.speed || 1), chase = gh.revenant ? 3.0 : base * HUNT_CHASE * (gh.speedLos ? 1.15 : 1), roam = gh.revenant ? 1.0 : base;
   if (best) {
-    gs.lastSeen = [best.pos.x, best.pos.z, levelOf(best.pos.y)]; gs.target = best.slot;
+    // it knows where they are: straight for them at chase speed
+    gs.lostT = 0; gs.lastSeen = [best.pos.x, best.pos.z, levelOf(best.pos.y)]; gs.target = best.slot; gs.chasing = true;
     gs.repath -= dt; if (gs.repath <= 0 || !gs.path.length) { gs.repath = 0.35; gs.path = findPath(gs.x, gs.z, gs.l, best.pos.x, best.pos.z, levelOf(best.pos.y), dyn); }
-    gs.speed = gh.revenant ? 3.0 : (gh.speedLos && bd > 3 ? base * 1.3 : base * (1 + Math.min(gs.huntT, 20) * 0.012));
+    gs.speed = chase;
+  } else if (gs.chasing && (gs.lostT = (gs.lostT || 0) + dt) < HUNT_FORGET) {
+    // out of sight: it keeps after the last place it knew for two seconds
+    gs.speed = chase;
+    if (!gs.path.length && gs.lastSeen) gs.path = findPath(gs.x, gs.z, gs.l, gs.lastSeen[0], gs.lastSeen[1], gs.lastSeen[2], dyn);
   } else {
-    gs.speed = gh.revenant ? 1.0 : base * 0.9;
-    if (!gs.path.length) {
-      if (gs.lastSeen) { gs.path = findPath(gs.x, gs.z, gs.l, gs.lastSeen[0], gs.lastSeen[1], gs.lastSeen[2], dyn); gs.lastSeen = null; }
-      else { const here = logicalRoom(gs.x, gs.z, gs.y); const ri = Math.random() < 0.5 ? (here >= 0 ? here : G.ghostRoom) : pick([...Array(NROOM).keys()]); const [x, z, l] = randomPointInRoom(ri); gs.path = findPath(gs.x, gs.z, gs.l, x, z, l, dyn); }
-    }
+    // lost them: back to roaming the house at its normal pace
+    if (gs.chasing) { gs.chasing = false; gs.lastSeen = null; gs.path = []; }
+    gs.speed = roam;
+    if (!gs.path.length) { const here = logicalRoom(gs.x, gs.z, gs.y); const ri = Math.random() < 0.5 ? (here >= 0 ? here : G.ghostRoom) : pick([...Array(NROOM).keys()]); const [x, z, l] = randomPointInRoom(ri); gs.path = findPath(gs.x, gs.z, gs.l, x, z, l, dyn); }
   }
   // touch = death
   for (const P of alivePlayers()) {

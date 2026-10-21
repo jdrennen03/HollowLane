@@ -12,7 +12,8 @@ function spellOn(key, p, span = 6) {
   h = Math.imul(h ^ (h >>> 16), 2246822507) >>> 0; h = Math.imul(h ^ (h >>> 13), 3266489909) >>> 0; h ^= h >>> 16;
   return ((h >>> 0) % 10000) / 10000 < p;
 }
-// seven evidences, every ghost a unique set of three, and a behaviour that singles it out even with no evidence
+// seven evidences, every ghost a unique set of three, and no two evidences that point to just one ghost; each also has
+// a behaviour that singles it out even with no evidence
 const GHOSTS = [
   { name: 'Spirit', ev: ['emf', 'spirit', 'uv'], tell: 'The only ghost that slams doors shut with a bang (others just ease them). Waits a little longer between hunts.', huntCd: 1.3, slams: true },
   { name: 'Wraith', ev: ['emf', 'spirit', 'laser'], tell: 'Breathes. Stand close to it and you will hear slow, heavy breathing in the dark. Drifts out of its room often.', wander: 0.35, breathes: true },
@@ -27,8 +28,8 @@ const GHOSTS = [
   { name: 'Onryo', ev: ['spirit', 'freeze', 'orbs'], tell: 'Every time it manifests, the room light bursts out with a pop. Also cuts all the power before it hunts.', lightsOff: 2, preHunt: true, popLights: true },
   { name: 'Changeling', ev: ['spirit', 'uv', 'laser'], tell: 'Leaves small, child-sized handprints, and sometimes repeats your question back through the spirit box. Its hunting footsteps come twice as fast.', fastSteps: true, speed: 1.08, childPrints: true, echo: true },
   { name: 'Yurei', ev: ['uv', 'freeze', 'writing'], tell: 'Now and then every open door around it eases shut at the same moment, with no one near them.', shutsAll: true },
-  { name: 'Siren', ev: ['spirit', 'uv', 'writing'], tell: 'Calls investigators by name. If a voice whispers your name from somewhere in the house, it is this one.', calls: true },
-  { name: 'Myling', ev: ['uv', 'orbs', 'writing'], tell: 'Hunts in silence: its footsteps are only heard once it is a few steps away. Restless otherwise, whispering and knocking far more than others.', silentSteps: true, chatty: 3 },
+  { name: 'Siren', ev: ['spirit', 'uv', 'freeze'], tell: 'Calls investigators by name. If a voice whispers your name from somewhere in the house, it is this one.', calls: true },
+  { name: 'Myling', ev: ['uv', 'laser', 'writing'], tell: 'Hunts in silence: its footsteps are only heard once it is a few steps away. Restless otherwise, whispering and knocking far more than others.', silentSteps: true, chatty: 3 },
   { name: 'Wendigo', ev: ['emf', 'uv', 'writing'], tell: 'Mimics you. Walk near it and you hear a second set of footsteps following a few paces behind you.', mimics: true },
   { name: 'Lantern Man', ev: ['laser', 'orbs', 'writing'], tell: 'The only ghost that switches lights on. Lamps flick on by themselves in empty rooms around it.', lightsOn: true, noSwitch: true },
 ];

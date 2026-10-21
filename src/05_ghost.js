@@ -385,16 +385,38 @@ function buildNav() {
   NAV.w = Math.ceil((bx1 - bx0) / NAV.cs); NAV.h = Math.ceil((bz1 - bz0) / NAV.cs); NAV.N = NAV.w * NAV.h; NAV.L = MAP.levels.length;
   const { x0, z0, cs, w, h, N } = NAV; NAV.block = new Uint8Array(N * NAV.L); NAV.closet = {}; NAV.links = new Map();
   for (const D of DOORS) if (D.closet) NAV.closet[D.i] = [];
+  // The ghost obeys the player's collision rules: a cell is open only where a player could stand there, judged at
+  // the real ground height of that cell (not the floor's nominal height), keeping the player's body radius clear of
+  // every wall and piece of furniture, and with head room under any floor above (no crawling under raised shacks).
+  const R = 0.2, gy = new Float32Array(N);
   for (let l = 0; l < NAV.L; l++) {
-    const ly = MAP.levels[l], holes = holesFor(l, 'floor');
+    const ly = MAP.levels[l], holes = holesFor(l, 'floor'), base = l * N;
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
-      const x = x0 + (i + 0.5) * cs, z = z0 + (j + 0.5) * cs; let b = 0;
+      const x = x0 + (i + 0.5) * cs, z = z0 + (j + 0.5) * cs, k = j * w + i;
       const ri = roomIdxAt(x, z, ly + 0.1);
       const open = (ri >= 0 && (ROOMS[ri].lv || 0) === l) || (MAP.navWalk && MAP.navWalk(l, x, z));
-      if (!open || holes.some(q => x > q[0] - 0.1 && x < q[2] + 0.1 && z > q[1] - 0.1 && z < q[3] + 0.1)) b = 1;
-      else for (const c of COLL) { if (!collAt(c, ly) ) continue; if (x > c.x0 - 0.24 && x < c.x1 + 0.24 && z > c.z0 - 0.24 && z < c.z1 + 0.24) { b = 1; break; } }
-      const k = l * N + j * w + i; NAV.block[k] = b;
-      for (const D of DOORS) { if (!D.closet || Math.abs(D.y - ly) > 0.5) continue; const d = D.def, along = d.z !== undefined; const u = along ? x : z, v = along ? z - d.z : x - d.x; if (u > d.s - 0.05 && u < d.e + 0.05 && Math.abs(v) < 0.3) NAV.closet[D.i].push(k); }
+      NAV.block[base + k] = !open || holes.some(q => x > q[0] - 0.1 && x < q[2] + 0.1 && z > q[1] - 0.1 && z < q[3] + 0.1) ? 1 : 0;
+      gy[k] = groundY(x, z, ly + 0.5);
+      for (const D of DOORS) { if (!D.closet || Math.abs(D.y - ly) > 0.5) continue; const d = D.def, along = d.z !== undefined; const u = along ? x : z, v = along ? z - d.z : x - d.x; if (u > d.s - 0.05 && u < d.e + 0.05 && Math.abs(v) < 0.3) NAV.closet[D.i].push(base + k); }
+    }
+    const span = (a0, a1, o, n) => [Math.max(0, Math.floor((a0 - o) / cs)), Math.min(n - 1, Math.floor((a1 - o) / cs))];
+    for (const c of COLL) {
+      if (c.h < 0.25 && c.furn) continue;
+      const [i0, i1] = span(c.x0 - R, c.x1 + R, x0, w), [j0, j1] = span(c.z0 - R, c.z1 + R, z0, h);
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const k = j * w + i; if (NAV.block[base + k]) continue;
+        const x = x0 + (i + 0.5) * cs, z = z0 + (j + 0.5) * cs, dx = x - clamp(x, c.x0, c.x1), dz = z - clamp(z, c.z0, c.z1);
+        if (dx * dx + dz * dz < R * R && collAt(c, gy[k])) NAV.block[base + k] = 1;
+      }
+    }
+    for (const sl of SLABS) {
+      const [i0, i1] = span(sl.x0, sl.x1, x0, w), [j0, j1] = span(sl.z0, sl.z1, z0, h);
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const k = j * w + i; if (NAV.block[base + k]) continue;
+        const x = x0 + (i + 0.5) * cs, z = z0 + (j + 0.5) * cs; if (x < sl.x0 || x > sl.x1 || z < sl.z0 || z > sl.z1) continue;
+        let hy = sl.y; if (sl.ramp) { const t = sl.axis === 'z' ? (z - sl.z0) / (sl.z1 - sl.z0) : (x - sl.x0) / (sl.x1 - sl.x0); hy = lerp(sl.ya, sl.yb, clamp(sl.flip ? 1 - t : t, 0, 1)); }
+        if (hy > gy[k] + 0.3 && hy < gy[k] + 1.75) NAV.block[base + k] = 1;
+      }
     }
   }
   // stairs: join the highest open cell on the ramp to the landing above
@@ -404,7 +426,9 @@ function buildNav() {
     const dirUp = st.flip ? -1 : 1, top = st.flip ? a0 : a1;
     for (let u = lo0 + cs / 2; u < lo1; u += cs) {
       let lower = -1;
-      for (let v = top - dirUp * 0.12; (dirUp > 0 ? v > a0 : v < a1); v -= dirUp * cs) { const [i, j] = along ? navCell(u, v) : navCell(v, u); if (!navBlocked(i, j, st.lo)) { lower = st.lo * N + j * w + i; break; } }
+      // the highest open cell that is on the steps themselves (not the floor under the top of the flight)
+      const ly = MAP.levels[st.lo], ramp = v => lerp(ly, MAP.levels[st.hi], clamp(st.flip ? 1 - (v - a0) / (a1 - a0) : (v - a0) / (a1 - a0), 0, 1));
+      for (let v = top - dirUp * 0.12; (dirUp > 0 ? v > a0 : v < a1); v -= dirUp * cs) { if (ramp(v) > ly + 0.45) continue; const [i, j] = along ? navCell(u, v) : navCell(v, u); if (!navBlocked(i, j, st.lo)) { lower = st.lo * N + j * w + i; break; } }
       const vu = top + dirUp * 0.3, [ui, uj] = along ? navCell(u, vu) : navCell(vu, u);
       if (lower < 0 || navBlocked(ui, uj, st.hi)) continue;
       const upper = st.hi * N + uj * w + ui; link(lower, upper); link(upper, lower);
@@ -570,7 +594,7 @@ function settlePropsWhenLoaded() {
     if (!WORLD || WORLD.root !== root) return;
     const busy = Object.values(MODEL_TPL).some(T => !T.m) || Object.values(PROP_TPL).some(T => !T.m);
     calm = busy ? 0 : calm + 1; if (calm < 2) return setTimeout(tick, 400);
-    settleProps();
+    settleProps(); buildNav();   // furniture models bring their own colliders: the ghost's map has to know about them too
   };
   setTimeout(tick, 400);
 }
