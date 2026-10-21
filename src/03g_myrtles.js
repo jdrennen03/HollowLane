@@ -56,7 +56,7 @@ MAPS.myrtles = {
     { id: 'bed1', name: 'Downstairs Bedroom', r: [0, 6, 6.5, 12], floor: 'woodF', wall: 'wpRose', sw: [3.3, 6.06, 0, 1], lamp: [3.25, 9] },
     { id: 'bath1', name: 'Downstairs Bath', r: [6.5, 6, 10, 12], floor: 'bathF', wall: 'bathTileW', sw: [9.94, 9.8, -1, 0], lamp: [8.25, 9] },
     // ---- upstairs
-    { id: 'landing', name: 'Upstairs Landing', r: [10, 3, 15, 9], lv: 1, floor: 'woodF', wall: 'wpBeige', sw: [14.94, 4.4, -1, 0], lamp: [12.9, 6], noGhost: true },
+    { id: 'landing', name: 'Upstairs Landing', r: [10, 3, 15, 9], lv: 1, floor: 'woodF', wall: 'wpBeige', sw: [14.94, 5.15, -1, 0], lamp: [12.9, 6], noGhost: true },
     { id: 'wsit', name: 'Woodruff Sitting Room', r: [5, 3, 10, 9], lv: 1, floor: 'woodF', wall: 'wpGold', sw: [9.94, 4.4, -1, 0], lamp: [7.5, 6] },
     { id: 'wbed', name: 'Judge Woodruff Bedroom', r: [0.3, 3, 5, 6.6], lv: 1, floor: 'woodF', wall: 'wpRose', sw: [4.94, 3.5, -1, 0], lamp: [2.65, 4.6] },
     { id: 'wbath', name: 'Woodruff Bath', r: [0.3, 6.6, 5, 9], lv: 1, floor: 'bathF', wall: 'bathTileW', sw: [3.4, 6.66, 0, 1], lamp: [2.65, 7.8] },

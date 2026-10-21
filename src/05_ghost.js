@@ -560,9 +560,17 @@ function mergeGeos(gs) { const gb = new GB(); for (const g of gs) gb.add(g, new 
 // h scales to a height, len to a length along z; part picks one named node out of a collection
 const PROP_MODELS = { teddy: { url: 'prop-teddy.json', h: 0.3 }, phone: { url: 'prop-vintage.json', part: 'SM_Cevirmeli_Ev_Telefonu_60', len: 0.22 }, slipper1: { url: 'prop-bathset.json', part: 'bs1', len: 0.26 }, slipper2: { url: 'prop-bathset.json', part: 'bs2', len: 0.25 } };
 ['base015_9', 'base016_23', 'base017_30', 'base018_40', 'base019_50'].forEach((part, i) => { PROP_MODELS['shoe' + (i + 1)] = { url: 'prop-shoes.json', part, len: 0.27 }; });
+// a list gives each prop of that type one of several looks, picked from its place in the map (the same for every player)
+PROP_MODELS.cup = { url: 'prop-plates.json', part: 'teacup', len: 0.15 };
+PROP_MODELS.plate = ['Circle002_3', 'Circle004_5', 'Circle003_4'].map(part => ({ url: 'prop-plates.json', part, len: 0.24 }));
+PROP_MODELS.bottle = [
+  ...[['Object_40', 0.3], ['Object_42', 0.27], ['Object_49', 0.29], ['Object_55', 0.27], ['Object_57', 0.24], ['Object_45', 0.24], ['Object_53', 0.2], ['Object_37', 0.22]].map(([part, h]) => ({ url: 'prop-bottles.json', part, h })),
+  ...[['Jameson', 0.29], ['Chivas', 0.25], ['Kahlua', 0.26], ['Martel', 0.28], ['Baileys', 0.24], ['Becherovka', 0.25]].map(([part, h]) => ({ url: 'prop-liquor.json', part, h })),
+];
 const PROP_TPL = {};
-function propModel(type, mesh, hh) {
-  const M = PROP_MODELS[type], put = T0 => { const T = M.part ? modelPart(T0, M.part) : T0; if (!T) return console.warn('prop part', type); const g = new THREE.Group(), s = M.len ? M.len / T.sz.z : M.h / T.sz.y, c = T.b.getCenter(new V3()); g.add(T.m.clone()); g.scale.setScalar(s); g.position.set(-c.x * s, -T.b.min.y * s - hh, -c.z * s); mesh.add(g); };
+function propModel(type, mesh, hh, i = 0) {
+  let M = PROP_MODELS[type]; if (Array.isArray(M)) M = M[(i * 7 + 3) % M.length];
+  const put = T0 => { const T = M.part ? modelPart(T0, M.part) : T0; if (!T) return console.warn('prop part', type); const g = new THREE.Group(), s = M.len ? M.len / T.sz.z : M.h / T.sz.y, c = T.b.getCenter(new V3()); g.add(T.m.clone()); g.scale.setScalar(s); g.position.set(-c.x * s, -T.b.min.y * s - hh, -c.z * s); mesh.add(g); };
   mesh.material = PROP_HIT_MAT;
   const T = PROP_TPL[M.url]; if (T && T.m) return put(T); if (T) return T.wait.push(put);
   const W = PROP_TPL[M.url] = { wait: [put] };
@@ -578,7 +586,7 @@ function buildProps() {
     const P = PROPS[i], d = PROP_DEF[P.type]();
     const m = new THREE.Mesh(d.geo, MATS[d.mat]); m.castShadow = true; m.receiveShadow = true;
     if (d.sy) m.scale.y = d.sy;
-    if (PROP_MODELS[P.type]) propModel(P.type, m, d.hh);
+    if (PROP_MODELS[P.type]) propModel(P.type, m, d.hh, i);
     const y = P.y + d.hh;
     m.position.set(P.x, y, P.z); m.rotation.y = P.ry; WORLD.root.add(m);
     const hit = new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.09, d.r * 0.9), 8, 6), PROP_HIT_MAT); m.add(hit); INTERACT.push({ mesh: hit, kind: 'prop', id: i });

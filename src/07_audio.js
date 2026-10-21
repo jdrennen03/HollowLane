@@ -189,14 +189,26 @@ function updateListener(cam) {
   else { L.setPosition(cam.position.x, cam.position.y, cam.position.z); L.setOrientation(f.x, f.y, f.z, u.x, u.y, u.z); }
 }
 let VOICE = null;
+// The ghost's voice is the computer's own built-in (local) speech voice pitched all the way down, which comes out deep and
+// demonic. Network voices such as Chrome's "Google UK English" ones barely follow the pitch, so they are never used; a male
+// local voice is preferred, then any local English voice. The list loads late in Chrome, so it is picked again once it does.
+function pickVoice() {
+  const vs = speechSynthesis.getVoices(), en = vs.filter(v => /^en/i.test(v.lang)), local = en.filter(v => v.localService && !/google/i.test(v.name));
+  const male = v => /\b(david|mark|guy|ryan|daniel|fred|alex|tom|aaron|george|james|male)\b/i.test(v.name) && !/female/i.test(v.name);
+  VOICE = local.find(male) || local.find(v => v.default) || local[0] || en.find(v => !/google/i.test(v.name)) || en[0] || null;
+}
+try { if (window.speechSynthesis) { pickVoice(); speechSynthesis.addEventListener('voiceschanged', pickVoice); } } catch (e) { }
 function ghostVoice(text, noRadio, whisper) {
   if (!noRadio) sfx('radio', 0.8);
   try {
     if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
-      const u = new SpeechSynthesisUtterance(text);
-      if (!VOICE) { const vs = speechSynthesis.getVoices(); VOICE = vs.find(v => /en/i.test(v.lang) && /male|daniel|fred|alex|google uk english male/i.test(v.name)) || vs.find(v => /en/i.test(v.lang)) || null; }
-      if (VOICE) u.voice = VOICE; u.pitch = whisper ? 0.3 : 0.05; u.rate = whisper ? 0.6 : 0.55; u.volume = whisper ? 0.55 : 1;
-      speechSynthesis.cancel(); speechSynthesis.speak(u);
+      if (!VOICE) pickVoice();
+      const say = (t, pitch, rate, vol) => { const u = new SpeechSynthesisUtterance(t); if (VOICE) { u.voice = VOICE; u.lang = VOICE.lang; } u.pitch = pitch; u.rate = rate; u.volume = vol; speechSynthesis.speak(u); };
+      speechSynthesis.cancel();
+      if (whisper) {   // the Siren: your name drawn out low and slow, then once more, fainter, like it came from further off
+        say(text + '...', 0, 0.42, 0.75);
+        say('...' + text, 0, 0.5, 0.35);
+      } else say(text, 0.05, 0.55, 1);
       return;
     }
   } catch (e) { }

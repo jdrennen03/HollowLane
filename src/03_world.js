@@ -682,7 +682,12 @@ function buildExterior(gb, root) {
   // neighbouring houses lost in the fog
   for (const [x, z, w, d, ry] of [[-30, -2, 14, 11, 0.05], [52, 3, 16, 12, -0.04], [-12, -44, 15, 11, 0.02], [18, -46, 18, 12, -0.03], [48, -42, 14, 10, 0.06], [-40, -40, 12, 10, 0]]) {
     gb.box('darkHouse', x, 2.6, z, w, 5.2, d, ry);
-    gb.box('shingles', x, 6.0, z, w + 1, 0.2, d * 0.62, ry, 0.55); gb.box('shingles', x, 6.0, z + 0.01, w + 1, 0.2, d * 0.62, ry, -0.55);
+    // gable roof: an attic prism closes the gable ends, and two shingled slopes meet at the ridge with a short overhang
+    const a = 0.55, rise = d / 2 * Math.tan(a), ov = 0.4, tri = new THREE.Shape([new THREE.Vector2(-d / 2, 0), new THREE.Vector2(d / 2, 0), new THREE.Vector2(0, rise)]);
+    const at = new THREE.ExtrudeGeometry(tri, { depth: w, bevelEnabled: false }); at.translate(0, 0, -w / 2); at.rotateY(Math.PI / 2);
+    gb.add(at, mat4(x, 5.2, z, ry), 'darkHouse', false);
+    const L = (d / 2 + ov) / Math.cos(a), cy = 5.2 + (rise - ov * Math.tan(a)) / 2;
+    for (const sd of [-1, 1]) { const lz = sd * (d / 2 + ov) / 2; gb.box('shingles', x + lz * Math.sin(ry), cy + 0.12, z + lz * Math.cos(ry), w + 0.8, 0.16, L, ry, sd * a); }
   }
   // distant lit window — someone is still up
   const win = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.4), new THREE.MeshBasicMaterial({ color: 0xffb060 })); win.position.set(14, 2.6, -39.95); win.material.color.multiplyScalar(0.7); root.add(win);
