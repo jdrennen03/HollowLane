@@ -352,7 +352,7 @@ function buildFurniture(gb, root) {
   { const f = fur(gb, 13.7, 10.8, -Math.PI / 2); f.box('lightWood', 0, 0.45, 0, 1.0, 0.9, 0.35); // dollhouse on a low shelf
     f.box('paintedWood', 0, 1.15, 0, 0.6, 0.5, 0.3); f.box('toyRed', 0, 1.5, 0, 0.66, 0.04, 0.36, 0, 0, 0.55); f.box('toyRed', 0, 1.5, 0, 0.66, 0.04, 0.36, 0, 0, -0.55); f.box('screen', -0.15, 1.15, 0.155, 0.12, 0.14, 0.01); f.box('screen', 0.15, 1.15, 0.155, 0.12, 0.14, 0.01); f.solid(-0.5, -0.18, 0.5, 0.18, 1.6); }
   prop('teddy', 9.55, FY + 0.56, 13.4); prop('ball', 11.0, FY + 0.1, 11.0); prop('block', 10.45, FY + 0.47, 9.65); prop('block', 10.7, FY + 0.47, 9.9); prop('block', 12.0, FY + 0.04, 12.2); prop('truck', 11.6, FY + 0.47 + 0.0, 13.6);
-  picFrame(root, 'z', 11.2, 13.89, FY + 1.6, -1, 'p7', 0, 0.46);
+  picFrame(root, 'z', 9.8, 13.89, FY + 1.65, -1, 'p7', 0, 0.46);   // over the bed, clear of the window
   // ===== KITCHEN
   { // base units along the east wall: a unit, the stove, a unit, the sink by the window, a unit
     for (const [z, sink] of [[6.56, 0], [8.42, 0], [9.42, 1], [10.42, 0]]) counter(fur(gb, 19.94, z, Math.PI / 2), sink);

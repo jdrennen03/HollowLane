@@ -216,15 +216,10 @@ function myMirror(gb, root, x, y, z, ry, w, h) {
   f.box('brass', 0, y + h / 2 + t + 0.08, 0.02, w * 0.5, 0.16, 0.04);
   return m;
 }
-// a four-poster: a bed model with turned posts and a canopy frame; headboard at local +z (against the wall)
+// a four-poster: the La Parisienne bed, headboard at local +z (against the wall); its quilt drapes to the floor at the sides
 function fourPoster(gb, root, f, len = 2.1, wid = 1.7) {
-  const [ox, oz, ry, oy] = f.o;
-  placeModel(root, { url: 'prop-bed1.json', x: ox, z: oz, y: oy, ry: ry + Math.PI, len: wid, axis: 'x', cols: false });
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) { f.cyl('darkWood', sx * (wid / 2 + 0.02), 1.12, sz * (len / 2 + 0.02), 0.045, 0.055, 2.24, 10); f.sphere('darkWood', sx * (wid / 2 + 0.02), 2.27, sz * (len / 2 + 0.02), 0.06); }
-  for (const sx of [-1, 1]) f.box('darkWood', sx * (wid / 2 + 0.02), 2.2, 0, 0.05, 0.07, len + 0.1);
-  for (const sz of [-1, 1]) f.box('darkWood', 0, 2.2, sz * (len / 2 + 0.02), wid + 0.1, 0.07, 0.05);
-  f.box('curtainLace', 0, 2.06, len / 2 + 0.03, wid, 0.22, 0.01); f.box('curtainLace', 0, 2.06, -len / 2 - 0.03, wid, 0.22, 0.01);
-  f.solid(-wid / 2 - 0.08, -len / 2 - 0.08, wid / 2 + 0.08, len / 2 + 0.08, 0.7);
+  furModel(f, 'prop-fourposter.json', 'Collada_visual_scene_group', { height: 2.05, turn: Math.PI / 2 });
+  f.solid(-0.8, -1.05, 0.8, 1.05, 0.7);
 }
 // a tall armoire, doors on local -z
 function armoire(f) {
@@ -402,11 +397,18 @@ function buildMyrtles(gb, root) {
   WORLD_EXTRA.myrtlesMirror = mirror;
   placeModel(root, { url: 'prop-sidetable.json', x: 14.78, z: 10.4, y: MY0, ry: -Math.PI / 2, len: 1.1, axis: 'x', cols: 'box' });
   { const f = F0(14.84, 6.0, -Math.PI / 2); grandfatherClock(f); }
-  { const f = F0(14.6, 1.2, -Math.PI / 2); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  // a pair of armchairs facing into the hall across a little oval table, a bentwood chair in each back corner
+  for (const z of [1.0, 2.45]) { const f = F0(14.6, z, Math.PI / 2); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
+  { const f = F0(14.62, 1.72); ovalTable(f, 0.55); f.solid(-0.2, -0.2, 0.2, 0.2, 0.55); }
+  { const f = F0(14.65, 11.55, -Math.PI / 2); bentChair(f); f.solid(-0.22, -0.22, 0.22, 0.22, 0.5); }
+  { const f = F0(10.32, 11.6, Math.PI / 2); bentChair(f); f.solid(-0.22, -0.22, 0.22, 0.22, 0.5); }
+  // the painted antique dresser on the left wall between the music-room door and the stair, a portrait above it
+  { const f = F0(10.07, 3.05, -Math.PI / 2); furModel(f, 'prop-antdresser.json', 'Sketchfab_model', { height: 0.85, back: true }); f.solid(-0.82, -0.5, 0.82, 0, 0.85); }
+  prop('candle', 10.3, MY0 + 0.85, 2.45); prop('jbox', 10.32, MY0 + 0.85, 2.85, 1.57); prop('book', 10.3, MY0 + 0.85, 3.3, 0.3); prop('vase', 10.3, MY0 + 0.85, 3.65);
   gb.mm('runner', 11.8, MY0 + 0.002, 0.4, 13.8, MY0 + 0.012, 11.6);
-  urn(F0(14.62, 0.45)); urn(F0(11.75, 11.6));
-  for (const [x, z, r] of [[10.07, 1.1, -Math.PI / 2], [14.93, 2.2, Math.PI / 2], [14.93, 9.2, Math.PI / 2]]) sconce(F0(x, z, r), 1.7);
-  picFrame(root, 'x', 10.08, 2.7, MY0 + 1.75, 1, 'p40', 0, 0.8); picFrame(root, 'x', 14.92, 4.1, MY0 + 2.65, -1, 'p12', 0, 0.55);
+  urn(F0(10.42, 0.42)); urn(F0(11.05, 11.62));
+  for (const [x, z, r] of [[10.07, 0.55, -Math.PI / 2], [14.93, 2.4, Math.PI / 2], [14.93, 9.2, Math.PI / 2]]) sconce(F0(x, z, r), 1.7);
+  picFrame(root, 'x', 10.08, 3.05, MY0 + 1.65, 1, 'p40', 0, 0.6); picFrame(root, 'x', 14.92, 1.72, MY0 + 1.75, -1, 'p12', 0, 0.55);
   prop('candle', 14.75, MY0 + 0.8, 10.2); prop('vase', 14.75, MY0 + 0.8, 10.65);
   // ---------- FRENCH ROOM (Mrs. Stirling's day room)
   { const f = F0(4.0, 5.89, 0); myMantel(f); } myMirror(gb, root, 4.0, MY0 + 2.05, 5.92, Math.PI, 0.9, 0.75);
@@ -416,7 +418,7 @@ function buildMyrtles(gb, root) {
   { const f = F0(1.0, 1.1, 0.5); dressingScreen(f); }
   { const f = F0(4.55, 0.12, Math.PI); furModel(f, PACK.tl, 'TinyLiving_TinyDeskForTinyLiving_37', { height: 1.0, back: true }); f.solid(-0.45, -0.85, 0.45, 0, 0.8); const c = F0(4.55, 1.2, Math.PI); bentChair(c); c.solid(-0.22, -0.22, 0.22, 0.22, 0.5); }
   rug(gb, 1.9, 4.6, 2.8, 2.0, 0, MY0);
-  picFrame(root, 'x', 0.08, 1.2, MY0 + 1.7, 1, 'p22', 0, 0.6);
+  picFrame(root, 'x', 0.115, 1.2, MY0 + 1.7, 1, 'p22', 0, 0.6);
   prop('book', 1.5, MY0 + 0.45, 4.7, 0.4); prop('candle', 1.75, MY0 + 0.45, 4.9); prop('jbox', 4.3, MY0 + 0.75, 0.4);
   // ---------- MUSIC ROOM
   { const f = F0(7.4, 3.4, 0.25); grandPianoModel(f); }
@@ -435,7 +437,7 @@ function buildMyrtles(gb, root) {
   { const f = F0(19.0, 3.65); ovalTable(f); f.solid(-0.38, -0.38, 0.38, 0.38, 0.45); }
   { const f = F0(15.55, 0.55); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); vicLamp(f, 0.0, 0.57, 0.0); }
   rug(gb, 18.6, 3.2, 3.6, 2.8, 0, MY0);
-  picFrame(root, 'x', 15.08, 1.8, MY0 + 1.8, 1, 'p5', 0, 0.75); picFrame(root, 'x', 21.42, 5.0, MY0 + 1.8, -1, 'p44', 0, 0.5);
+  picFrame(root, 'x', 15.08, 1.8, MY0 + 1.8, 1, 'p5', 0, 0.75); picFrame(root, 'x', 21.42, 5.3, MY0 + 1.8, -1, 'p44', 0, 0.42);
   prop('cup', 18.85, MY0 + 0.45, 3.6); prop('book', 19.15, MY0 + 0.45, 3.75, 0.9); prop('candle', 19.1, MY0 + 1.36, 5.78); prop('candle', 20.1, MY0 + 1.36, 5.78); prop('clock', 19.6, MY0 + 1.36, 5.75, Math.PI);
   // ---------- GENTLEMEN'S PARLOR
   { const f = F0(27.89, 3.0, Math.PI / 2); myMantel(f); } myMirror(gb, root, 27.92, MY0 + 2.1, 3.0, -Math.PI / 2, 1.0, 0.9);
@@ -445,14 +447,14 @@ function buildMyrtles(gb, root) {
   { const f = F0(25.9, 3.0); ovalTable(f); f.solid(-0.38, -0.38, 0.38, 0.38, 0.45); }
   { const f = F0(22.6, 5.62, 0); bookshelf(f); f.solid(-0.5, -0.2, 0.5, 0.2, 2); }
   rug(gb, 25.6, 3.0, 3.2, 3.0, 0, MY0);
-  picFrame(root, 'x', 21.58, 2.2, MY0 + 1.8, 1, 'p18', 0, 0.8);
+  picFrame(root, 'z', 24.75, 0.115, MY0 + 1.8, 1, 'p18', 0, 0.75);
   prop('bottle', 25.75, MY0 + 0.45, 2.85); prop('cup', 26.05, MY0 + 0.45, 3.15); prop('candle', 27.75, MY0 + 1.36, 2.4);
   // ---------- DINING ROOM: table and chairs, the hutch, a sideboard and the punkah fan over the table
   placeModel(root, { url: 'prop-dining.json', x: 18.25, z: 9.0, y: MY0, scale: 1.15, cols: 'parts' });
   { const pz = 8.15; gb.mm('doorWood', 17.25, MY0 + 2.05, pz - 0.02, 19.25, MY0 + 2.45, pz + 0.02); gb.mm('brass', 17.25, MY0 + 2.45, pz - 0.03, 19.25, MY0 + 2.48, pz + 0.03); for (const px of [17.6, 18.9]) gb.cyl('brass', px, MY0 + 2.58, pz, 0.006, 0.006, 0.24, 4); }   // the punkah, clear of the chandelier
   { const f = F0(18.25, 11.9, 0); chinaCabinet(f); f.solid(-0.75, -0.45, 0.75, 0, 2.1); }
   { const f = F0(15.08, 10.6, -Math.PI / 2); longCabinet(f, 1.9); f.solid(-0.95, -0.3, 0.95, 0, 1.6); }
-  picFrame(root, 'x', 21.42, 7.4, MY0 + 1.8, -1, 'p50', 0, 0.6); picFrame(root, 'x', 15.08, 10.6, MY0 + 1.9, 1, 'p27', 0, 0.62);
+  picFrame(root, 'x', 21.42, 7.4, MY0 + 1.8, -1, 'p50', 0, 0.6); picFrame(root, 'x', 15.08, 10.6, MY0 + 2.2, 1, 'p27', 0, 0.5);
   for (const [px, pz] of [[17.7, 8.75], [18.8, 9.25], [18.25, 8.7], [17.6, 9.3]]) prop('plate', px, MY0 + 0.9, pz);
   prop('candle', 18.25, MY0 + 0.9, 9.0); prop('cup', 18.55, MY0 + 0.9, 8.75); prop('vase', 15.32, MY0 + 0.92, 10.2); prop('candle', 15.32, MY0 + 0.92, 11.1);
   // ---------- GAME ROOM: a card table with four chairs, a fireplace, books
@@ -461,7 +463,7 @@ function buildMyrtles(gb, root) {
   { const f = F0(27.89, 10.2, Math.PI / 2); myMantel(f); }
   { const f = F0(22.0, 11.62, 0); bookshelf(f); f.solid(-0.5, -0.2, 0.5, 0.2, 2); }
   { const f = F0(26.9, 6.7, Math.PI * 0.8); vicArmchair(f); f.solid(-0.4, -0.4, 0.4, 0.4, 1); }
-  picFrame(root, 'z', 24.75, 6.08, MY0 + 1.8, 1, 'p57', 0, 0.6);
+  picFrame(root, 'z', 22.9, 6.08, MY0 + 1.8, 1, 'p57', 0, 0.55);
   prop('book', 24.5, MY0 + 0.77, 8.9, 0.3); prop('cup', 25.1, MY0 + 0.77, 9.2); prop('candle', 24.8, MY0 + 0.77, 9.05);
   // ---------- DOWNSTAIRS BEDROOM
   { const f = F0(3.25, 10.9, 0); fourPoster(gb, root, f); }
