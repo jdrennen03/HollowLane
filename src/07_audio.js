@@ -164,17 +164,20 @@ function sfxKey(name) {   // a pool name -> the buffer to play this time
 const SFX_ROLLOFF = { meowLoud: 0.45, manifest: 0.9, wail: 0.4, knock: 0.85, whisper: 0.9, creak: 0.85, gstep: 0.8, vanish: 0.9, switch: 1.0, bulbPop: 0.8, scribble: 1.0, slam: 0.6, clatter: 1.0, breaker: 0.6 };   // sounds meant to carry through the house
 const SFX_WET = { meow: 0.12, meowLoud: 0.15, gbreath: 0.3, breath: 0.2 };   // how much of a sound goes to the room reverb (1 = all of it)
 const SFX_ROLLOFF_CLOSE = { gbreath: 2.6 };   // heard only up close
+// the ghost's own sounds: louder, full volume out to a few metres before they start to fade, and only partly
+// muffled by walls, so you hear it coming instead of having to strain for it
+const GHOST_SFX = { manifest: [3, 1.8], gstep: [2.6, 1.9], wail: [4, 1.6], knock: [2.6, 1.8], whisper: [2.6, 1.8], creak: [2.6, 1.6], vanish: [3, 1.8], hum: [3, 1.8], lunge: [3, 1.5], slam: [3, 1.4], scribble: [2, 1.6], bulbPop: [3, 1.4], switch: [2, 1.4], breaker: [3, 1.4], gbreath: [1.2, 1.3], doll: [3, 1.4], clatter: [2, 1.5] };
 function sfxAt(name, pos, vol = 1, rate) {
   const pool = name; name = AU.ready && sfxKey(name); if (!name || !AU.bufs[name]) return;
   const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = AU.bufs[name]; s.playbackRate.value = rate || (name.startsWith('f:') ? 1 + ((_sfxVary[name] || 0) * (Math.random() * 2 - 1)) : 0.92 + Math.random() * 0.16);
-  const p = ctx.createPanner(); p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = 1.2; p.rolloffFactor = SFX_ROLLOFF_CLOSE[pool] ?? SFX_ROLLOFF[pool] ?? SFX_ROLLOFF[name] ?? 1.4; p.maxDistance = 60;
+  const GS = GHOST_SFX[pool], p = ctx.createPanner(); p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = GS ? GS[0] : 1.2; p.rolloffFactor = SFX_ROLLOFF_CLOSE[pool] ?? SFX_ROLLOFF[pool] ?? SFX_ROLLOFF[name] ?? 1.4; p.maxDistance = 60;
   p.positionX.value = pos.x; p.positionY.value = pos.y; p.positionZ.value = pos.z;
   // walls muffle sounds that come from another room
   const P = typeof me === 'function' && me();
   const occl = P && !sightClear(P.pos.x, P.pos.z, pos.x, pos.z, P.pos.y, pos.y - 1.2);
-  const g = ctx.createGain(); g.gain.value = vol * (occl ? 0.55 : 1);
+  const g = ctx.createGain(); g.gain.value = vol * (GS ? GS[1] : 1) * (occl ? (GS ? 0.75 : 0.55) : 1);
   let node = s;
-  if (occl) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; s.connect(f); node = f; }
+  if (occl) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = GS ? 1800 : 900; s.connect(f); node = f; }
   node.connect(g); g.connect(p); p.connect(AU.master);
   const wet = SFX_WET[pool]; if (wet === undefined) g.connect(AU.revIn); else { const w = ctx.createGain(); w.gain.value = wet; g.connect(w); w.connect(AU.revIn); }
   s.start();
