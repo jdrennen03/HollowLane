@@ -98,7 +98,7 @@ function createWindow() {
   win.once('ready-to-show', () => win.show());
   win.webContents.on('before-input-event', (e, i) => {
     if (i.type !== 'keyDown') return;
-    if (i.key === 'Enter' && i.alt) { win.setFullScreen(!win.isFullScreen()); e.preventDefault(); }   // F11 is the game's developer screen
+    if (i.key === 'F11' || (i.key === 'Enter' && i.alt)) { win.setFullScreen(!win.isFullScreen()); e.preventDefault(); }
   });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.loadURL('app://game/index.html');

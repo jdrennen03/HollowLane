@@ -20,7 +20,7 @@ CONTROLS
   R use held item, T talk to spirit box, Q / 1-3 / scroll to switch items,
   G drop, J journal, Esc pause.
   Loose objects (mugs, books, horse figures...): E to carry one in your free hand,
-  G to drop it, left click to throw it.  Alt+Enter toggles fullscreen.
+  G to drop it, left click to throw it.  F11 (or Alt+Enter) toggles fullscreen.
 
 NEW GEAR
   Camcorder - switch it on (R) to look through night vision. Some ghosts show as floating
