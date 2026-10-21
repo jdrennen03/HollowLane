@@ -27,6 +27,7 @@ const SB_ANSWERS = [
 ];
 
 // ---------------------------------------------------------------- gear
+const GRAVE_DOLL = [1.15, -6.85];   // the bayou doll lies on a front-row grave, between the headstone and the offerings: x, z
 const ITEM_TYPES = ['emf', 'spirit', 'uv', 'laser', 'thermo', 'incense', 'doll', 'camera', 'journal', 'meds'];
 const MEDS_SANITY = 40;
 const INCENSE_BURN = 10, INCENSE_RANGE = 4.5, INCENSE_REPEL = 6;
@@ -221,8 +222,10 @@ function setItemHomes() {
   const tx = TENT.x, tz = TENT.z + 0.15, top = 0.76 + terrainY(TENT.x, TENT.z);
   for (const it of ITEMS) {
     it.home.set(tx + it.off[0], top + it.off[2], tz + it.off[1]);
-    if (it.type === 'doll') {   // the voodoo doll only exists at the Drennen Estate, lying on Claire's bed
-      if (MAP.id === 'farm') it.home.set(MAP.mirror !== undefined ? MAP.mirror - 6.78 : 6.78, FA1 + 0.505, 1.55); else it.home.set(0, -60, 0);
+    if (it.type === 'doll') {   // the voodoo doll: on Claire's bed at the Drennen Estate, on a grave at the bayou, nowhere else
+      if (MAP.id === 'farm') it.home.set(MAP.mirror !== undefined ? MAP.mirror - 6.78 : 6.78, FA1 + 0.505, 1.55);
+      else if (MAP.id === 'bayou') it.home.set(GRAVE_DOLL[0], terrainY(GRAVE_DOLL[0], GRAVE_DOLL[1]) + 0.04, GRAVE_DOLL[1]);   // left lying on a grave in the bayou's graveyard
+      else it.home.set(0, -60, 0);
       it.restTilt = true;
     }
     it.holder = -1; it.on = false; it.pos.copy(it.home); it.ry = Math.PI; placeItemInWorld(it);

@@ -96,7 +96,7 @@ function toggleHeld() {
   }
   if (h.type === 'doll') {
     if (h.spent) { sub('The pin is already buried in its heart.', 'sys'); return; }
-    request('on', h.id, 1); h.spent = true; sfx('thud', 0.6, 1.6);   // tell the host first: it ignores a doll already marked used sub('You press the long pin into the doll\'s heart…', 'sys'); hudInventory(); return;
+    request('on', h.id, 1); h.spent = true; sfx('thud', 0.6, 1.6); sub('You press the long pin into the doll\'s heart…', 'sys'); hudInventory(); return;   // the host is told first: it ignores a doll already marked used
   }
   if (h.type === 'incense') {
     if (h.spent) { sub('This bundle has burned down to ash.', 'sys'); return; }

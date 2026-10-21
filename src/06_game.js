@@ -327,8 +327,12 @@ function dollHunt(it) {
   const P = G.players[it.holder] || me();
   hostEvent(['snd', 'scare', r2(P.pos.x), r2(P.pos.y + 1.4), r2(P.pos.z), 1]);
   hostEvent(['msg', -1, (it.holder >= 0 ? G.players[it.holder].nick : 'Someone') + ' drove the pin into the voodoo doll.']);
+  // at the bayou the doll belongs to the graves: the ghost rises there, and anyone among the graves can be caught
+  if (MAP.id === 'bayou') { const g = GRAVE_DOLL; gs.x = g[0]; gs.z = g[1] + 0.8; gs.l = 0; gs.y = MAP.levels[0]; gs.path = []; gs.yard = true; hostEvent(['msg', -1, 'The ground over the graves heaves. Something climbs out of it…']); }
   startHunt();
 }
+// who a hunting ghost can see and catch: anyone inside, and during a graveyard hunt anyone out among the graves
+function huntable(P) { return P.inside || (G.gs.yard && levelOf(P.pos.y) === 0 && Math.hypot(P.pos.x - GRAVEYARD.x, P.pos.z - GRAVEYARD.z) < GRAVEYARD.r); }
 function startHunt() {
   const gs = G.gs;
   if (G.ghost.preHunt) { for (let i = 0; i < NROOM; i++) G.lights[i] = false; hostEvent(['snd', 'breaker', r2(gs.x), r2(gs.y + 2), r2(gs.z), 1]); }
@@ -339,7 +343,7 @@ function startHunt() {
   hostSpookCheck();
 }
 function endHunt() {
-  const gs = G.gs; gs.mode = 0; gs.vis = 0; gs.path = []; gs.wait = 3; gs.cooldown = 28 * (G.ghost.huntCd || 1); gs.eventT = Math.max(gs.eventT, 20);
+  const gs = G.gs; gs.yard = false; gs.mode = 0; gs.vis = 0; gs.path = []; gs.wait = 3; gs.cooldown = 28 * (G.ghost.huntCd || 1); gs.eventT = Math.max(gs.eventT, 20);
   for (const fd of DOORS) if (fd.ext) fd.locked = false; G.frontLocked = false;
   hostEvent(['hunt', 0]);
 }
@@ -351,7 +355,7 @@ function huntThink(dt) {
   // who can it see?
   let best = null, bd = 1e9;
   for (const P of alivePlayers()) {
-    if (!P.inside || P.hidden) continue;
+    if (!huntable(P) || P.hidden) continue;
     if (gs.fixate >= 0 && P.slot !== gs.fixate && G.players[gs.fixate]?.alive) continue;
     const d = Math.hypot(P.pos.x - gs.x, P.pos.z - gs.z);
     if (d < 16 && sightClear(gs.x, gs.z, P.pos.x, P.pos.z, gs.y, P.pos.y) && d < bd) { bd = d; best = P; }
@@ -372,7 +376,7 @@ function huntThink(dt) {
   if (dogGuard()) return;   // Scout, at someone's side indoors, puts himself between them and the ghost
   // touch = death
   for (const P of alivePlayers()) {
-    if (P.hidden || !P.inside) continue;
+    if (P.hidden || !huntable(P)) continue;
     if (Math.hypot(P.pos.x - gs.x, P.pos.z - gs.z) < 0.62 && Math.abs(P.pos.y - gs.y) < 1) { if (G.mode === 'rookie') { hostEvent(['caught', P.slot]); endHunt(); } else killPlayer(P.slot); return; }
   }
 }

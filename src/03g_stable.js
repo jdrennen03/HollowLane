@@ -643,7 +643,7 @@ function onSpook(first, gx, gz) {
     sub(first ? mine.def.name + ' lets rip, bucks hard and throws you!' : mine.def.name + ' rears straight up and you slide off!', 'sys');
   }
   const loose = STB.animals.filter(A => !A.away && STB.wagon.animal !== A.i).map(A => A.def.name), team = STB.wagon.animal >= 0 && !STB.animals[STB.wagon.animal].away ? STB.animals[STB.wagon.animal].def.name : '', and = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0];
-  if (P && names.length) sub(first ? 'Out by the graves the animals spook!' + (loose.length ? ' ' + and(loose) + ' let rip, buck and bolt.' : '') + (team ? ' ' + team + ' rears in the harness.' : '') : and(names) + (names.length > 1 ? ' rear' : ' rears') + ' and shy away from the graveyard.', 'sys');
+  if (P && names.length) sub(first ? 'Out by the graves the animals spook!' + (loose.length ? ' ' + and(loose) + (loose.length > 1 ? ' let rip, buck and bolt.' : ' lets rip, bucks and bolts.') : '') + (team ? ' ' + team + ' rears in the harness.' : '') : and(names) + (names.length > 1 ? ' rear' : ' rears') + ' and shy away from the graveyard.', 'sys');
 }
 function hostCalm(slot, A) {
   const P = G.players[slot]; if (!A || !A.spk || !P) return;
