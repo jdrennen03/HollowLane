@@ -421,7 +421,7 @@ function loadMap(id) {
 function beginGame(o) {
   G.mp = o.mp; G.isHost = o.host; G.mySlot = o.mySlot;
   if (o.map && o.map !== CURMAP) loadMap(o.map);
-  G.ghostModel = o.gm ?? 0; useGhostModel(G.ghostModel); WARM = true; o.mode = o.mode || 'pro';
+  G.roundGm = o.gm ?? 0; G.ghostModel = DEV.custom >= 0 && GHOST_MODELS[DEV.custom] ? DEV.custom : o.gm ?? 0; useGhostModel(G.ghostModel);   // a model loaded on the developer screen wins (on this computer) WARM = true; o.mode = o.mode || 'pro';
   startRound(o);
   G.state = 'play'; UI.results = false;
   PL.yaw = Math.PI; PL.pitch = -0.05; PL.crouch = false; PL.eyeH = 1.62; $('crouchTag').hidden = true; $('readout').hidden = true; PL.deathT = -1; PL.spectate = false; PL.stamina = 1; PL.slotIdx = 0; POST.death = 0;
