@@ -190,8 +190,9 @@ function updateListener(cam) {
   else { L.setPosition(cam.position.x, cam.position.y, cam.position.z); L.setOrientation(f.x, f.y, f.z, u.x, u.y, u.z); }
 }
 let VOICE = null;
-// The ghost's voice is the computer's own built-in (local) speech voice pitched all the way down, which comes out deep and
-// demonic. Network voices such as Chrome's "Google UK English" ones barely follow the pitch, so they are never used; a male
+// Where Chrome's "Google español de Estados Unidos" voice exists it is the ghost's voice. Otherwise (the desktop app has no
+// Google voices) it is the computer's own built-in (local) speech voice pitched all the way down, which comes out deep and
+// demonic. Other network voices (the "Google UK English" ones) barely follow the pitch, so they are skipped; a male
 // local voice is preferred, then any local English voice. The list loads late in Chrome, so it is picked again once it does.
 // a voice chosen on the developer screen (~) wins, remembered on this computer
 let VOICE_PREF = null; try { VOICE_PREF = localStorage.getItem('hl-voice'); } catch (e) { }
@@ -202,6 +203,8 @@ function oldVoicePick(vs) { return vs.find(v => /en/i.test(v.lang) && /male|dani
 function sampleVoice(v, siren, name) { const keep = VOICE; VOICE = v; ghostVoice(siren ? name : pick(['I am here', 'Get out', 'Behind you', 'Always watching']), true, siren); VOICE = keep; }
 function pickVoice() {
   const vs = speechSynthesis.getVoices(), pref = VOICE_PREF && vs.find(v => v.voiceURI === VOICE_PREF); if (pref) { VOICE = pref; return; }
+  // the default ghost voice: Chrome's "Google español de Estados Unidos", reading the English lines in its own accent
+  const es = vs.find(v => /google espa(ñ|n)ol de estados unidos/i.test(v.name)) || vs.find(v => /google/i.test(v.name) && /^es[-_]US$/i.test(v.lang)); if (es) { VOICE = es; return; }
   const en = vs.filter(v => /^en/i.test(v.lang)), local = en.filter(v => v.localService && !/google/i.test(v.name));
   const male = v => /\b(david|mark|guy|ryan|daniel|fred|alex|tom|aaron|george|james|male)\b/i.test(v.name) && !/female/i.test(v.name);
   VOICE = local.find(male) || local.find(v => v.default) || local[0] || en.find(v => !/google/i.test(v.name)) || en[0] || null;

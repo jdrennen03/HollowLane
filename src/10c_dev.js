@@ -36,7 +36,7 @@ function buildDev() {
     vgrid.innerHTML = '';
     const add = (v) => {
       const tags = [v === old && 'used before: spirit box', v === def && 'used before: first answer', v === cur && 'current'].filter(Boolean);
-      const b = document.createElement('button'); b.className = 'mapc' + (v === cur ? ' sel' : ''); b.innerHTML = (v ? v.name : 'Automatic') + '<small>' + (v ? v.lang + (v.localService ? ' · on this computer' : ' · online') : 'deep local voice') + (tags.length ? '<br>' + tags.join(' · ') : '') + '</small>';
+      const b = document.createElement('button'); b.className = 'mapc' + (v === cur ? ' sel' : ''); b.innerHTML = (v ? v.name : 'Automatic') + '<small>' + (v ? v.lang + (v.localService ? ' · on this computer' : ' · online') : 'Google español (EE. UU.) where it exists, else a deep local voice') + (tags.length ? '<br>' + tags.join(' · ') : '') + '</small>';
       b.onclick = () => { setGhostVoice(v); if (v || VOICE) sampleVoice(v || VOICE, false); fillVoices(); };
       const s = document.createElement('span'); s.textContent = '▶ Siren'; s.style.cssText = 'display:inline-block;margin-top:6px;padding:2px 8px;border:1px solid currentColor;font-size:11px;cursor:pointer';
       s.onclick = e => { e.stopPropagation(); sampleVoice(v || VOICE, true, nick()); }; b.appendChild(document.createElement('br')); b.appendChild(s);
