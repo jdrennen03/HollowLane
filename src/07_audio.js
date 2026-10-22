@@ -27,6 +27,7 @@ function initAudio() {
   B.whisper = mk(1.8, d => { for (let i = 0; i < d.length; i++) { const t = i / sr; const syl = Math.max(0, Math.sin(t * 9.5 + Math.sin(t * 3) * 2)); d[i] = N() * syl * Math.sin(Math.PI * t / 1.8); } svf(d, t => 900 + 1400 * (0.5 + 0.5 * Math.sin(t * 13)), 0.25, 'bp'); norm(d, 0.6); });
   B.creakHouse = mk(1.6, d => { let ph = 0; for (let i = 0; i < d.length; i++) { const t = i / sr; ph += (12 + 10 * Math.sin(t * 1.3)) / sr; d[i] = (ph % 1 < 0.02 ? 1 : 0) * Math.sin(Math.PI * t / 1.6); } svf(d, 380, 0.06, 'bp'); norm(d, 0.6); });
   B.scare = mk(2.2, d => { for (let i = 0; i < d.length; i++) { const t = i / sr; let v = 0; for (const f of [220, 233, 311, 466, 622]) v += ((t * f * (1 + t * 0.05)) % 1 - 0.5); d[i] = (v * 0.3 + N() * 0.4) * env(t, 0.02, 0.6); } svf(d, 4000, 0.5, 'lp'); norm(d, 1); });
+  B.blowout = mk(0.8, d => { for (let i = 0; i < d.length; i++) { const t = i / sr; d[i] = N() * (t < 0.06 ? t / 0.06 : Math.exp(-(t - 0.06) / 0.16)) + (t > 0.25 ? N() * 0.04 * Math.exp(-(t - 0.25) / 0.2) : 0); } svf(d, t => 1400 - 900 * Math.min(1, t / 0.4), 0.7, 'lp'); norm(d, 0.8); });   // a breath that snuffs a flame
   B.vanish = mk(0.9, d => { for (let i = 0; i < d.length; i++) { const t = i / sr; d[i] = N() * (t / 0.9) * (t < 0.85 ? 1 : (0.9 - t) / 0.05); } svf(d, t => 200 + 4000 * t, 0.6, 'lp'); norm(d, 0.6); });
   B.manifest = mk(2.0, d => { for (let i = 0; i < d.length; i++) { const t = i / sr; d[i] = (Math.sin(t * 6.283 * (38 + t * 15)) * 0.8 + N() * 0.3) * Math.sin(Math.PI * t / 2.0); } svf(d, 600, 0.5, 'lp'); norm(d, 0.9); });
   B.huntStart = mk(3.0, d => { for (let i = 0; i < d.length; i++) { const t = i / sr; const roar = Math.tanh(((t * 90 * (1 - t * 0.1)) % 1 - 0.5) * 6 + N() * 0.8) * env(t, 0.3, 1.2); d[i] = Math.sin(t * 6.283 * 36) * env(t, 0.01, 1.4) * 1.2 + roar * 0.6; } svf(d, 1800, 0.6, 'lp'); norm(d, 1); });
@@ -161,12 +162,12 @@ function sfxKey(name) {   // a pool name -> the buffer to play this time
   const choice = ready.length > 1 ? pick(ready.filter(n => n !== _sfxLast[name])) : ready[0];
   _sfxLast[name] = choice; _sfxVary['f:' + choice] = P.vary || 0; return 'f:' + choice;
 }
-const SFX_ROLLOFF = { meowLoud: 0.45, manifest: 0.9, wail: 0.4, knock: 0.85, whisper: 0.9, creak: 0.85, gstep: 0.8, vanish: 0.9, switch: 1.0, bulbPop: 0.8, scribble: 1.0, slam: 0.6, clatter: 1.0, breaker: 0.6 };   // sounds meant to carry through the house
+const SFX_ROLLOFF = { meowLoud: 0.45, manifest: 0.9, wail: 0.4, knock: 0.85, whisper: 0.9, creak: 0.85, gstep: 0.8, vanish: 0.9, switch: 1.0, bulbPop: 0.8, scribble: 1.0, slam: 0.6, clatter: 1.0, breaker: 0.6, blowout: 0.9 };   // sounds meant to carry through the house
 const SFX_WET = { meow: 0.12, meowLoud: 0.15, gbreath: 0.3, breath: 0.2 };   // how much of a sound goes to the room reverb (1 = all of it)
 const SFX_ROLLOFF_CLOSE = { gbreath: 2.6 };   // heard only up close
 // the ghost's own sounds: louder, full volume out to a few metres before they start to fade, and only partly
 // muffled by walls, so you hear it coming instead of having to strain for it
-const GHOST_SFX = { manifest: [3, 1.8], gstep: [2.6, 1.9], wail: [4, 1.6], knock: [2.6, 1.8], whisper: [2.6, 1.8], creak: [2.6, 1.6], vanish: [3, 1.8], hum: [3, 1.8], lunge: [3, 1.5], slam: [3, 1.4], scribble: [2, 1.6], bulbPop: [3, 1.4], switch: [2, 1.4], breaker: [3, 1.4], gbreath: [1.2, 1.3], doll: [3, 1.4], clatter: [2, 1.5] };
+const GHOST_SFX = { manifest: [3, 1.8], gstep: [2.6, 1.9], wail: [4, 1.6], knock: [2.6, 1.8], whisper: [2.6, 1.8], creak: [2.6, 1.6], vanish: [3, 1.8], hum: [3, 1.8], lunge: [3, 1.5], slam: [3, 1.4], scribble: [2, 1.6], bulbPop: [3, 1.4], switch: [2, 1.4], breaker: [3, 1.4], gbreath: [1.2, 1.3], doll: [3, 1.4], clatter: [2, 1.5], blowout: [2.2, 1.6] };
 function sfxAt(name, pos, vol = 1, rate) {
   const pool = name; name = AU.ready && sfxKey(name); if (!name || !AU.bufs[name]) return;
   const ctx = AU.ctx, s = ctx.createBufferSource(); s.buffer = AU.bufs[name]; s.playbackRate.value = rate || (name.startsWith('f:') ? 1 + ((_sfxVary[name] || 0) * (Math.random() * 2 - 1)) : 0.92 + Math.random() * 0.16);
@@ -192,8 +193,16 @@ let VOICE = null;
 // The ghost's voice is the computer's own built-in (local) speech voice pitched all the way down, which comes out deep and
 // demonic. Network voices such as Chrome's "Google UK English" ones barely follow the pitch, so they are never used; a male
 // local voice is preferred, then any local English voice. The list loads late in Chrome, so it is picked again once it does.
+// a voice chosen on the developer screen (~) wins, remembered on this computer
+let VOICE_PREF = null; try { VOICE_PREF = localStorage.getItem('hl-voice'); } catch (e) { }
+function setGhostVoice(v) { VOICE_PREF = v ? v.voiceURI : null; try { if (v) localStorage.setItem('hl-voice', v.voiceURI); else localStorage.removeItem('hl-voice'); } catch (e) { } VOICE = null; pickVoice(); }
+// what the game picked before v1.5.3: the first English voice whose name matched "male" (so often a "Female" one), and,
+// before the list had loaded, the browser's default voice
+function oldVoicePick(vs) { return vs.find(v => /en/i.test(v.lang) && /male|daniel|fred|alex|google uk english male/i.test(v.name)) || vs.find(v => /en/i.test(v.lang)) || null; }
+function sampleVoice(v, siren, name) { const keep = VOICE; VOICE = v; ghostVoice(siren ? name : pick(['I am here', 'Get out', 'Behind you', 'Always watching']), true, siren); VOICE = keep; }
 function pickVoice() {
-  const vs = speechSynthesis.getVoices(), en = vs.filter(v => /^en/i.test(v.lang)), local = en.filter(v => v.localService && !/google/i.test(v.name));
+  const vs = speechSynthesis.getVoices(), pref = VOICE_PREF && vs.find(v => v.voiceURI === VOICE_PREF); if (pref) { VOICE = pref; return; }
+  const en = vs.filter(v => /^en/i.test(v.lang)), local = en.filter(v => v.localService && !/google/i.test(v.name));
   const male = v => /\b(david|mark|guy|ryan|daniel|fred|alex|tom|aaron|george|james|male)\b/i.test(v.name) && !/female/i.test(v.name);
   VOICE = local.find(male) || local.find(v => v.default) || local[0] || en.find(v => !/google/i.test(v.name)) || en[0] || null;
 }

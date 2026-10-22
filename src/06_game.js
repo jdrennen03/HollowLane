@@ -19,7 +19,7 @@ function startRound({ seed, ghostIdx, ghostRoom, roster, mode }) {
   if (G.mode === 'nightmare') { const h = Math.abs(seed | 0) % 3; G.hiddenEv = base.ev[h]; G.ghost.ev = base.ev.filter((_, i) => i !== h); }
   G.seed = seed; G.ghostIdx = ghostIdx; G.ghostRoom = ghostRoom;
   G.elapsed = 0; G.ended = false; G.eggOn = false; G.gatorBait = false; G.frontLocked = false; G.stats = { deaths: 0 }; G.journal = { ev: {}, pick: -1 };
-  G.lights = new Array(NROOM).fill(false);
+  G.lights = new Array(NROOM).fill(false); G.blown = new Set();   // rooms whose bulb an Onryo has burst (host only)
   G.players = roster.map(r => makePlayer(r.slot, r.nick));
   for (const p of G.players) { p.peer = roster[p.slot].peer; p.ch = roster[p.slot].ch || 'f'; loadPlayerModel(p.ch); }
   initTemps(seed);
@@ -43,6 +43,7 @@ function alivePlayers() { return G.players.filter(p => p.alive); }
 function hostEvent(ev) { applyEvent(ev); if (G.mp) Net.pushEvent(ev); }
 function hostToggleLight(ri, slot, force) {
   const on = force !== undefined ? force : !G.lights[ri];
+  if (on && G.blown && G.blown.has(ri)) { if (slot >= 0) hostEvent(['msg', slot, 'Nothing. The bulb has burst.']); return; }
   if (on && !G.lights[ri] && G.lights.filter(Boolean).length >= 4) { hostEvent(['msg', slot, 'The fuse box can only handle four lights at once.']); return; }
   G.lights[ri] = on;
   const gs = G.gs;
@@ -260,6 +261,8 @@ function ghostInteract() {
   const ri = logicalRoom(gs.x, gs.z, gs.y), FL = MAP.levels[gs.l];
   const journals = ITEMS.filter(it => it.type === 'journal' && it.holder < 0 && !it.spent && Math.abs(it.pos.y - gs.y) < 1.6 && Math.hypot(it.pos.x - gs.x, it.pos.z - gs.z) < 4.5);
   if (journals.length && gh.ev.includes('writing')) opts.push(['write', 4]);
+  const candles = ITEMS.filter(it => it.type === 'candle' && it.on && it.holder < 0 && Math.abs(it.pos.y - gs.y) < 1.6 && Math.hypot(it.pos.x - gs.x, it.pos.z - gs.z) < 4);
+  if (candles.length) opts.push(['candle', 4]);
   if (nearDoors.length) opts.push(['door', 3]);
   if (nearProps.length) opts.push(['throw', 2.5 * (gh.throwy || 1)]);
   opts.push(['touch', 2.5]);
@@ -277,7 +280,11 @@ function ghostInteract() {
   if (choice === 'write' && Math.random() > EV_CHANCE) choice = 'sound';
   if ((choice === 'lighton' || choice === 'call') && Math.random() > TRAIT_CHANCE) choice = 'sound';
   if (choice === 'shutall' && Math.random() > TRAIT_CHANCE) choice = 'door';
-  if (choice === 'write') {   // ghost writing: the journal's pages fill with scrawl
+  if (choice === 'candle') {   // it snuffs out a lit candle someone set down; 70% of the time that reads EMF 5, if EMF 5 is its evidence
+    const C = pick(candles); C.on = false;
+    hostEvent(['snd', 'blowout', r2(C.pos.x), r2(C.pos.y + 0.15), r2(C.pos.z), 1]);
+    hostEvent(['emf', r2(C.pos.x), r2(C.pos.y + 0.15), r2(C.pos.z), gh.ev.includes('emf') && Math.random() < EV_CHANCE ? 5 : 2]);
+  } else if (choice === 'write') {   // ghost writing: the journal's pages fill with scrawl
     const J = pick(journals); J.spent = true;
     hostEvent(['snd', 'scribble', r2(J.pos.x), r2(J.pos.y + 0.1), r2(J.pos.z), 0.7]); hostEvent(['jw', J.id]);
   } else if (choice === 'door') {
@@ -345,7 +352,7 @@ function tryGhostEvent() {
     if (g.popLights && Math.random() < TRAIT_CHANCE) {   // Onryo: the bulb bursts wherever it shows itself, and where its witness stands
       for (const r of new Set([ri, logicalRoom(P.pos.x, P.pos.z, P.pos.y)])) {
         if (r < 0 || !G.lights[r]) continue;
-        hostToggleLight(r, -1, false); const L = ROOMS[r].lamp; hostEvent(['snd', 'bulbPop', r2(L[0]), r2(ROOMS[r].y + 2.3), r2(L[1]), 1]);
+        hostToggleLight(r, -1, false); G.blown.add(r); const L = ROOMS[r].lamp; hostEvent(['snd', 'bulbPop', r2(L[0]), r2(ROOMS[r].y + 2.3), r2(L[1]), 1]);
       }
     } else if (ri >= 0 && G.lights[ri] && !g.keepsLights && Math.random() < 0.5) hostToggleLight(ri, -1, false);
     return;

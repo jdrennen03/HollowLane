@@ -25,7 +25,7 @@ const GHOSTS = [
   { name: 'Revenant', ev: ['spirit', 'laser', 'freeze'], tell: 'Crawls at a walking pace when it loses you, then sprints faster than anything else the moment it sees you.', revenant: true },
   { name: 'Shade', ev: ['emf', 'orbs', 'writing'], tell: 'Only ever manifests as a pitch-black silhouette with no features. Shy: barely acts when several investigators are near.', shy: true, shadow: true },
   { name: 'Demon', ev: ['emf', 'freeze', 'writing'], tell: 'The only ghost that will hunt while everyone\'s sanity is still high. Hunts often, with little warning.', huntChance: 1.8, huntCd: 0.6, anySanity: true },
-  { name: 'Onryo', ev: ['spirit', 'freeze', 'orbs'], tell: 'Every time it manifests, the room light bursts out with a pop. Also cuts all the power before it hunts.', lightsOff: 2, preHunt: true, popLights: true },
+  { name: 'Onryo', ev: ['spirit', 'freeze', 'orbs'], tell: 'When it manifests, the lit bulbs around it can burst with a pop, and a burst bulb stays dead. Can also cut all the power before it hunts.', lightsOff: 2, preHunt: true, popLights: true },
   { name: 'Changeling', ev: ['spirit', 'uv', 'laser'], tell: 'Leaves small, child-sized handprints, and sometimes repeats your question back through the spirit box. Its hunting footsteps come twice as fast.', fastSteps: true, speed: 1.08, childPrints: true, echo: true },
   { name: 'Yurei', ev: ['uv', 'freeze', 'writing'], tell: 'Now and then every open door around it eases shut at the same moment, with no one near them.', shutsAll: true },
   { name: 'Siren', ev: ['spirit', 'uv', 'freeze'], tell: 'Calls investigators by name. If a voice whispers your name from somewhere in the house, it is this one.', calls: true },
@@ -42,11 +42,11 @@ const SB_ANSWERS = [
 ];
 
 // ---------------------------------------------------------------- gear
-const ITEM_TYPES = ['emf', 'spirit', 'uv', 'laser', 'thermo', 'incense', 'doll', 'camera', 'journal', 'meds'];
+const ITEM_TYPES = ['emf', 'spirit', 'uv', 'laser', 'thermo', 'incense', 'doll', 'camera', 'journal', 'meds', 'candle'];
 const MEDS_SANITY = 40;
 const JOURNAL_LIFT = 2.6;   // seconds the spirit journal floats while the ghost writes
 const INCENSE_BURN = 10, INCENSE_RANGE = 4.5, INCENSE_REPEL = 6;
-const ITEM_NAME = { emf: 'EMF Reader', spirit: 'Spirit Box', uv: 'UV Light', laser: 'Laser Projector', thermo: 'Thermometer', incense: 'Incense Bundle', doll: 'Voodoo Doll', camera: 'Camcorder', journal: 'Spirit Journal', meds: 'Sanity Medication' };
+const ITEM_NAME = { emf: 'EMF Reader', spirit: 'Spirit Box', uv: 'UV Light', laser: 'Laser Projector', thermo: 'Thermometer', incense: 'Incense Bundle', doll: 'Voodoo Doll', camera: 'Camcorder', journal: 'Spirit Journal', meds: 'Sanity Medication', candle: 'Candle' };
 const ITEM_ICON = {
   emf: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="9" y="4" width="14" height="24" rx="2"/><circle cx="16" cy="9" r="1.4" fill="#4dff7a" stroke="none"/><circle cx="16" cy="13" r="1.4" fill="#9dff4d" stroke="none"/><circle cx="16" cy="17" r="1.4" fill="#ffd24d" stroke="none"/><circle cx="16" cy="21" r="1.4" fill="#ff8a3c" stroke="none"/><circle cx="16" cy="25" r="1.4" fill="#ff3c3c" stroke="none"/></svg>',
   spirit: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="6" y="10" width="20" height="18" rx="2"/><path d="M20 10 L25 2"/><rect x="9" y="13" width="14" height="5" fill="#ff5a3c33"/><circle cx="16" cy="23" r="3"/></svg>',
@@ -57,6 +57,7 @@ const ITEM_ICON = {
   journal: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M16 9c-3-2-8-2-11 0v16c3-2 8-2 11 0 3-2 8-2 11 0V9c-3-2-8-2-11 0z"/><path d="M16 9v16"/><path d="M19 14c2-1 3 1 5-1M19 18c1.5 0 3 1 5-1" stroke="#b03030" stroke-width="1.2"/></svg>',
   meds: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 6h12l1 3v17l-1 2H10l-1-2V9z"/><path d="M9 11h14M9 22h14"/><path d="M16 13.5v6M13 16.5h6" stroke="#5fd08a" stroke-width="2"/></svg>',
   doll: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="16" cy="8" r="4.5"/><path d="M16 12.5v9M7 15h18M16 21.5l-4 7M16 21.5l4 7"/><path d="M14 7l1.5 1.5M15.5 7L14 8.5" stroke-width="1"/><circle cx="18" cy="7.8" r="0.9" fill="currentColor" stroke="none"/><path d="M24 12l-6 5" stroke="#ccc" stroke-width="1.1"/><circle cx="24.5" cy="11.5" r="1.8" fill="#d02020" stroke="none"/><path d="M15 16.5l1 1 1-1-1 1.6z" fill="#d02020" stroke="none"/></svg>',
+  candle: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 14h8v13h-8z"/><path d="M9 27h14"/><path d="M16 14v-2"/><path d="M16 4c-2.5 3-2.5 5.5 0 7 2.5-1.5 2.5-4 0-7z" fill="#ffb347" stroke="#ff8a3c" stroke-width="1"/></svg>',
   incense: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 29l2-15h5l2 15z"/><path d="M12.5 22h8" stroke="#c9a46a"/><circle cx="16.5" cy="13" r="1.6" fill="#ff8a3c" stroke="none"/><path d="M16 10c-2-2 1-3 0-5M18 9c2-2-1-3 1-6" stroke="#b9c0c8" stroke-width="1.2"/></svg>',
 };
 const ITEMS = [];
@@ -201,6 +202,15 @@ function buildItem(id, type) {
     const emberM = new THREE.MeshStandardMaterial({ color: 0x1a1410, emissive: 0xff5a1c, emissiveIntensity: 0, roughness: 1 });
     const tip = body(new THREE.CylinderGeometry(0.028, 0.026, 0.02, 10), emberM, 0, 0.205, 0); tip.castShadow = false;
     it.parts.ember = emberM; it.parts.tip = tip; it.spent = false; it.burnEnd = 0;
+  } else if (type === 'candle') {
+    // a pillar candle in a brass holder; once lit, a small flame and a warm point light that the ghost can snuff out
+    body(new THREE.CylinderGeometry(0.045, 0.05, 0.012, 18), MATS.brass, 0, 0.006, 0);
+    body(new THREE.CylinderGeometry(0.03, 0.03, 0.11, 16), MATS.wax || new THREE.MeshStandardMaterial({ color: 0xece4d0, roughness: 0.6 }), 0, 0.067, 0);
+    body(new THREE.CylinderGeometry(0.0015, 0.0015, 0.012, 4), MATS.blackPlastic, 0, 0.128, 0);
+    const flameM = new THREE.MeshBasicMaterial({ color: 0xffb04a, transparent: true, opacity: 0.9, depthWrite: false });
+    const flame = new THREE.Mesh(new THREE.SphereGeometry(0.008, 10, 8), flameM); flame.scale.set(1, 2.4, 1); flame.position.set(0, 0.146, 0); flame.visible = false; g.add(flame);
+    const L = new THREE.PointLight(0xffa040, 0, 4.5, 1.6); L.position.set(0, 0.17, 0); L.target = new THREE.Object3D(); L.target.position.set(0, 0, 0); g.add(L, L.target);
+    it.light = L; it.parts.flame = flame;
   }
   const hit = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.25, 0.26), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.08; g.add(hit);
   it.hit = hit;
@@ -216,6 +226,7 @@ const HAND_POSE = {
   laser: [0.2, -0.36, -0.42, 0.1, 0.25, 0],
   thermo: [0.11, -0.175, -0.27, -0.28, -0.12, 0],
   incense: [0.2, -0.26, -0.46, -1.0, 0.15, -0.25],
+  candle: [0.2, -0.24, -0.42, 0.0, 0.0, 0],
   doll: [0.15, -0.21, -0.36, 0.15, -0.35, 0],
   camera: [0.17, -0.2, -0.36, 0.0, 0.0, 0],
   journal: [0.13, -0.24, -0.4, 1.1, 0.0, 0],
@@ -230,7 +241,7 @@ function buildItems(scene) {
   const layout = [['journal', -0.9, -0.24, 0], ['journal', -0.9, -0.24, 0.028],
     ['emf', -0.58, -0.18], ['emf', -0.44, -0.18], ['uv', -0.26, -0.16], ['uv', -0.12, -0.16], ['thermo', 0.06, -0.17], ['thermo', 0.22, -0.17], ['camera', 0.42, -0.17], ['camera', 0.6, -0.17],
     ['spirit', -0.52, 0.2], ['spirit', -0.38, 0.2], ['laser', -0.16, 0.18], ['laser', 0.08, 0.18], ['incense', 0.32, 0.17], ['incense', 0.43, 0.17], ['incense', 0.54, 0.17], ['incense', 0.65, 0.17],
-    ['meds', 0.82, 0.1], ['meds', 0.94, 0.1], ['meds', 0.82, 0.24], ['meds', 0.94, 0.24], ['doll', 0, 0]];
+    ['meds', 0.82, 0.1], ['meds', 0.94, 0.1], ['meds', 0.82, 0.24], ['meds', 0.94, 0.24], ['doll', 0, 0], ['candle', 0.72, -0.02], ['candle', 0.9, -0.04]];
   for (const [type, ox, oz, oy] of layout) {
     const it = buildItem(id++, type);
     it.off = [ox, oz, oy || 0]; it.home = new V3(); it.ry = Math.PI + (WR() - 0.5) * 0.3;

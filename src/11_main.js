@@ -321,6 +321,9 @@ function updateItems(t, dt) {
     } else if (it.type === 'doll') {   // the long pin slides from the arm into the heart
       it.pinK = lerp(it.pinK || 0, it.spent ? 1 : 0, clamp(dt * 6, 0, 1)); const k = it.pinK, pp = it.parts.pin;
       pp.position.set(lerp(0.045, 0.002, k), lerp(0.1, 0.099, k), lerp(0, 0.012, k)); pp.rotation.set(lerp(0, 1.45, k), 0, lerp(-0.6, 0, k));
+    } else if (it.type === 'candle') {   // the flame gutters; its light follows the candle wherever it is visible
+      const on = it.on && (it.where === 'hand' || it.where === 'world' || (it.where && it.where.startsWith('av') && it.obj.visible)), fl = 0.85 + Math.sin(t * 11 + it.id) * 0.08 + Math.random() * 0.1;
+      it.parts.flame.visible = on; if (on) it.parts.flame.scale.set(1, 2.2 + fl * 0.5, 1); it.light.intensity = on ? 0.9 * fl : 0;
     } else if (it.type === 'incense') {
       it.parts.ember.emissiveIntensity = it.on ? 2.2 + Math.sin(t * 9 + it.id) * 0.6 + Math.random() * 0.5 : 0;
       it.parts.ember.color.setHex(it.spent ? 0x4a4642 : 0x1a1410);
@@ -409,7 +412,7 @@ function loadMap(id) {
   LIGHTS.moon.intensity = MAP.moonI ?? 2.4; LIGHTS.hemi.intensity = MAP.hemiI ?? 0.35;
   const fg = MAP.fog || [0x070a10, 0.03]; scene.fog.color.setHex(fg[0]); scene.fog.density = fg[1];
   LIGHTS.moon.shadow.camera.left = LIGHTS.moon.shadow.camera.bottom = -(MAP.moonSpan || 30); LIGHTS.moon.shadow.camera.right = LIGHTS.moon.shadow.camera.top = MAP.moonSpan || 30; LIGHTS.moon.shadow.camera.updateProjectionMatrix(); LIGHTS.moon.shadow.mapSize.set(MAP.moonRes || 2048, MAP.moonRes || 2048); if (LIGHTS.moon.shadow.map) { LIGHTS.moon.shadow.map.dispose(); LIGHTS.moon.shadow.map = null; }
-  G.lights = new Array(NROOM).fill(false); G.lights[MAP.lure] = true;
+  G.lights = new Array(NROOM).fill(false); G.lights[MAP.lure] = true; G.blown = new Set();
   if (G.gs) { G.gs.y = -50; G.ghostView.y = -50; }
   menuForMap();
 }

@@ -97,6 +97,10 @@ function toggleHeld() {
     if (h.on) return;
     h.on = true; request('on', h.id, 1); sfx('lighter', 0.8); sub('The sage catches. Its smoke drives a hunting ghost back, for a few seconds.', 'sys'); hudInventory(); return;
   }
+  if (h.type === 'candle') {
+    h.on = !h.on; request('on', h.id, h.on ? 1 : 0); sfx(h.on ? 'lighter' : 'blowout', h.on ? 0.8 : 0.4);
+    if (h.on) sub('The candle is lit. Set it down (G) where the ghost lingers: if it blows the flame out, check your EMF.', 'sys'); hudInventory(); return;
+  }
   h.on = !h.on;
   if (h.type === 'camera') { sfx('beep', 0.4, h.on ? 1.3 : 0.9); if (h.on) sub('Camcorder recording. Night vision shows what your eyes can\'t: watch for orbs.', 'sys'); } request('on', h.id, h.on ? 1 : 0); sfx('click', 0.6); if (h.type === 'spirit' && h.on) sub('Spirit box on. Press T or click to ask a question.', 'sys'); hudInventory(); }
 function dropHeld() {

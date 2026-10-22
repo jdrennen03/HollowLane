@@ -246,11 +246,6 @@ function dressingScreen(f) {
   for (let i = -1; i <= 1; i++) { const a = i * 0.5; f.box('darkWood', i * 0.48, 0.92, Math.abs(i) * 0.1, 0.5, 1.7, 0.03, a); f.box('fabricRose', i * 0.48, 0.95, Math.abs(i) * 0.1 - 0.02, 0.42, 1.4, 0.01, a); }
   f.solid(-0.75, -0.15, 0.75, 0.2, 1.8);
 }
-function grandfatherClock(f) {
-  f.box('darkWood', 0, 1.0, 0, 0.5, 2.0, 0.32); f.box('darkWood', 0, 2.05, 0, 0.56, 0.12, 0.36);
-  f.cyl('porcelain', 0, 1.65, -0.165, 0.17, 0.17, 0.01, 20, Math.PI / 2); f.box('glass', 0, 0.9, -0.165, 0.32, 0.9, 0.01); f.cyl('brass', 0, 0.75, -0.12, 0.08, 0.08, 0.01, 16, Math.PI / 2);
-  f.solid(-0.25, -0.16, 0.25, 0.16, 2.1);
-}
 function hutch(f) {
   f.box('darkWood', 0, 0.45, 0, 1.4, 0.9, 0.48); f.box('darkWood', 0, 1.45, 0.06, 1.36, 1.1, 0.36); f.box('glass', 0, 1.45, -0.125, 1.2, 0.96, 0.01);
   for (let i = 0; i < 5; i++) f.cyl('porcelain', -0.5 + i * 0.25, 1.32, 0.12, 0.1, 0.1, 0.012, 16, Math.PI / 2 - 0.25);

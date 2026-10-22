@@ -297,11 +297,7 @@ function buildFurniture(gb, root) {
   { const f = fur(gb, 4.7, 2.9, Math.PI / 2); armchair(f, 'fabricBrown'); f.solid(-0.45, -0.45, 0.45, 0.45, 1); }
   { const f = fur(gb, 0.3, 4.4, -Math.PI / 2); bookshelf(f); f.solid(-0.5, -0.18, 0.5, 0.18, 2); }
   { const f = fur(gb, 0.55, 5.55, 0); nightstand(f); f.solid(-0.3, -0.3, 0.3, 0.3, 0.6); tableLamp(f, 0.08, 0.57, 0.08); }
-  { const f = fur(gb, 7.62, 5.55, -Math.PI / 2); // grandfather clock
-    f.box('darkWood', 0, 1.0, 0, 0.5, 2.0, 0.32); f.box('darkWood', 0, 2.05, 0, 0.56, 0.12, 0.36);
-    f.cyl('porcelain', 0, 1.65, 0.165, 0.17, 0.17, 0.01, 20, Math.PI / 2); f.box('glass', 0, 0.9, 0.165, 0.32, 0.9, 0.01); f.cyl('brass', 0, 0.75, 0.12, 0.08, 0.08, 0.01, 16, Math.PI / 2);
-    f.solid(-0.25, -0.16, 0.25, 0.16, 2);
-  }
+  { const f = fur(gb, 7.62, 5.55, -Math.PI / 2); grandfatherClock(f, 1); }
   { const f = fur(gb, 6.2, 0.6, 0); floorLamp(f); f.solid(-0.15, -0.15, 0.15, 0.15, 1.7); }
   prop('mug', 2.0, FY + 0.445, 2.85); prop('book', 2.5, FY + 0.445, 3.0, 0.4); prop('remote', 2.15, FY + 0.445, 3.15, 1.2); prop('vase', 0.4, FY + 0.58, 5.4);
   prop('book', 0.3, FY + 0.03, 3.5, 1.3);
@@ -349,8 +345,7 @@ function buildFurniture(gb, root) {
   { const f = fur(gb, 11.3, 13.6, 0); f.box('toyBlue', 0, 0.22, 0, 0.8, 0.44, 0.45); f.box('toyYellow', 0, 0.46, -0.05, 0.82, 0.04, 0.46, 0, -0.5); f.solid(-0.42, -0.24, 0.42, 0.24, 0.5); }
   { const f = fur(gb, 12.8, 9.6, 0.7); rockingHorse(f, root); f.solid(-0.2, -0.5, 0.2, 0.5, 0.8); }
   { const f = fur(gb, 10.6, 9.8, 0); coffeeTable(f, 0.47); f.solid(-0.36, -0.36, 0.36, 0.36, 0.5); for (const [a, r] of [[-0.6, Math.PI / 2], [0.6, -Math.PI / 2]]) { const [cx, cz] = f.pt(a, 0); const c = fur(gb, cx, cz, r); chair(c, 'toyRed', 'toyRed', 0.7); } }
-  { const f = fur(gb, 13.7, 10.8, -Math.PI / 2); f.box('lightWood', 0, 0.45, 0, 1.0, 0.9, 0.35); // dollhouse on a low shelf
-    f.box('paintedWood', 0, 1.15, 0, 0.6, 0.5, 0.3); f.box('toyRed', 0, 1.5, 0, 0.66, 0.04, 0.36, 0, 0, 0.55); f.box('toyRed', 0, 1.5, 0, 0.66, 0.04, 0.36, 0, 0, -0.55); f.box('screen', -0.15, 1.15, 0.155, 0.12, 0.14, 0.01); f.box('screen', 0.15, 1.15, 0.155, 0.12, 0.14, 0.01); f.solid(-0.5, -0.18, 0.5, 0.18, 1.6); }
+  { const f = fur(gb, 13.7, 10.8, -Math.PI / 2); dollhouse(gb, f); f.solid(-0.5, -0.18, 0.5, 0.18, 1.25); }   // a dollhouse on a low shelf
   prop('teddy', 9.55, FY + 0.56, 13.4); prop('ball', 11.0, FY + 0.1, 11.0); prop('block', 10.45, FY + 0.47, 9.65); prop('block', 10.7, FY + 0.47, 9.9); prop('block', 12.0, FY + 0.04, 12.2); prop('truck', 11.6, FY + 0.47 + 0.0, 13.6);
   picFrame(root, 'z', 9.8, 13.89, FY + 1.65, -1, 'p7', 0, 0.46);   // over the bed, clear of the window
   // ===== KITCHEN
@@ -493,6 +488,14 @@ function kitchenTable(f) { furModel(f, 'prop-dining.json', 'Table', { height: 0.
 // the Victorian set (camelback sofa, upholstered armchair, bentwood chair, oval tables, china cabinets, lamp, urn,
 // sconce, chandelier), the grand piano and the rustic set (hutch, chest of drawers, desk)
 function vicSofa(f, len = 2.0) { logFurn(f, 'sofa', -1); furModel(f, PACK.vint, 'SM_Koltuk_P1_5', { len, axis: 'x' }); }
+// the vintage longcase clock; its dial sits in the hood's arch. front: which local z its face looks along (+1 or -1)
+function grandfatherClock(f, front = -1) {
+  furModel(f, 'prop-gfclock.json', 'body', { height: 2.15, turn: front < 0 ? 0 : Math.PI });
+  const [y, d, r] = GFC_DIAL; f.cyl('porcelain', 0, y, front * d, r, r, 0.008, 24, Math.PI / 2);   // dial, then the hands at ten to two
+  f.box('blackPlastic', -0.035, y + 0.02, front * (d + 0.006), 0.008, 0.08, 0.003, 0, 0, 0.9); f.box('blackPlastic', 0.04, y + 0.03, front * (d + 0.008), 0.006, 0.11, 0.003, 0, 0, -0.75);
+  f.solid(-0.3, -0.21, 0.3, 0.21, 2.1);
+}
+const GFC_DIAL = [1.72, 0.2, 0.14];   // dial height, depth and radius
 function vicArmchair(f) { logFurn(f, 'armchair', -1); furModel(f, PACK.vint, 'SM_Sandalye_20', { height: 1.02 }); }
 function bentChair(f) { logFurn(f, 'chair', 1); furModel(f, PACK.vint, 'SM_Sandalye_P1_40', { height: 0.92, turn: 0 }); }
 function ovalTable(f, h = 0.5) { furModel(f, PACK.vint, 'SM_Orta_Sehpa_P1_6', { height: h }); }
@@ -514,6 +517,23 @@ function boxDresser(f) { f.box('darkWood', 0, 0.45, 0, 1.4, 0.9, 0.48); f.box('d
 function tableLamp(f, x, y, z) { furModel(f, PACK.tl, 'TinyLiving_TheModernDeskLamp_23', { height: 0.5, at: [x, z], dy: y }); }
 function floorLamp(f) { furModel(f, PACK.tl, 'TinyLiving_LampWithoutStorage_20', { height: 1.75 }); }
 // the wooden rocking horse model (its head is at +x; the furniture frame wants it at -z)
+// a two-storey dollhouse on a low white shelf; its front (windows, door) faces local +z
+function dollhouse(gb, f) {
+  f.box('whitePaint', 0, 0.19, 0, 1.0, 0.38, 0.36); f.box('whitePaint', 0, 0.39, 0.005, 1.04, 0.025, 0.38);   // shelf and its top
+  for (const x of [-0.25, 0.25]) f.box('toyBlue', x, 0.19, 0.181, 0.4, 0.26, 0.01);                          // two cubby doors
+  const W = 0.7, H = 0.5, D = 0.3, y0 = 0.4;
+  f.box('paintedWood', 0, y0 + H / 2, 0, W, H, D);
+  f.box('lightWood', 0, y0 + H / 2, D / 2 + 0.004, W + 0.01, 0.02, 0.01);                                     // floor line between storeys
+  for (const [x, y] of [[-0.22, 0.13], [0.22, 0.13], [-0.22, 0.37], [0, 0.37], [0.22, 0.37]]) {             // windows with white frames
+    f.box('whitePaint', x, y0 + y, D / 2 + 0.004, 0.11, 0.12, 0.008); f.box('blackPlastic', x, y0 + y, D / 2 + 0.008, 0.08, 0.09, 0.006); }
+  f.box('toyRed', 0, y0 + 0.1, D / 2 + 0.006, 0.09, 0.17, 0.01); f.box('whitePaint', 0, y0 + 0.005, D / 2 + 0.03, 0.16, 0.01, 0.06);   // door, step
+  const rise = 0.2, a = Math.atan2(rise, D / 2), ov = 0.04, L = Math.hypot(D / 2, rise) + ov, yt = y0 + H;
+  const tri = new THREE.Shape([new THREE.Vector2(-D / 2, 0), new THREE.Vector2(D / 2, 0), new THREE.Vector2(0, rise)]);   // gable ends
+  const pr = new THREE.ExtrudeGeometry(tri, { depth: W, bevelEnabled: false }); pr.translate(0, 0, -W / 2); pr.rotateY(Math.PI / 2);
+  const [px, pz] = f.pt(0, 0); gb.add(pr, mat4(px, f.o[3] + yt, pz, f.o[2]), 'paintedWood', false);
+  for (const sd of [-1, 1]) f.box('toyRed', 0, yt + rise / 2 - ov * Math.sin(a) / 2 + 0.012, sd * (D / 4 + ov * Math.cos(a) / 2), W + 0.06, 0.022, L, 0, sd * a);
+  f.box('brick', 0.2, yt + rise * 0.75, -0.05, 0.07, 0.2, 0.07);                                               // chimney
+}
 function rockingHorse(f, root) { const [ox, oz, ry, oy] = f.o; placeModel(root, { url: 'prop-rockhorse.json', x: ox, z: oz, y: oy, ry: ry + Math.PI / 2, len: 1.0, axis: 'x', cols: false }); }
 function rug(gb, x, z, w, d, ry, y = FY) { const g = new THREE.PlaneGeometry(w, d); g.rotateX(-Math.PI / 2); gb.add(g, mat4(x, y + 0.006, z, ry), 'rugMat', false); }
 // img: a portrait texture index, or 'p<n>' for a framed piece from the paintings collection, scaled to height h

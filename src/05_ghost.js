@@ -110,6 +110,9 @@ const GHOST_FILES = [
   { url: 'ghost-endboss.json', height: 2.3, name: 'endboss' }, { url: 'ghost-zombie.json', height: 1.85, name: 'zombie' },
   { url: 'ghost-zombie-male.json', height: 1.85, name: 'zombie-male', arms: 'hang' }, { url: 'ghost-zombie-female.json', height: 1.74, name: 'zombie-female', arms: 'hang' },
   { url: 'ghost-vurdalak.json', height: 2.3, name: 'vurdalak' },
+  // these two bring their own idle / walk / run clips (the spiky one as stretches of one long take, in frames at 30 fps)
+  { url: 'ghost-spiky.json', height: 1.95, name: 'spiky', clips: { idle: [0, 138], walk: [160, 280], run: [290, 410] } },
+  { url: 'ghost-lobotomy.json', height: 1.8, name: 'lobotomy', turn: Math.PI / 2, clips: { idle: 'Idle1', walk: 'Walk' } },
 ];
 const GHOST_MODELS = [], GHOST_LOADING = {};
 // models are fetched only when a round picks them (they are large); the stand-in ghost is used until it arrives
@@ -240,9 +243,10 @@ function prepGhostModel(gl, f, scene) {
   if (!rigged) autoRig(model);
   // keep the creature in place: drop horizontal root motion from the hips, keep the bob
   for (const clip of gl.animations) for (const tr of clip.tracks) {
-    if (!/\.position$/.test(tr.name) || !/hips/i.test(tr.name)) continue;
+    if (!/\.position$/.test(tr.name) || !/hips|^Bip0\d+(_\d+)?\.|pelvis/i.test(tr.name)) continue;
     const v = tr.values, x0 = v[0], z0 = v[2]; for (let i = 0; i < v.length; i += 3) { v[i] = x0; v[i + 2] = z0; }
   }
+  if (f.turn) model.rotation.y += f.turn;   // models that face sideways are turned to face +z like the rest
   model.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(model, true), size = box.getSize(new V3()), s = f.height / Math.max(size.y, 1e-6);
   const cx = (box.min.x + box.max.x) / 2, cz = (box.min.z + box.max.z) / 2;
@@ -268,16 +272,23 @@ function prepGhostModel(gl, f, scene) {
     o.material = m; o.userData.gm = m; meshes.push(o);
   });
   const mixer = new THREE.AnimationMixer(model);
-  const action = gl.animations[0] ? mixer.clipAction(gl.animations[0]) : null; if (action) action.play();
+  let action = null, acts = null;
+  if (f.clips) {   // its own idle / walk / run, blended by how fast it moves; no procedural gait on top
+    acts = {}; const src = gl.animations[0];
+    for (const [k, c] of Object.entries(f.clips)) {
+      const clip = Array.isArray(c) ? THREE.AnimationUtils.subclip(src, k, c[0], c[1], 30) : gl.animations.find(a => a.name.includes(c));
+      if (!clip) continue; const a = acts[k] = mixer.clipAction(clip); a.play(); a.setEffectiveWeight(k === 'idle' ? 1 : 0);
+    }
+  } else { action = gl.animations[0] ? mixer.clipAction(gl.animations[0]) : null; if (action) action.play(); }
   // the models only ship an idle clip, so walking is layered on procedurally: find the limbs to swing
   if (f.arms) armPose(model, f.arms);
   const gait = [];
-  model.traverse(o => {
+  if (!acts) model.traverse(o => {
     if (!o.isBone) return;
     for (const [kind, re] of GAIT_BONES) if (re.test(o.name)) { gait.push({ bone: o, kind, side: /_L_|Left|^\w+\d+L_/.test(o.name) ? 1 : /_R_|Right|^\w+\d+R_/.test(o.name) ? -1 : 0, q0: o.quaternion.clone() }); break; }
   });
   root.visible = false; scene.add(root);
-  return { root, inner, baseY: inner.position.y, meshes, mixer, action, gait, stride: f.height * 0.36, gph: 0, gw: 0, run: 0, glb: true, look: 'hidden', phase: 0, name: f.name };
+  return { root, inner, baseY: inner.position.y, meshes, mixer, action, acts, wk: 0, rk: 0, gait, stride: f.height * 0.36, gph: 0, gw: 0, run: 0, glb: true, look: 'hidden', phase: 0, name: f.name };
 }
 // pose each upper arm (from whatever bind pose the model has) toward a target direction in the model's frame:
 // 'hang' lets T-posed arms fall to the sides (the hunt's reach lifts them), 'reach' points them forward
@@ -307,6 +318,12 @@ function useGhostModel(idx) {
 function animateGhost(gh, t, dt, v) {
   if (!gh.glb) { gh.phase += dt * (v.moving || 0) * 4.5; poseGhost(gh, t, Math.min(1.5, (v.moving || 0) / 1.2), v.mode); return; }
   const mv = v.moving || 0;
+  if (gh.acts) {   // clip-driven: idle when still, walk when moving, run while hunting (or a quicker walk if it has no run)
+    const A = gh.acts, hunt = v.mode === 2 || v.mode === 3, k = 1 - Math.exp(-dt * 5);
+    gh.wk = lerp(gh.wk, clamp(mv / 0.5, 0, 1), k); gh.rk = lerp(gh.rk, hunt && mv > 0.2 && A.run ? 1 : 0, k);
+    if (A.idle) A.idle.setEffectiveWeight(1 - gh.wk); if (A.walk) A.walk.setEffectiveWeight(gh.wk * (1 - gh.rk)); if (A.run) A.run.setEffectiveWeight(gh.wk * gh.rk);
+    gh.mixer.timeScale = hunt && !A.run ? 1.5 : 0.8 + mv * 0.25; gh.mixer.update(dt); return;
+  }
   for (const b of gh.gait) b.bone.quaternion.copy(b.q0);   // bones the clip doesn't drive would otherwise accumulate the gait
   gh.mixer.timeScale = v.mode === 2 ? 1.1 : v.mode === 3 ? 1.6 : 0.75 + mv * 0.2;
   gh.mixer.update(dt);

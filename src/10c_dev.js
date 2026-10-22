@@ -13,7 +13,7 @@ function devRender() {
   const badge = $('devBadge'); badge.hidden = DEV.ghost < 0; if (DEV.ghost >= 0) badge.textContent = 'DEV · next ghost: ' + GHOSTS[DEV.ghost].name;
 }
 function devToggle(open = !DEV.open) {
-  DEV.open = open; $('dev').hidden = !open;
+  DEV.open = open; $('dev').hidden = !open; if (open && DEV.fillVoices) DEV.fillVoices();
   if (open && document.pointerLockElement) document.exitPointerLock();
   devRender();
 }
@@ -24,6 +24,28 @@ function buildDev() {
   const add = (i, label, sub) => { const b = document.createElement('button'); b.className = 'mapc'; b.dataset.dg = i; b.innerHTML = label + '<small>' + sub + '</small>'; b.onclick = () => { DEV.ghost = i; devRender(); }; grid.appendChild(b); };
   add(-1, 'Random', 'the usual');
   GHOSTS.forEach((g, i) => add(i, g.name, g.ev.map(e => EV_SHORT[e]).join(' · ')));
+  // ghost voice: every speech voice this computer has, each with a spirit box and a Siren sample; the one you pick is used
+  const vb = document.createElement('div'); vb.innerHTML = '<h2 style="margin-top:18px">Ghost voice</h2><p class="devnote">Click a voice to hear a spirit box answer and use it for the spirit box and the Siren from now on (remembered on this computer). ▶ Siren plays the name whisper. Tags mark the voices the game used before.</p><div class="maps devgrid devvoices"></div>';
+  box.querySelector('.devbox').appendChild(vb);
+  const vgrid = vb.querySelector('.devvoices');
+  const fillVoices = () => {
+    if (!window.speechSynthesis) { vgrid.textContent = 'This browser has no speech voices.'; return; }
+    const vs = speechSynthesis.getVoices(); if (!vs.length) { vgrid.textContent = 'Loading voices…'; return; }
+    const old = oldVoicePick(vs), def = vs.find(v => v.default), cur = (pickVoice(), VOICE), nick = () => ($('nick') && $('nick').value.trim()) || 'Claire';
+    const list = [...vs].sort((a, b) => (/^en/i.test(b.lang) - /^en/i.test(a.lang)) || ((b === old || b === def) - (a === old || a === def)));
+    vgrid.innerHTML = '';
+    const add = (v) => {
+      const tags = [v === old && 'used before: spirit box', v === def && 'used before: first answer', v === cur && 'current'].filter(Boolean);
+      const b = document.createElement('button'); b.className = 'mapc' + (v === cur ? ' sel' : ''); b.innerHTML = (v ? v.name : 'Automatic') + '<small>' + (v ? v.lang + (v.localService ? ' · on this computer' : ' · online') : 'deep local voice') + (tags.length ? '<br>' + tags.join(' · ') : '') + '</small>';
+      b.onclick = () => { setGhostVoice(v); if (v || VOICE) sampleVoice(v || VOICE, false); fillVoices(); };
+      const s = document.createElement('span'); s.textContent = '▶ Siren'; s.style.cssText = 'display:inline-block;margin-top:6px;padding:2px 8px;border:1px solid currentColor;font-size:11px;cursor:pointer';
+      s.onclick = e => { e.stopPropagation(); sampleVoice(v || VOICE, true, nick()); }; b.appendChild(document.createElement('br')); b.appendChild(s);
+      vgrid.appendChild(b);
+    };
+    add(null); list.forEach(add);
+  };
+  if (window.speechSynthesis) speechSynthesis.addEventListener('voiceschanged', fillVoices);
+  DEV.fillVoices = fillVoices;
   box.onclick = e => { if (e.target === box) devToggle(false); };
   document.body.appendChild(box);
   const badge = document.createElement('div'); badge.id = 'devBadge'; badge.hidden = true; document.body.appendChild(badge);
