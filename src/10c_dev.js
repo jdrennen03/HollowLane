@@ -65,6 +65,21 @@ function buildDev() {
   mb.querySelector('.devgh').onchange = e => { CUSTOM_GHOST.height = clamp(+e.target.value || 1.9, 0.5, 4); if (CUSTOM_GHOST.buf) devLoadCustomGhost(say); };
   mb.querySelector('.devturn').onclick = () => { if (!CUSTOM_GHOST.buf) return; CUSTOM_GHOST.turn = (CUSTOM_GHOST.turn + Math.PI / 2) % (Math.PI * 2); devLoadCustomGhost(say); };
   mb.querySelector('.devbuiltin').onclick = () => { devClearCustomGhost(); mb.querySelector('.devglb').value = ''; gst.textContent = 'Back to the built-in ghost models.'; };
+  // the Drennen Estate giant from a local .glb
+  const gb2 = document.createElement('div');
+  gb2.innerHTML = '<h2 style="margin-top:18px">Giant model (Drennen Estate tape)</h2><p class="devnote">Load a .glb to be the giant. It is auto-rigged with the giant\'s own skeleton and walks, bends and peeks in the windows the same way. A standing figure facing forward, arms out to the sides, fits best; use Turn 90° if it comes in sideways. Only you see it in multiplayer.</p>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;font:13px var(--f-ui);color:var(--paper)"><input type="file" accept=".glb,.gltf,model/gltf-binary" class="devgiant">' +
+    '<button class="mapc devgturn" style="min-height:0;padding:6px 10px">Turn 90°</button><button class="mapc devgnow" style="min-height:0;padding:6px 10px">Summon it now</button><button class="mapc devgbuiltin" style="min-height:0;padding:6px 10px">Use built-in giant</button></div><p class="devnote devgist" style="margin-top:8px"></p>';
+  box.querySelector('.devbox').appendChild(gb2);
+  const gist = gb2.querySelector('.devgist');
+  const restartGiant = () => { if (GIANT.on) { stopGiant(); startGiant((Math.random() * 1e9) | 0); } };
+  gb2.querySelector('.devgiant').onchange = e => { const file = e.target.files[0]; if (!file) return;
+    file.arrayBuffer().then(buf => { Object.assign(CUSTOM_GIANT, { buf, name: file.name, turn: 0 }); gist.textContent = '✓ ' + file.name + ' will be the giant' + (GIANT.on ? ' (swapped in now).' : ' the next time the tape is played.'); restartGiant(); }); };
+  gb2.querySelector('.devgturn').onclick = () => { if (!CUSTOM_GIANT.buf) return; CUSTOM_GIANT.turn = (CUSTOM_GIANT.turn + Math.PI / 2) % (Math.PI * 2); gist.textContent = '✓ ' + CUSTOM_GIANT.name + ' turned ' + Math.round(CUSTOM_GIANT.turn * 180 / Math.PI) + '°.'; restartGiant(); };
+  gb2.querySelector('.devgnow').onclick = () => {
+    if (G.state !== 'play' || MAP.id !== 'farm') { gist.textContent = 'Start a round on the Drennen Estate first.'; return; }
+    stopGiant(); startGiant((Math.random() * 1e9) | 0); devToggle(false); };
+  gb2.querySelector('.devgbuiltin').onclick = () => { CUSTOM_GIANT.buf = null; gb2.querySelector('.devgiant').value = ''; gist.textContent = 'Back to the built-in giant.'; restartGiant(); };
   // ghost voice: every speech voice this computer has, each with a spirit box and a Siren sample; the one you pick is used
   const vb = document.createElement('div'); vb.innerHTML = '<h2 style="margin-top:18px">Ghost voice</h2><p class="devnote">Click a voice to hear a spirit box answer and use it for the spirit box and the Siren from now on (remembered on this computer). ▶ Siren plays the name whisper. Tags mark the voices the game used before.</p><div class="maps devgrid devvoices"></div>';
   box.querySelector('.devbox').appendChild(vb);

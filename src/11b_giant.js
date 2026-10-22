@@ -10,13 +10,42 @@ function startGiant(seed) {
   if (MAP.id !== 'farm' || GIANT.on) return;
   G.eggOn = true; GIANT.on = true; GIANT.rnd = mulberry32(seed);
   setTimeout(() => { if (GIANT.on) { sub('Something enormous is walking toward the house.', 'sys'); sfx('huntStart', 0.7, 0.45); } }, 2500);
-  loadModelFile('ghost-zombie.json', gl => {
+  const onGl = gl => {
     if (!GIANT.on || GIANT.gh) return;
     const gh = GIANT.gh = prepGhostModel(gl, { height: GIANT_H, name: 'giant' }, scene);
     for (const m of gh.meshes) { m.material.emissive.setHex(0x23252c); }   // a faint moonlit sheen so it reads at night (a flat colour: no extra texture unit)
     gh.root.visible = true;
     setupGiant();
-  }, e => console.warn('giant failed to load', e));
+  };
+  // a model loaded on the developer screen: flattened to plain meshes, then auto-rigged with the same skeleton and driven by
+  // the same walk, bend and peek as the built-in giant
+  if (CUSTOM_GIANT.buf) new GLTFLoader().parse(CUSTOM_GIANT.buf.slice(0), '', gl => onGl({ scene: flattenForRig(gl.scene, CUSTOM_GIANT.turn), animations: [] }), e => { console.warn('custom giant failed', e); loadModelFile('ghost-zombie.json', onGl, () => { }); });
+  else loadModelFile('ghost-zombie.json', onGl, e => console.warn('giant failed to load', e));
+}
+const CUSTOM_GIANT = { buf: null, name: '', turn: 0 };
+// every mesh of a model as a plain mesh (skins, bones and clips dropped), turned about y if asked, so the auto-rig can fit its
+// own skeleton. A skinned model can be taken in its bind pose (usually a T-pose) or in the pose it loads in; the auto-rig
+// wants the arms out to the sides, so the bind pose is used when it stands upright and is about as wide or wider.
+function flattenForRig(model, turn = 0) {
+  model.updateMatrixWorld(true);
+  const build = posed => { const g = new THREE.Group(), v = new V3();
+    model.traverse(o => {
+      if (!o.isMesh) return;
+      const geo = o.geometry.clone(); geo.morphAttributes = {};
+      if (o.isSkinnedMesh && posed) {   // as drawn: every vertex through its bones
+        o.skeleton.update(); const P = geo.attributes.position, out = new Float32Array(P.count * 3);
+        for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i); (o.applyBoneTransform || o.boneTransform).call(o, i, v); v.applyMatrix4(o.matrixWorld); out.set([v.x, v.y, v.z], i * 3); }
+        geo.setAttribute('position', new THREE.BufferAttribute(out, 3)); geo.computeVertexNormals();
+      } else geo.applyMatrix4(o.matrixWorld);   // a static mesh, or a skinned one in its bind pose
+      geo.deleteAttribute('skinIndex'); geo.deleteAttribute('skinWeight'); if (turn) geo.rotateY(turn);
+      g.add(new THREE.Mesh(geo, o.material));
+    });
+    const b = new THREE.Box3().setFromObject(g), s = b.getSize(v); g.userData.h = s.y; g.userData.spread = Math.max(s.x, s.z) / Math.max(s.y, 1e-6); return g; };
+  let skinned = false; model.traverse(o => { if (o.isSkinnedMesh) skinned = true; });
+  const bind = build(false); if (!skinned) return bind;
+  // the bind pose only counts if it stands upright like the loaded model (some files keep it in another up-axis)
+  const posed = build(true), upright = bind.userData.spread < 1.6;   // a figure lying down is far wider than it is tall
+  return upright && bind.userData.spread >= posed.userData.spread * 0.95 ? bind : posed;   // near a tie, the bind pose (the rig's own rest shape)
 }
 // joints the pose is measured with (positions in the giant's own frame)
 function giantJoints(gh) { return gh.gait.filter(b => b.kind === 'calf' || b.kind === 'foot'); }
@@ -54,7 +83,12 @@ function giantMeasure(gh, b) {
 }
 function setupGiant() {
   const gh = GIANT.gh;
-  GIANT.minJ0 = giantMeasure(gh, 0).minJ;
+  const m0 = giantMeasure(gh, 0); GIANT.minJ0 = m0.minJ;
+  // how far this rig has to fold to bring its head as low as the built-in giant's full bend (about a quarter of its standing
+  // head height); auto-rigged models fold a little less per step, so they may bend past 1
+  const eff = b => { const m = giantMeasure(gh, b); return m.head.y - (m.minJ - m0.minJ); };
+  let lo = 0.6, hi = 2; for (let k = 0; k < 12; k++) { const b = (lo + hi) / 2; if (eff(b) > 0.265 * m0.head.y) lo = b; else hi = b; }
+  const bMax = GIANT.bMax = Math.max(1, (lo + hi) / 2);
   // house centre from the downstairs rooms
   let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const R of ROOMS) if (!R.outdoor && !R.closet) { x0 = Math.min(x0, R.r[0]); x1 = Math.max(x1, R.r[2]); z0 = Math.min(z0, R.r[1]); z1 = Math.max(z1, R.r[3]); }
   const C = GIANT.c = [(x0 + x1) / 2, (z0 + z1) / 2];
@@ -68,7 +102,7 @@ function setupGiant() {
     const T = new V3(cx + n[0] * 3.2, (W.y0 + W.y1) / 2 - 0.9, cz + n[1] * 3.2), yaw = Math.atan2(n[0], n[1]);
     let g = terrainY(T.x + n[0] * 6, T.z + n[1] * 6), sol = null;
     for (let pass = 0; pass < 2; pass++) {
-      let lo = 0, hi = 1, m = null;
+      let lo = 0, hi = bMax, m = null;
       for (let k = 0; k < 14; k++) { const b = (lo + hi) / 2; m = giantMeasure(gh, b); const hy = m.head.y - (m.minJ - GIANT.minJ0); if (hy + g > T.y) lo = b; else hi = b; }
       const b = (lo + hi) / 2; m = giantMeasure(gh, b);
       const hy = m.head.y - (m.minJ - GIANT.minJ0); if (Math.abs(hy + g - T.y) > 0.6) { sol = null; break; }
@@ -76,7 +110,7 @@ function setupGiant() {
       sol = { b, x: T.x - off.x, z: T.z - off.z, yaw, drop: m.minJ - GIANT.minJ0 };
       g = terrainY(sol.x, sol.z);
     }
-    if (sol && (W.fy > 2 || sol.b < 0.9)) { sol.g = g; sol.up = W.fy > 2; GIANT.wins.push(sol); }
+    if (sol && (W.fy > 2 || sol.b < 0.9 * bMax)) { sol.g = g; sol.up = W.fy > 2; GIANT.wins.push(sol); }
   }
   for (const g of gh.gait) g.bone.quaternion.copy(g.q0);
   if (!GIANT.wins.length) { console.warn('giant: no reachable windows'); stopGiant(); return; }
