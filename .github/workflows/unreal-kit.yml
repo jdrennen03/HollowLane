@@ -1,0 +1,49 @@
+name: Build Unreal export kit
+
+# Runs tools/unreal-export/make-kit.sh in a headless browser and publishes the zip as a (pre)release.
+# Actions tab > "Build Unreal export kit" > Run workflow, give the release tag (e.g. unreal-kit-2).
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag for the kit, e.g. unreal-kit-1 (blank = zip under the run's Artifacts only)"
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  kit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Tools (three, playwright + Chromium, ffmpeg, zip)
+        run: |
+          npm install --prefix "$RUNNER_TEMP/t" three@0.165.0
+          mkdir -p desktop/node_modules && ln -s "$RUNNER_TEMP/t/node_modules/three" desktop/node_modules/three
+          npm install --prefix "$RUNNER_TEMP/pw" playwright@1.49.1
+          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium
+          sudo apt-get update && sudo apt-get install -y ffmpeg zip
+      - name: Build the kit
+        run: NODE_PATH="$RUNNER_TEMP/pw/node_modules" sh tools/unreal-export/make-kit.sh "$RUNNER_TEMP/out/HollowLane-UnrealKit"
+      - uses: actions/upload-artifact@v4
+        if: inputs.tag == ''
+        with:
+          name: HollowLane-UnrealKit
+          path: ${{ runner.temp }}/out/HollowLane-UnrealKit.zip
+      - uses: softprops/action-gh-release@v2
+        if: inputs.tag != ''
+        with:
+          tag_name: ${{ inputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Unreal export kit (${{ inputs.tag }})
+          prerelease: true
+          files: ${{ runner.temp }}/out/HollowLane-UnrealKit.zip
+          body: |
+            Export kit for porting Hollow Lane to Unreal Engine: the five maps as glTF scenes with named markers plus layout
+            JSON, every model as .glb, all sounds as WAV, and the game data (ghosts, evidence, items, spirit box) as JSON/CSV.
+            See README.md inside the zip for importing. Built with tools/unreal-export/make-kit.sh.

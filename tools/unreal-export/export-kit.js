@@ -2,7 +2,8 @@
 // its layout as JSON, every procedural sound effect rendered to WAV, and the game data (ghosts, evidence, items, spirit box)
 // as JSON and CSV. Models and recorded sounds are copied/converted by make-kit.sh.
 //   usage: node tools/unreal-export/export-kit.js <outDir>
-// Needs playwright-core and a Chromium (PLAYWRIGHT / CHROMIUM env var for the executable), and three in desktop/node_modules.
+// Needs playwright (or playwright-core) with a Chromium (CHROMIUM env var to pick the executable), and three in
+// desktop/node_modules.
 let chromium; try { ({ chromium } = require('playwright-core')); } catch (e) { ({ chromium } = require('playwright')); } const fs = require('fs'), path = require('path'), http = require('http'), { execSync } = require('child_process');
 const repo = path.resolve(__dirname, '../..'), out = path.resolve(process.argv[2] || 'unreal-kit');
 const MAPS = (process.env.MAPS || 'lane,farm,bayou,barn,myrtles').split(',');
@@ -18,7 +19,7 @@ const server = http.createServer((q, r) => {
 const base = 'http://localhost:' + server.address().port;
 
 (async () => {
-  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
+  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || (fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined), args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
   const p = await b.newPage({ viewport: { width: 320, height: 200 } }); p.on('pageerror', e => console.log('PAGEERR: ' + e.message));
   const parts = {}; await p.exposeFunction('saveChunk', (name, i, n, b64) => { (parts[name] = parts[name] || [])[i] = Buffer.from(b64, 'base64'); if (parts[name].filter(Boolean).length === n) { fs.writeFileSync(path.join(out, name), Buffer.concat(parts[name])); delete parts[name]; } });
   await p.goto(base + '/test.html', { waitUntil: 'domcontentloaded' }); await p.waitForFunction(() => window.__HL, null, { timeout: 90000 }); await p.waitForTimeout(2000);
